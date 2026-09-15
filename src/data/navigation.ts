@@ -4,13 +4,13 @@ export const workspaces: Record<WorkspaceRole, WorkspaceConfig> = {
   admin: {
     label: 'Administrador',
     title: 'Espacio de administración',
-    description: 'La estructura para administrar la comunidad está lista. Las funciones de gestión se incorporarán en las siguientes etapas.',
-    navigation: [{ label: 'Inicio', path: '/admin' }],
+    description: 'Consulta tus datos de acceso y el condominio que administras.',
+    navigation: [{ label: 'Condominio', path: '/admin' }, { label: 'Residencias', path: '/admin/residencias', end: false }, { label: 'Mi perfil', path: '/admin/perfil' }],
   },
   resident: {
     label: 'Residente',
     title: 'Espacio del residente',
-    description: 'Este será tu espacio para consultar y gestionar el acceso a tu vivienda. Las funciones se incorporarán en las siguientes etapas.',
-    navigation: [{ label: 'Inicio', path: '/residente' }],
+    description: 'Consulta tus datos de acceso y la residencia a la que perteneces.',
+    navigation: [{ label: 'Mi residencia', path: '/residente' }, { label: 'Mi perfil', path: '/residente/perfil' }],
   },
 }

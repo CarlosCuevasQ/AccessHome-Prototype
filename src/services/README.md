@@ -1,14 +1,44 @@
 # Servicios
 
-Los componentes consumen contratos asíncronos de servicios. El acceso a localStorage está encapsulado en esta carpeta.
+Las pantallas consumen contratos asíncronos. Solo `demoStorage.ts` lee/escribe localStorage; una futura API puede sustituir la implementación de estos contratos.
 
-- `authService`: `getSession()`, `login(credentials)`, `logout()` y `subscribe(listener)`.
-- `demoService`: credenciales para la ayuda del login, contexto del perfil y `resetDemoData()`.
-- `demoStorage`: lectura/escritura de `accesshome.demo.v1` y notificaciones entre componentes y pestañas.
-- `demoValidation`: valida estructura, roles y referencias antes de utilizar datos persistidos.
+| Servicio | Responsabilidad |
+| --- | --- |
+| `authService` | Login, logout, sesión pública sin contraseña y suscripción a cambios. Rechaza cuentas de habitantes inactivos. |
+| `demoService` | Ayuda de credenciales, contexto propio y restauración de la semilla completa. |
+| `demoStorage` | Clave `accesshome.demo.v1`, lectura validada, escritura y notificaciones locales/entre pestañas. |
+| `demoValidation` / `demoMigration` | Valida esquema 3 y relaciones; migra versiones 1/2 conservando datos y sesión. |
+| `communityService` | Resumen/listado administrativo, detalle autorizado y operaciones de estructura. Expone las operaciones de los dos servicios siguientes. |
+| `principalService` | Asignación administrativa de principal existente de esa casa o creación de principal con cuenta demo. |
+| `householdService` | Alta/edición de habitantes y vehículos por el principal de su propia casa activa. Las bajas son cambios de estado reversibles. |
+| `communityRules` | Resuelve usuario desde sesión, valida rol, pertenencia, principal, actividad, campos y duplicados. |
 
-La semilla original se define en `data/demo.ts` y cada restauración obtiene una copia independiente. La escritura de la base y la sesión se realiza con un único `setItem`; un fallo no se anuncia como operación exitosa. Restaurar reemplaza esa clave completa y cierra la sesión, sin usar `localStorage.clear()`.
+## Permisos
 
-El identificador de sesión se resuelve contra los usuarios almacenados. No hay autenticación real: las contraseñas demo son visibles en la semilla y en los datos locales. Los objetos de sesión que reciben las pantallas excluyen contraseñas.
+Ninguna operación recibe el usuario que concede autorización desde un componente. Cada operación lee la sesión persistida y vuelve a verificar permisos. Un ID de residencia enviado por la pantalla no concede acceso.
 
-La futura integración con una API Django sustituirá la implementación de autenticación y datos conservando los contratos usados por las pantallas; las utilidades de restauración son exclusivas del prototipo.
+- Administrador: estructura y asignación dentro de su condominio; consulta todas sus casas. Los métodos cotidianos rechazan su rol.
+- Principal activo: gestión cotidiana solo si la residencia coincide con `user.residenceId`, `residence.principalUserId` coincide con su ID y la casa está activa.
+- Cuenta adicional activa: consulta exclusivamente su casa. Una casa inactiva también queda en consulta.
+- Cuenta de habitante inactivo: no obtiene sesión ni accede a consultas protegidas.
+- Actualizar un habitante/vehículo comprueba tanto la casa autorizada como la pertenencia del registro. Se copian únicamente campos editables; IDs, rol, cuenta y casa no se cambian desde formularios cotidianos.
+
+## Integridad
+
+`Residence.principalUserId` referencia una cuenta residente; `Inhabitant.userId` es opcional y permite conservar cuentas anteriores sin exigir autenticación para nuevos habitantes. `Vehicle.ownerId` referencia un habitante de su misma residencia, no una cuenta.
+
+Asignar un habitante sin cuenta crea la cuenta necesaria con correo único y la contraseña demo centralizada. Elegir uno con cuenta la conserva. El principal anterior permanece en su casa con consulta; nunca se trasladan usuarios entre casas. El principal no puede desactivarse antes de ser reemplazado por el administrador.
+
+El correo del habitante es de contacto y no cambia credenciales. El nombre de una cuenta vinculada se actualiza al editar el nombre del habitante. Desactivar un habitante conserva su relación con los vehículos; la interfaz identifica a propietarios inactivos.
+
+Número de casa único por condominio; correo de acceso único entre cuentas; placas únicas por condominio ignorando mayúsculas, espacios y guiones. Se validan campos y estado antes de escribir.
+
+## Persistencia
+
+La escritura completa se hace con un único `setItem`; el servicio solo notifica después de guardar. Si falla, devuelve error y conserva los datos almacenados. No hay escrituras parciales de principal, cuenta y habitante.
+
+La migración convierte usuarios residentes anteriores en habitantes, conserva propietarios y asigna un principal a cada casa con residentes. Los vehículos sin propietario permanecen sin asignar. El esquema v3 mantiene la clave histórica y migra una sola vez. Las cuentas y la sesión se conservan.
+
+`resetDemoData()` reemplaza todos los datos propios, incluidas asignaciones, habitantes y estados, por una copia de la semilla. Cierra sesión y conserva claves de otras aplicaciones; nunca llama `localStorage.clear()`.
+
+`AuthProvider` y `useCommunityQuery` escuchan notificaciones. La implementación es una simulación local, no una barrera frente a la manipulación directa del navegador; la futura API deberá aplicar estos permisos en el servidor.

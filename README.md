@@ -1,23 +1,29 @@
 # AccessHome
 
-Prototipo funcional para una presentación universitaria sobre seguridad residencial.
+Prototipo funcional para una presentación universitaria sobre seguridad residencial. React, Vite, TypeScript y React Router, con persistencia local y sin backend ni servicios externos.
 
 ## Estado actual
 
-Etapa 2: autenticación simulada. Incluye React, Vite, TypeScript, React Router, login por correo y contraseña, logout, sesión persistente, protección de rutas por rol, restauración de datos demo y los layouts responsive de la etapa 1.
+Etapa 3, con responsabilidades corregidas:
 
-La autenticación es exclusivamente de demostración: los datos y contraseñas demo están disponibles en el frontend y se guardan localmente. Las restricciones de navegación no constituyen seguridad real. No utilizar cuentas ni datos personales reales. No hay backend ni servicios externos.
+- **Administrador:** crea residencias, edita número/calle y estado, asigna o cambia al principal y consulta habitantes y vehículos.
+- **Residente principal:** administra los habitantes y vehículos de su propia residencia activa. Puede agregarlos, consultar su detalle, editarlos, desactivarlos y reactivarlos.
+- **Habitante adicional:** puede existir sin cuenta. Las cuentas adicionales conservadas de etapas anteriores solo consultan su casa hasta que el administrador las designe como principal.
+
+Los permisos se verifican en las pantallas y en cada operación del servicio. Se mantienen autenticación, roles, navegación, sesión persistente, restauración y diseño responsive azul con acentos amarillos.
+
+La autenticación es simulada: las contraseñas demo están en el frontend y los datos locales se pueden manipular desde el navegador. Utiliza datos ficticios. No hay seguridad de servidor.
 
 ## Ejecutar
 
-Requisito: Node.js `^20.19.0` o `>=22.12.0` y npm. Entorno de verificación: Node.js 24.11.0 y npm 11.6.1.
+Requisito: Node.js `^20.19.0` o `>=22.12.0` y npm. Entorno verificado: Node.js 24.11.0 y npm 11.6.1.
 
 ```sh
 npm install
 npm run dev
 ```
 
-Abre http://127.0.0.1:5173. El puerto es fijo: si está ocupado, detén el proceso que lo utiliza antes de iniciar otra instancia.
+Abre [AccessHome local](http://127.0.0.1:5173). El puerto es fijo; si ya hay una instancia activa, abre esa instancia.
 
 ```sh
 npm run build
@@ -25,71 +31,93 @@ npm test
 npm run preview
 ```
 
-El build valida TypeScript y genera `dist/`. La vista previa del build está en http://127.0.0.1:4173. Ninguno de estos comandos publica el sitio.
+Build comprueba TypeScript y genera `dist/`. Preview sirve el build en [http://127.0.0.1:4173](http://127.0.0.1:4173). Estos comandos no publican el sitio.
 
-## Rutas y prueba rápida
+## Rutas
 
-| Ruta | Resultado |
+| Ruta | Función |
 | --- | --- |
-| `/` | Lleva al login o al inicio del perfil si existe sesión |
-| `/login` | Formulario de acceso; con sesión redirige al inicio del perfil |
-| `/admin` | Inicio exclusivo del administrador |
-| `/residente` | Inicio exclusivo del residente |
-| Cualquier ruta desconocida | Página 404 |
-| `/admin/no-existe` o `/residente/no-existe` | 404 dentro del layout correspondiente, solo con el rol adecuado |
+| `/`, `/login` | Login; con sesión redirige al inicio del rol |
+| `/admin` | Resumen y datos básicos del condominio |
+| `/admin/residencias` | Listado, búsqueda y alta de casas |
+| `/admin/residencias/:residenceId` | Estructura, estado, asignación del principal y consulta de habitantes/vehículos |
+| `/residente` | Mi residencia; gestión si el usuario es su principal y la casa está activa |
+| `/admin/perfil`, `/residente/perfil` | Perfil del usuario autenticado |
+| Ruta desconocida | Página 404, dentro del layout cuando corresponde |
 
-Sin sesión, cualquier ruta de perfil redirige al login. Con un rol distinto, redirige al inicio propio con un aviso de acceso restringido.
+Sin sesión se redirige al login; un rol incompatible vuelve a su inicio con aviso.
 
-### Datos de prueba
+## Datos de prueba
 
-| Perfil | Nombre | Correo | Contraseña |
+| Perfil | Correo | Contraseña |
+| --- | --- | --- |
+| Administrador Demo | `admin@accesshome.demo` | `Access123` |
+| Daniel Cuevas, principal de Casa 24 | `residente@accesshome.demo` | `Access123` |
+| Mariana Torres, habitante con cuenta de consulta | `mariana@accesshome.demo` | `Access123` |
+
+Semilla de **Residencial Los Robles**: cuatro casas activas, ocho habitantes y cinco vehículos (cuatro activos).
+
+| Casa | Principal | Otros habitantes | Vehículos |
 | --- | --- | --- | --- |
-| Administrador | Administrador Demo | `admin@accesshome.demo` | `Access123` |
-| Residente | Daniel Cuevas | `residente@accesshome.demo` | `Access123` |
+| 12 | Ana López | Jorge Mendoza | `DEMO-012`, Kia Rio azul |
+| 24 | Daniel Cuevas | Mariana Torres, Andrea Cuevas, Carlos Cuevas | `DEMO-024`, Nissan Versa gris; `DEMO-124`, Toyota Corolla blanco, inactivo |
+| 37 | Luis Herrera | — | `DEMO-037`, Mazda CX-5 rojo |
+| 51 | Elena Ríos | — | `DEMO-051`, Honda CR-V plata, sin propietario |
 
-Semilla centralizada en `src/data/demo.ts`: Residencial Los Encinos, Casa 24 y Casa 25, con dos vehículos asociados a Casa 24 (`DEMO-024`, Nissan Versa gris; `DEMO-124`, Toyota Corolla blanco). Daniel está asociado a Casa 24. Son datos ficticios; esta etapa muestra el contexto de perfil, sin implementar gestión de residencias ni vehículos.
+Andrea y Carlos no tienen cuenta. Agregar un habitante no crea credenciales. Su correo opcional es de contacto: editarlo no cambia el correo de acceso de una cuenta existente.
 
-1. En el login, prueba la contraseña `incorrecta`: debe aparecer **Correo o contraseña incorrectos**.
-2. Ingresa como administrador con `Access123`: debe abrir `/admin` y mostrar Administrador Demo.
-3. Pulsa **Cerrar sesión** en el menú: vuelve al login. En móvil, primero pulsa **Abrir menú**.
-4. Ingresa como residente: debe abrir `/residente`, mostrar Daniel Cuevas y Casa 24.
-5. Escribe `/admin` en la dirección: vuelve a `/residente` con un aviso; no muestra administración.
-6. Recarga: la sesión y el perfil se conservan.
+Al asignar un principal, el administrador puede elegir un habitante activo de esa casa o registrar al nuevo principal. Si necesita cuenta, se crea con correo único y contraseña demo `Access123`. Si ya tiene cuenta, se conserva. El principal anterior queda como habitante de consulta; no se trasladan cuentas entre casas.
 
-### Restaurar la demostración
+Los vehículos pertenecen a la residencia. Su propietario opcional debe ser un habitante de esa misma casa. Se usa desactivación reversible para conservar registros. El principal actual no puede desactivarse hasta que la administración nombre a su reemplazo. Una casa inactiva permite consulta y bloquea su gestión cotidiana hasta reactivarse.
 
-Cierra sesión y pulsa **Restaurar datos demo** en el login, después **Confirmar restauración**. Reemplaza todos los datos del prototipo por la semilla original y elimina la sesión compartida entre las pestañas del mismo origen. No modifica datos de otras aplicaciones. La función es `demoService.resetDemoData()`.
+## Prueba rápida
 
-La persistencia usa únicamente la clave `accesshome.demo.v1`. La sesión dura hasta cerrar sesión, restaurar o borrar los datos del navegador. Se comparte entre pestañas del mismo origen; `localhost`, `127.0.0.1` y distintos puertos tienen almacenamientos separados. No se sobrescriben automáticamente datos corruptos: se ofrece restauración explícita. Si el navegador bloquea localStorage, se muestra un error y no se simula un guardado exitoso.
+1. Entra como administrador, abre **Residencias → Agregar residencia** y crea Casa `91`, calle `Circuito Cedros`.
+2. Abre Casa 91, pulsa **Asignar residente principal** y registra a **Sofía Ramos**, correo `sofia91@accesshome.demo`. Comprueba que solo aparecen acciones administrativas y de consulta.
+3. Cierra sesión y entra con esa cuenta y `Access123`: podrá gestionar exclusivamente Casa 91.
+4. Entra como Daniel. En Casa 24, pulsa **Agregar habitante** y registra **Elena Cuevas**, sin correo obligatorio. Abre **Ver detalle → Editar habitante** y cambia teléfono, apellido o estado.
+5. Pulsa **Registrar vehículo**: `DEMO-324`, Mazda, 3, Azul, propietario Elena. Abre su detalle, edita el color y desactívalo. Recarga para comprobar persistencia.
+6. Con Daniel, intenta abrir `/admin/residencias/house-12`: vuelve a su casa con aviso. Las llamadas directas del servicio contra otra casa también se rechazan; hay un ejemplo en la guía de pruebas.
+7. Entra como administrador y consulta Casa 24: verás los cambios, sin botones para agregar o editar habitantes/vehículos.
+
+Si un número, correo o placas ya existen, utiliza otros. Durante la verificación se conservaron Casa 90 / Sofía Ramos (`sofia90@accesshome.demo`), Lucía Cuevas Pérez y `DEMO-224` en Casa 24. No se reiniciaron los datos anteriores del navegador.
+
+## Persistencia y restauración
+
+Solo `services/demoStorage.ts` accede a localStorage, bajo `accesshome.demo.v1`. El esquema interno es **versión 3**. Migra automáticamente versiones 1 y 2 conservando casas, usuarios, credenciales, vehículos, propietarios, ediciones y sesión. Los antiguos residentes se convierten en habitantes vinculados a su cuenta. Daniel queda como principal de su Casa 24; en las demás casas se asigna al primer residente existente. Las casas sin residentes quedan sin principal. Andrea y Carlos se añaden a la casa de Daniel si faltan.
+
+La migración desde versión 1 también conserva Casa 25 y completa los datos demo de la etapa anterior. Por eso una instalación migrada puede tener más casas y cantidades distintas de la semilla.
+
+Para recuperar la semilla exacta: cierra sesión y usa **Restaurar datos demo → Confirmar restauración** en el login. `demoService.resetDemoData()` reemplaza todos los datos del prototipo y cierra la sesión; conserva las claves de otras aplicaciones. Los datos corruptos no se sobrescriben automáticamente y los fallos de almacenamiento se muestran como errores.
+
+La sesión no caduca automáticamente. Los cambios y el logout se comparten entre pestañas del mismo origen; `localhost`, `127.0.0.1` y otros puertos tienen almacenamientos independientes.
 
 ## Organización
 
 ```text
 src/
-  components/   Marca, navegación, protección de rutas y herramientas demo
-  layouts/      Layout público y layouts de perfiles
-  pages/        Login, inicio de perfil y 404
-  services/     Autenticación, restauración, validación y persistencia local
-  data/         Semilla demo y navegación por perfil
-  types/        Tipos compartidos
-  hooks/        Estado de sesión y título de página
-  utils/        Destino inicial por rol
-  styles/       Estilos globales, layouts y páginas
-  main.tsx      Montaje de React
-  router.tsx    Árbol principal de rutas
+  components/   Navegación, rutas protegidas, formularios, tablas y detalles
+  layouts/      Público, administrador y residente
+  pages/        Login, condominio, residencias, perfil y 404
+  services/     Contratos asíncronos, permisos, autenticación y persistencia
+  data/         Semilla y navegación
+  types/        Cuentas, condominio, casas, habitantes y vehículos
+  hooks/        Sesión, consultas y título de página
+  utils/        Destino por rol y nombres de habitantes
+  styles/       Estilos globales y responsive
+  router.tsx    Rutas principales
 ```
 
-Las pantallas consumen los servicios asíncronos `authService` y `demoService`. Solo `services/demoStorage.ts` accede a localStorage. `AuthProvider` mantiene el estado de presentación y se suscribe a cambios del servicio; `ProtectedRoute` aplica la navegación por rol. La sesión persistida contiene únicamente `userId`; el servicio resuelve los datos del usuario y nunca devuelve la contraseña en el objeto de sesión. Una futura API Django podrá sustituir los servicios conservando sus contratos.
+`communityService` ofrece las consultas y operaciones estructurales; delega la gestión de habitantes/vehículos a `householdService` y la asignación a `principalService`. `communityRules` resuelve al usuario desde la sesión persistida, verifica principal/casa/estado y valida campos, números, correos y placas. Las pantallas no eligen el usuario que autoriza una operación. Las consultas no devuelven contraseñas.
 
-La interfaz usa azul oscuro `#123B5D`, azul principal `#1E5A88` y acentos amarillos `#F2B705` sobre amarillo suave `#FFF4CC` en los indicadores de etapa. Los botones principales siguen siendo azules. Utiliza fuentes del sistema, separadores discretos y navegación por teclado. No requiere fuentes, imágenes ni recursos externos en ejecución.
+Los componentes consumen contratos asíncronos y notificaciones de los servicios; una futura API podrá sustituir su implementación sin trasladar persistencia a las pantallas. No se añaden dependencias de componentes ni recursos externos.
 
-Los módulos de gestión, contactos frecuentes, invitaciones con QR y enlace público, simulación de entrada/salida, historial y reportes quedan pendientes. Su checklist se mantiene en el documento de estado. La presentación final incluirá `docs/PRESENTATION_DEMO.md`.
+## Verificación y documentación
 
-## Documentación
+`npm test` ejecuta **32 pruebas** con TypeScript y el ejecutor nativo de Node: autenticación, permisos de lectura/escritura, asignación y revocación del principal, desactivación, duplicados, migraciones, restauración y errores de almacenamiento. Build y recorridos de navegador comprobados; guía acumulativa con casos manuales y alcance de la revisión.
 
-Pruebas automatizadas sin dependencias adicionales: `npm test` compila los servicios en `.test-build/` y ejecuta 11 pruebas con el ejecutor nativo de Node. Cubren credenciales, persistencia, logout, restauración, aislamiento de datos y fallos de almacenamiento. La guía acumulativa registra además las pruebas en navegador, incluidas restricciones por rol y sesión entre pestañas.
-
-- [Estado y fases previstas](docs/PROTOTYPE_STATUS.md)
+- [Estado y checklist de fases](docs/PROTOTYPE_STATUS.md)
 - [Guía acumulativa de pruebas](docs/PROTOTYPE_TESTING.md)
+- [Contratos y reglas de servicios](src/services/README.md)
 
-Para un futuro alojamiento estático, configurar la redirección de rutas hacia `index.html` para soportar React Router. No se ha configurado alojamiento en esta etapa.
+Contactos frecuentes, invitaciones, accesos y reportes siguen pendientes. No se ha iniciado el siguiente módulo ni se han realizado commits o push.

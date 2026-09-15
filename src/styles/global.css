@@ -1,6 +1,7 @@
 @import './layouts.css';
 @import './pages.css';
 @import './auth.css';
+@import './community.css';
 
 :root {
   font-family: 'Segoe UI', Arial, sans-serif;

@@ -15,6 +15,21 @@ export interface Residence {
   condominiumId: string
   name: string
   street: string
+  number: string
+  active: boolean
+  principalUserId: string | null
+}
+
+export interface Inhabitant {
+  id: string
+  residenceId: string
+  userId: string | null
+  firstName: string
+  lastName: string
+  phone: string
+  email: string
+  relationship: string
+  active: boolean
 }
 
 export interface Vehicle {
@@ -24,13 +39,27 @@ export interface Vehicle {
   brand: string
   model: string
   color: string
+  active: boolean
+  ownerId: string | null
 }
 
 export interface DemoDatabase {
-  version: 1
+  version: 3
   users: DemoAccount[]
   condominiums: Condominium[]
   residences: Residence[]
+  inhabitants: Inhabitant[]
   vehicles: Vehicle[]
   session: { userId: string } | null
+}
+
+export interface DemoDatabaseV2 extends Omit<DemoDatabase, 'version' | 'residences' | 'inhabitants'> {
+  version: 2
+  residences: Omit<Residence, 'active' | 'principalUserId'>[]
+}
+
+export interface LegacyDemoDatabase extends Omit<DemoDatabaseV2, 'version' | 'residences' | 'vehicles'> {
+  version: 1
+  residences: Omit<Residence, 'number' | 'active' | 'principalUserId'>[]
+  vehicles: Omit<Vehicle, 'active' | 'ownerId'>[]
 }

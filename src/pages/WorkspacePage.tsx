@@ -31,13 +31,13 @@ export function WorkspacePage({ role }: { role: WorkspaceRole }) {
 
   return (
     <section className="workspace-page">
-      <p className="eyebrow">{workspace.label} / Inicio</p>
+      <p className="eyebrow">{workspace.label} / Mi perfil</p>
       {location.state?.accessDenied && <p className="access-notice" role="alert">Tu perfil no tiene acceso a esa sección. Te llevamos a tu inicio.</p>}
       <h1>{workspace.title}</h1>
       <p>Bienvenido, <strong>{user?.name}</strong>.</p>
       <p className="lead">{workspace.description}</p>
       <div className="stage-banner">
-        <span className="status-badge">Etapa 2</span>
+        <span className="status-badge">Etapa 3</span>
         <p>Sesión de demostración activa</p>
       </div>
       <section className="scope-section" aria-labelledby="scope-title">
@@ -50,7 +50,7 @@ export function WorkspacePage({ role }: { role: WorkspaceRole }) {
           {role === 'resident' && <div><dt>Residencia</dt><dd>{profile?.residence?.name ?? 'Cargando…'}</dd></div>}
         </dl>
       </section>
-      <p className="muted">Tu sesión se conserva al recargar. Para probar el otro perfil, cierra sesión desde el menú e ingresa con su cuenta. Los módulos de gestión estarán disponibles en etapas posteriores.</p>
+      <p className="muted">Tu sesión se conserva al recargar. Para probar el otro perfil, cierra sesión desde el menú e ingresa con su cuenta.</p>
     </section>
   )
 }

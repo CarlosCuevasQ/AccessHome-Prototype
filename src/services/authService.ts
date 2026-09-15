@@ -1,8 +1,9 @@
 import type { LoginCredentials, SessionUser } from '../types/auth.js'
 import type { DemoAccount } from '../types/demo.js'
 import { notifyDemoChange, readDemoData, subscribeToDemoChanges, writeDemoData } from './demoStorage.js'
+import { accountIsActive } from './communityRules.js'
 
-function sessionUser(account: DemoAccount): SessionUser {
+export function sessionUser(account: DemoAccount): SessionUser {
   return {
     id: account.id,
     name: account.name,
@@ -17,13 +18,14 @@ export const authService = {
   async getSession(): Promise<SessionUser | null> {
     const data = readDemoData()
     const user = data.users.find((account) => account.id === data.session?.userId)
-    return user ? sessionUser(user) : null
+    return user && accountIsActive(data, user) ? sessionUser(user) : null
   },
 
   async login({ email, password }: LoginCredentials): Promise<SessionUser> {
     const data = readDemoData()
     const user = data.users.find((account) => account.email.toLowerCase() === email.trim().toLowerCase() && account.password === password)
     if (!user) throw new Error('Correo o contraseña incorrectos.')
+    if (!accountIsActive(data, user)) throw new Error('Este habitante está inactivo. Solicita su reactivación al residente principal.')
     data.session = { userId: user.id }
     writeDemoData(data)
     notifyDemoChange()

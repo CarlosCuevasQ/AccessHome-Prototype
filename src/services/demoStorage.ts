@@ -1,6 +1,7 @@
 import { createDemoData } from '../data/demo.js'
 import type { DemoDatabase } from '../types/demo.js'
-import { isDemoDatabase } from './demoValidation.js'
+import { isDemoDatabase, isLegacyDemoDatabase } from './demoValidation.js'
+import { migrateDemoData } from './demoMigration.js'
 
 export const DEMO_STORAGE_KEY = 'accesshome.demo.v1'
 const changeEvent = 'accesshome:demo-changed'
@@ -17,11 +18,15 @@ export function readDemoData(): DemoDatabase {
     writeDemoData(initial)
     return initial
   }
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (isDemoDatabase(parsed)) return parsed
-  } catch {
-    // Los datos se conservan hasta que el usuario decida restaurarlos.
+  let parsed: unknown
+  try { parsed = JSON.parse(raw) } catch { parsed = null }
+  if (isDemoDatabase(parsed)) return parsed
+  if (isLegacyDemoDatabase(parsed)) {
+    const migrated = migrateDemoData(parsed)
+    if (isDemoDatabase(migrated)) {
+      writeDemoData(migrated)
+      return migrated
+    }
   }
   throw new Error('Los datos locales no son válidos. Restaura los datos demo para volver a entrar.')
 }
@@ -36,6 +41,11 @@ export function writeDemoData(data: DemoDatabase): void {
 
 export function notifyDemoChange(): void {
   window.dispatchEvent(new Event(changeEvent))
+}
+
+export function saveDemoData(data: DemoDatabase): void {
+  writeDemoData(data)
+  notifyDemoChange()
 }
 
 export function subscribeToDemoChanges(listener: () => void): () => void {

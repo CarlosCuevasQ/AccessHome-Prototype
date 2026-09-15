@@ -12,7 +12,7 @@ export function Navigation({ items, onNavigate }: NavigationProps) {
       <ul className="navigation-list">
         {items.map((item) => (
           <li key={item.path}>
-            <NavLink end to={item.path} onClick={onNavigate} className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+            <NavLink end={item.end ?? true} to={item.path} onClick={onNavigate} className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               {item.label}
             </NavLink>
           </li>

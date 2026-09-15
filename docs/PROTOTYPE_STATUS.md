@@ -1,6 +1,75 @@
 # Estado del prototipo AccessHome
 
-## Etapa 2 · Autenticación simulada
+## Etapa 3 · Corrección de responsabilidades (vigente)
+
+Esta sección sustituye el modelo de permisos de la implementación inicial. Las secciones históricas se conservan como registro de entregas, no como requisitos actuales.
+
+- [x] Residencia con estado activo/inactivo y referencia explícita al residente principal.
+- [x] Administrador: crear y editar estructura/estado, asignar o cambiar principal y consultar habitantes/vehículos.
+- [x] Habitantes separados de cuentas de acceso: nombre, apellido, teléfono/correo/relación opcionales y estado.
+- [x] Daniel principal de Casa 24; Mariana conservada y Andrea/Carlos como habitantes sin cuenta.
+- [x] Principal: alta, detalle, edición, desactivación y reactivación de habitantes y vehículos propios.
+- [x] Vehículos vinculados a la casa y propietario opcional entre sus habitantes.
+- [x] Administrador sin mutaciones cotidianas de habitantes/vehículos, también en servicios.
+- [x] Residente sin acceso a estructura, asignación o registros de otras casas, también en servicios.
+- [x] Cambio de principal revoca permisos anteriores; una cuenta adicional queda en consulta.
+- [x] Casa inactiva bloquea la gestión cotidiana y permite consulta; principal actual protegido contra desactivación.
+- [x] Migración de esquemas 1/2 a 3 sin reiniciar datos; restauración actualizada.
+- [x] Autenticación, roles, persistencia, navegación y diseño azul/amarillo conservados.
+- [x] README y guía acumulativa con los nueve recorridos solicitados y prueba directa de permisos.
+- [x] 32 pruebas automatizadas correctas y build de TypeScript/Vite correcto.
+- [x] Recorridos de navegador: asignación, habitantes, vehículos, estados, persistencia y bloqueo por rol; revisión a 375, 768 y 1366 px.
+
+### Datos conservados de la verificación
+
+- Casa 90, Circuito Cedros, principal Sofía Ramos; `sofia90@accesshome.demo` / `Access123`.
+- Casa 24 mantiene a Daniel como principal. Se agregó Lucía Cuevas Pérez, teléfono ficticio `55 5550 2490`, sin cuenta; se verificó desactivación/reactivación y quedó activa.
+- Vehículo de prueba `DEMO-224`, Mazda 3 azul oscuro, propietaria Lucía, inactivo.
+- Se conservaron Casa 25, Casa 88 y los registros anteriores del navegador. La semilla restaurada sigue teniendo cuatro casas, ocho habitantes y cinco vehículos.
+
+### Archivos principales de esta corrección
+
+- Modelos/semilla: `src/types/demo.ts`, `src/types/community.ts`, `src/data/demo.ts`, `src/utils/people.ts`.
+- Servicios: `communityService.ts`, `communityRules.ts`, `householdService.ts`, `principalService.ts`, autenticación, validación, migración y almacenamiento en `src/services/`.
+- Interfaz: `src/components/community/`, `src/pages/ResidencePage.tsx`, `ResidencesPage.tsx`, `CondominiumPage.tsx`, `src/router.tsx`, `src/styles/community.css`.
+- Pruebas/documentación: `tests/community.test.mjs`, `tests/migration.test.mjs`, `package.json`, README y ambas guías.
+
+No se añadieron dependencias ni se avanzó a contactos frecuentes. No se realizó commit ni push.
+
+Mensaje de commit sugerido: `fix: separar permisos de administrador y residente principal`.
+
+## Etapa 3 · Implementación inicial (histórico)
+
+- [x] Semilla de Residencial Los Robles: casas 12, 24, 37 y 51, seis residentes y cinco vehículos coherentes.
+- [x] Daniel Cuevas asociado a Casa 24 junto con Mariana Torres.
+- [x] Varios residentes/vehículos por casa; propietario principal opcional y estado activo/inactivo.
+- [x] Resumen de condominio con cantidades reales y edición de nombre/dirección.
+- [x] Listado y búsqueda de residencias por número, con estados vacíos.
+- [x] Detalle de residencia con residentes y vehículos.
+- [x] Alta y edición básica de casas, residentes y vehículos.
+- [x] Consulta del residente limitada a su propia casa, sin controles de modificación.
+- [x] Validaciones de duplicados, campos, propietarios y permisos en servicios.
+- [x] Persistencia local y migración del esquema anterior sin reiniciar los datos.
+- [x] Tablas de escritorio adaptadas a listas compactas en móvil/tablet.
+- [x] 25 pruebas automatizadas correctas; build y pruebas de navegador.
+- [x] Documentación de alta de casa, residente y vehículo.
+
+No se implementaron invitaciones ni funciones de etapas posteriores.
+
+### Verificación y archivos de la etapa 3
+
+- 25 pruebas automatizadas correctas, incluidas las 11 de autenticación y 14 de comunidad/migración.
+- En navegador: creación de Casa 88, alta de Laura Méndez, registro de DEMO-088 con propietaria, recarga y edición de casa/residente/vehículo. Se conservó el ejemplo de prueba (Laura Méndez Ruiz, Circuito Cedros Norte, vehículo azul oscuro e inactivo).
+- Login de la nueva residente comprobado: solo ve Casa 88. Daniel sigue viendo Casa 24 y la navegación administrativa está bloqueada.
+- Resumen, búsqueda, formulario de condominio, rechazo de número de casa duplicado y vistas a 375, 768 y 1366 px comprobados.
+- Migración conserva sesión, Casa 25 y modificaciones anteriores; una restauración recupera la nueva semilla exacta.
+- No se instalaron dependencias, no se borraron archivos y no se realizaron commits o push.
+
+Archivos principales: `src/types/demo.ts`, `src/types/community.ts`, `src/data/demo.ts`, `src/services/communityService.ts`, `src/services/communityRules.ts`, `src/services/demoMigration.ts`, validación/persistencia, `src/hooks/useCommunityQuery.ts`, `src/pages/CondominiumPage.tsx`, `ResidencesPage.tsx`, `ResidencePage.tsx`, `src/components/community/`, router/navegación y `src/styles/community.css`. Pruebas en `tests/community.test.mjs`; documentación en README y las dos guías del prototipo.
+
+Mensaje de commit sugerido (sin ejecutarlo): `feat: gestionar condominio, residencias, residentes y vehículos`.
+
+## Etapa 2 · Autenticación simulada (histórico)
 
 - [x] Login por correo y contraseña con errores legibles.
 - [x] Administrador Demo y Daniel Cuevas con los correos y contraseña solicitados.
@@ -17,7 +86,7 @@
 
 ## Etapa 1 · Infraestructura del frontend (histórico)
 
-La entrega vigente es la etapa 2. Los resultados siguientes conservan el historial de la infraestructura inicial.
+La entrega vigente es la etapa 3. Los resultados siguientes conservan el historial de la infraestructura inicial.
 
 - [x] React, Vite y TypeScript con comprobación estricta.
 - [x] Router principal con redirección inicial.
@@ -35,13 +104,13 @@ La entrega vigente es la etapa 2. Los resultados siguientes conservan el histori
 
 ## Fases previstas
 
-El objetivo general actualizado define las funciones finales. Esta división organiza su implementación; se debe detener el trabajo al terminar cada etapa y esperar la indicación de continuar. Las fases 1 y 2 están implementadas.
+El objetivo general actualizado define las funciones finales. Esta división organiza su implementación; se debe detener el trabajo al terminar cada etapa y esperar la indicación de continuar. Las fases 1, 2 y 3 están implementadas.
 
 - [x] **Fase 1 — Infraestructura:** implementación y verificación completadas.
 - [x] **Fase 2 — Datos, servicios y perfiles:** modelos tipados, datos demo, sesión simulada por rol y localStorage encapsulado en servicios sustituibles por API.
   - [x] Relaciones tipadas entre condominio, usuarios, residencias y vehículos; semilla inicial del prototipo.
   - [x] Casa 24 como residencia del recorrido de presentación.
-- [ ] **Fase 3 — Comunidad:** consulta del condominio, administración de residencias y consulta de residentes/vehículos para el administrador; consulta de residencia, residentes asociados y vehículos para el residente.
+- [x] **Fase 3 — Comunidad y permisos:** el administrador gestiona estructura, estado y principal de cada casa; el principal administra habitantes y vehículos propios. Consulta administrativa y restricciones en servicios verificadas.
 - [ ] **Fase 4 — Contactos frecuentes:** alta, edición y eliminación de contactos propios del residente.
   - [ ] Nombre, teléfono/correo/notas opcionales y varios vehículos con placas y marca/modelo/color opcionales.
   - [ ] Un contacto guardado no concede autorización permanente de entrada.
@@ -63,7 +132,9 @@ Una integración de producción con API queda fuera del prototipo y requiere una
 - Las rutas están protegidas en el frontend; es una simulación que no ofrece seguridad frente a la manipulación del navegador o del código.
 - La sesión y los datos demo se guardan en `accesshome.demo.v1`; no hay backend ni cuentas reales.
 - Las contraseñas demo están en la semilla local. No se devuelven en los objetos de sesión.
-- La gestión de comunidad, contactos, invitaciones, accesos y reportes sigue pendiente.
+- Contactos, invitaciones, accesos y reportes siguen pendientes.
+- Las bajas son desactivaciones reversibles. No hay eliminación física, traslado entre casas ni cambio de contraseñas. Las cuentas adicionales consultan su casa; solo el principal de una casa activa puede gestionarla.
+- La migración conserva Casa 25 y otros registros anteriores; restaurar recupera exactamente las cuatro casas de la nueva semilla.
 - La sesión no tiene vencimiento automático y se comparte entre pestañas del mismo origen.
 - La secuencia de fases futuras puede ajustarse sin omitir los requisitos del objetivo final.
 

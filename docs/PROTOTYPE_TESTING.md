@@ -9,7 +9,137 @@ Esta guía se amplía en cada etapa. Al incorporar funciones nuevas, repetir tam
 3. Ejecutar `npm run dev` y mantener esa terminal abierta.
 4. Abrir http://127.0.0.1:5173.
 
-## Etapa 2 · Autenticación simulada (pruebas vigentes)
+## Etapa 3 · Permisos y residencia propia (pruebas vigentes)
+
+Esta corrección sustituye los casos E3 antiguos que daban al administrador altas/edición cotidianas o limitaban al principal a consulta. La autenticación, navegación, búsqueda, 404 y pruebas de almacenamiento de etapas anteriores siguen aplicando.
+
+### Datos
+
+- Administrador: `admin@accesshome.demo` / `Access123`.
+- Daniel, principal de Casa 24: `residente@accesshome.demo` / `Access123`.
+- Mariana, cuenta adicional de consulta: `mariana@accesshome.demo` / `Access123`.
+- Casa 24 contiene Daniel, Mariana, Andrea y Carlos en la semilla. Andrea/Carlos no tienen cuenta. Mantiene sus dos vehículos demo.
+- Para este recorrido: Casa **91**, Circuito Cedros; principal **Sofía Ramos**, `sofia91@accesshome.demo`; habitante **Elena Cuevas**; vehículo `DEMO-324`, Mazda 3 azul. Usa otros valores si ya existen.
+- Los datos anteriores se migran sin reinicio. Solo usa Restaurar datos demo si deseas descartar las altas/ediciones y volver a la semilla exacta: cuatro casas, ocho habitantes y cinco vehículos.
+
+### Nueve recorridos solicitados
+
+| ID | Pasos | Resultado esperado |
+| --- | --- | --- |
+| P3-01 | Como administrador, abrir Residencias → Agregar residencia. Guardar Casa 91, Circuito Cedros, Activa. | Nueva casa sin principal ni habitantes; aparece en la búsqueda y el resumen. |
+| P3-02 | Abrir Casa 91 → Asignar residente principal. Registrar Sofía Ramos / `sofia91@accesshome.demo`. | Sofía figura como principal. Solo hay acciones de estructura/asignación y consulta; no Agregar habitante ni Registrar vehículo. |
+| P3-03 | Cerrar sesión. Entrar con `sofia91@accesshome.demo` / `Access123`. Después entrar como Daniel para los pasos siguientes. | Sofía gestiona Casa 91; Daniel gestiona Casa 24. Ninguno puede editar el número de casa, crear casas o asignarse otra. |
+| P3-04 | Como Daniel, pulsar Agregar habitante. Nombre Elena, apellido Cuevas, relación Familiar; dejar teléfono/correo vacíos y guardar. | Habitante activo de Casa 24, sin crear cuenta de acceso. |
+| P3-05 | Ver detalle de Elena → Editar habitante. Cambiar apellido a Cuevas Pérez y teléfono a `55 5550 2432`; guardar y volver a abrir el detalle. | Datos actualizados. El formulario permite desactivar y reactivar; no cambia casa ni asignación. |
+| P3-06 | Registrar vehículo: `DEMO-324`, Mazda, 3, Azul, Activo, propietaria Elena Cuevas Pérez. | Vehículo de Casa 24, con propietaria de esa casa. El selector no incluye habitantes de otras casas. |
+| P3-07 | Ver detalle del vehículo → Editar vehículo. Cambiar color a Azul oscuro y estado a Inactivo; guardar y recargar. | Se conservan sesión, casa, propietaria, color y estado. Se puede reactivar. |
+| P3-08 | Como Daniel, abrir `/admin/residencias/house-12`. Ejecutar además la llamada directa de servicio indicada debajo. | La ruta vuelve a `/residente` con aviso. La llamada rechaza la modificación por pertenecer a otra casa. |
+| P3-09 | Cerrar sesión, entrar como administrador y abrir Residencias → Casa 24. Abrir los detalles de Elena y del vehículo. | Ve habitantes/vehículos actualizados y sus datos; no puede editarlos desde el detalle. |
+
+### P3-08: comprobar permisos en el servicio
+
+Con `npm run dev`, sesión de Daniel y la consola de desarrollo del navegador abierta en `/residente`, ejecutar:
+
+```js
+const { communityService } = await import('/src/services/communityService.ts');
+try {
+  await communityService.updateVehicle('house-12', 'vehicle-12', {
+    plates: 'DEMO-012', brand: 'Kia', model: 'Rio', color: 'Verde',
+    active: true, ownerId: null,
+  });
+  console.error('FALLO: se permitió modificar otra casa');
+} catch (error) {
+  console.log(error.message);
+}
+```
+
+Resultado: **Solo puedes acceder a tu propia residencia.** El administrador debe seguir viendo el Kia de Casa 12 azul, sin cambios. El ejemplo requiere el servidor de desarrollo de Vite; no funciona en `npm run preview` porque el código fuente no se sirve en el build. `npm test` también verifica las cuatro operaciones de habitantes/vehículos contra otra casa, además de IDs ajenos enviados junto al ID de Casa 24.
+
+### Casos adicionales y regresión
+
+| ID | Pasos | Resultado esperado |
+| --- | --- | --- |
+| P3-10 | Como Daniel, desactivar a Elena desde Editar habitante. Consultar su vehículo y reactivar a Elena. | Habitante inactivo identificado; vehículo y propietaria se conservan. La reactivación recupera el estado activo. |
+| P3-11 | Abrir la edición de Daniel. | Estado deshabilitado: el principal no puede desactivarse hasta que el administrador lo reemplace. La misma acción directa se rechaza en el servicio. |
+| P3-12 | Como administrador, editar Casa 91 y cambiarla a Inactiva. Entrar con Sofía. Luego reactivarla como administrador. | Sofía consulta pero no gestiona mientras esté inactiva; tras reactivación recupera la gestión. No se borran habitantes/vehículos. |
+| P3-13 | Como Sofía, agregar a Tomás Ramos sin cuenta. Como administrador, cambiar principal de Casa 91 a Tomás, correo de acceso `tomas91@accesshome.demo`. | No duplica al habitante. Tomás puede entrar con Access123 y gestionar; Sofía queda en consulta. La casa de Daniel no cambia. |
+| P3-14 | Como administrador, volver a elegir Sofía como principal existente. | Usa su cuenta previa; no exige crear otra ni cambia su contraseña. Tomás queda como habitante de consulta. |
+| P3-15 | En Casa 91, intentar crear un nuevo principal usando `residente@accesshome.demo`. | Error de correo existente; no mueve a Daniel ni duplica habitantes/cuentas. |
+| P3-16 | Entrar como Mariana y consultar Casa 24. | Tiene consulta y detalle, sin altas/ediciones ni permisos de gestión en servicios. |
+| P3-17 | Como Daniel, editar correo de contacto de un habitante con cuenta. | Cambia el contacto, no su correo de acceso ni contraseña. Si desactiva una cuenta adicional, esta no puede iniciar sesión hasta reactivarse. |
+| P3-18 | Intentar Casa 24 duplicada, principal con correo inválido/existente, placas `demo 012` o campos obligatorios en blanco. | Error legible; sin registros duplicados ni guardados parciales. Teléfono, contacto y relación de habitantes siguen siendo opcionales. |
+| P3-19 | Repetir login incorrecto, ambos roles, logout, recarga, perfil, 404 y cambios entre pestañas. | Se conservan flujos anteriores. Los cambios de principal/estado se reflejan al recibir notificaciones y el servicio revalida cada operación. |
+| P3-20 | Probar listas, detalles, formularios y menú a 375, 768 y 1366 px. Recorrer con teclado. | Sin desbordamiento horizontal; acciones visibles, foco identificable y tablas/listas legibles. |
+| P3-21 | Restaurar desde el login en una copia de prueba. | Recupera Daniel como principal de Casa 24, ocho habitantes y cinco vehículos; cierra sesión y elimina las altas locales. |
+
+### Verificación realizada en esta corrección
+
+- `npm test`: **32/32** pruebas correctas: 11 de autenticación, 17 de comunidad/permisos y 4 de migración/integridad. Prueban permisos dentro de servicios, asignación/revocación, acceso anónimo e inactivo, rechazo entre condominios, propietarios, duplicados y errores de escritura. Se conserva la regresión de autenticación.
+- `npm run build`: TypeScript y Vite correctos. Se reutilizó y comprobó el servidor `npm run dev` del puerto 5173.
+- Navegador, P3-01 a P3-09: se usó Casa **90** y **Sofía Ramos** (`sofia90@accesshome.demo`), se comprobó su login; como Daniel se agregó **Lucía Cuevas**, luego **Lucía Cuevas Pérez** / `55 5550 2490`. Se registró `DEMO-224` Mazda 3, se editó a Azul oscuro/Inactivo y se comprobó recarga. El administrador ve los cambios sin botones cotidianos. P3-08: bloqueo de ruta probado en navegador; llamadas directas verificadas por tests de Node.
+- Desactivación/reactivación de Lucía probada desde el móvil; quedó activa y sin cuenta. Se conservaron sus datos y su vehículo. La migración mantuvo la sesión previa de Laura, Casa 88 y Casa 25; no se reinició localStorage.
+- Revisión visual de formularios a 375 × 812 y consulta administrativa a 1366 × 1000 y 768 × 1024. Sin desbordamiento horizontal en las vistas medidas. Se ajustó la posición del indicador Principal en tablet. Menú y logout móvil comprobados.
+- El cambio de principal y la casa inactiva están cubiertos por pruebas automatizadas; P3-12 a P3-14 quedan disponibles como recorridos manuales adicionales sin alterar la asignación demo de Daniel.
+- No se instalaron dependencias ni se realizaron commits/push. No se inició contactos frecuentes.
+
+## Etapa 3 · Comunidad (registro histórico)
+
+Los recorridos y resultados siguientes corresponden a la implementación previa. Sus permisos de edición administrativa y consulta exclusiva del residente fueron sustituidos por P3-01 a P3-21.
+
+La autenticación sigue funcionando. `/admin` ahora abre el resumen del condominio y `/residente` abre la casa del residente. Los datos de perfil anteriores están en **Mi perfil**.
+
+### Preparación y datos
+
+- Administrador: `admin@accesshome.demo` / `Access123`.
+- Daniel Cuevas: `residente@accesshome.demo` / `Access123`, asociado a Casa 24.
+- Semilla nueva: Residencial Los Robles; Casa 12 (Ana López y Jorge Mendoza), Casa 24 (Daniel Cuevas y Mariana Torres), Casa 37 (Luis Herrera) y Casa 51 (Elena Ríos).
+- Cinco vehículos permanentes, cuatro activos y uno inactivo en una semilla recién restaurada. Casa 24 tiene `DEMO-024` (Daniel, activo) y `DEMO-124` (Mariana, inactivo).
+- Para las altas utiliza Casa `90`, `Circuito Cedros`, residente `Laura Pérez`, correo `laura90@accesshome.demo`, vehículo `DEMO-090`, `Honda`, `Civic`, `Negro`. Si existen, usa otro número, correo y placas.
+
+La migración conserva los registros de la etapa 2, incluida Casa 25; añade lo que falte y conserva la sesión. Los vehículos anteriores reciben estado activo y propietario sin asignar. Por ello las cantidades iniciales pueden diferir de la semilla nueva. No hace falta borrar datos. Si se desea la semilla exacta, cerrar sesión y usar **Restaurar datos demo → Confirmar restauración**, que descarta las altas y ediciones locales.
+
+### Crear una casa, agregar residente y registrar vehículo
+
+| ID | Pasos | Resultado esperado |
+| --- | --- | --- |
+| E3-01 | Ingresar como administrador y abrir Condominio. | Nombre, dirección y cantidades de residencias/residentes/vehículos calculadas desde datos reales. |
+| E3-02 | Abrir Residencias y buscar `24`; luego `Casa 24` y un número inexistente. | Se filtra Casa 24 en los primeros casos y se muestra estado vacío para el inexistente. |
+| E3-03 | Pulsar Agregar residencia, escribir número `90` y calle `Circuito Cedros`, guardar. | Aparece Casa 90; el filtro se limpia para que la nueva casa sea visible. |
+| E3-04 | Abrir Casa 90 y pulsar Agregar residente demo. Guardar Laura Pérez / `laura90@accesshome.demo`. | Residente asociado a Casa 90 y contador actualizado. La cuenta usa `Access123`. |
+| E3-05 | Pulsar Agregar vehículo. Completar `DEMO-090`, Honda, Civic, Negro, Activo; elegir Laura Pérez como propietaria. | Vehículo asociado a la casa, con sus datos, estado y propietaria visibles. |
+| E3-06 | Recargar y volver al listado/resumen. | Casa, residente y vehículo se conservan; cantidades actualizadas. |
+| E3-07 | Cerrar sesión y entrar como `laura90@accesshome.demo` / `Access123`. | Solo consulta Casa 90 y sus datos. No aparecen acciones de edición. |
+
+### Edición, integridad y permisos
+
+| ID | Pasos | Resultado esperado |
+| --- | --- | --- |
+| E3-08 | Como administrador, editar calle/número de Casa 90. | Se actualiza la información sin perder residentes ni vehículos. |
+| E3-09 | Editar nombre/correo de Laura. | Se actualiza la tabla y el nombre de propietaria en sus vehículos. Puede entrar con el nuevo correo y la misma contraseña. |
+| E3-10 | Editar placas, marca, modelo, color y estado de un vehículo; seleccionar Sin asignar. | Cambios persistidos; estado Inactivo explícito y propietaria opcional. El resumen refleja los vehículos activos. |
+| E3-11 | En Condominio, pulsar Editar información y modificar nombre/dirección. | Se reflejan en el resumen y en los detalles de las casas; Cancelar conserva los datos previos. |
+| E3-12 | Intentar repetir Casa 24, un correo ya registrado o las placas `DEMO-024` (también `demo 024`). | Error legible; no duplica ni sobrescribe registros. |
+| E3-13 | Dejar campos obligatorios vacíos o escribir una calle con solo espacios. | No guarda; muestra validación del formulario o servicio. |
+| E3-14 | Revisar el selector de propietario en Casa 24. | Solo permite elegir residentes de Casa 24 o Sin asignar. El servicio también rechaza IDs de otra casa. |
+| E3-15 | Como Daniel, consultar Mi residencia y luego intentar `/admin/residencias/house-12`. | Ve Casa 24 con Daniel/Mariana y sus vehículos; la ruta administrativa redirige a su inicio con aviso. |
+| E3-16 | Abrir un ID de residencia inexistente como administrador. | Mensaje Residencia no disponible con enlace de regreso. |
+| E3-17 | Probar login incorrecto, logout, recarga con sesión y Mi perfil para ambos roles. | Continúan funcionando los flujos de la etapa 2. |
+| E3-18 | Probar formularios/listas a 375–430 px, 768 px y escritorio. | Tablas de escritorio; listas compactas en ancho reducido, campos y acciones accesibles, sin scroll horizontal. |
+| E3-19 | Restaurar datos demo y volver a entrar. | Cuatro casas, seis residentes, cinco vehículos; se eliminan altas y ediciones de prueba. |
+
+### Resultados de verificación de la etapa 3
+
+- `npm test`: **25/25** pruebas correctas. Incluye regresión de autenticación, alta/edición, duplicados, relaciones, propietarios, acceso entre condominios, consultas del residente, migración, restauración y fallos de escritura.
+- `npm run build`: TypeScript y Vite correctos.
+- Navegador: migración conservó sesión y Casa 25, y mostró Los Robles con las nuevas casas y residentes.
+- Se creó **Casa 88**, **Laura Méndez** (`laura@accesshome.demo`) y **DEMO-088**, Honda Civic. Se comprobó persistencia al recargar, se editó la calle a **Circuito Cedros Norte**, el nombre a **Laura Méndez Ruiz** y el vehículo a **Azul oscuro / Inactivo**. Estos registros de prueba se conservaron; no se restauraron los datos del navegador.
+- E3-02 a E3-06 y edición de casa/residente/vehículo comprobados en la interfaz. El resto de validaciones de integridad y restricciones de servicio también está cubierto por tests automatizados.
+- E3-07: la cuenta creada `laura@accesshome.demo` entró con `Access123` y mostró exclusivamente Casa 88 con su vehículo inactivo. Se comprobó el formulario de edición del condominio guardando sus valores vigentes y el rechazo visual de Casa 24 duplicada.
+- Vista de Daniel verificada sin acciones de edición; bloqueo de detalle administrativo de otra casa y persistencia al recargar comprobados.
+- Revisión visual a 1366 × 1000, formulario de vehículo y consulta de residente a 375 × 812, y consulta a 768 × 1024. Ancho de contenido igual al área disponible en las vistas móviles/tablet inspeccionadas.
+- Sin errores ni advertencias de consola observados.
+
+## Etapa 2 · Autenticación simulada (regresión)
 
 Las pruebas de esta sección sustituyen el acceso libre y el cambio directo de perfil de la etapa 1. Las verificaciones anteriores de apariencia, teclado y 404 siguen aplicando, pero las rutas de cada perfil requieren su sesión correspondiente.
 
@@ -20,7 +150,7 @@ Las pruebas de esta sección sustituyen el acceso libre y el cambio directo de p
 | Administrador | Administrador Demo | `admin@accesshome.demo` | `Access123` |
 | Residente | Daniel Cuevas | `residente@accesshome.demo` | `Access123` |
 
-Condominio: **Residencial Los Encinos**. Residencia de Daniel: **Casa 24**. La semilla incluye Casa 25 y dos vehículos de Casa 24: `DEMO-024` (Nissan Versa gris) y `DEMO-124` (Toyota Corolla blanco). No hay pantallas de gestión de estos registros todavía.
+En la etapa 2 el condominio se llamaba Los Encinos y la semilla tenía Casa 24 y Casa 25. La etapa 3 actualiza el nombre, amplía los datos e incorpora su gestión; las credenciales principales se conservan.
 
 ### Los seis recorridos solicitados
 
