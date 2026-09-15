@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "tsc -p tests/tsconfig.json && node --test tests/auth.test.mjs"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

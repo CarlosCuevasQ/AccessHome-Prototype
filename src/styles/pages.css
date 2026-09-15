@@ -6,12 +6,6 @@
 .login-access { border-left: 1px solid var(--border); padding-left: clamp(24px, 4vw, 56px); }
 .login-access h2 { font-size: 1.65rem; margin-bottom: 12px; }
 .login-access > p:not(.eyebrow) { color: var(--muted); }
-.profile-options { margin: 28px 0; border-top: 1px solid var(--border); }
-.profile-option { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px 8px; border-bottom: 1px solid var(--border); text-decoration: none; }
-.profile-option:hover { background: var(--light-blue); }
-.profile-option strong { display: block; font-weight: 650; color: var(--primary); margin-bottom: 6px; }
-.profile-option span span { display: block; font-size: 0.875rem; line-height: 1.5; color: var(--muted); }
-.profile-arrow { font-size: 1.5rem; }
 .access-note { font-size: 0.8rem; }
 .workspace-page { max-width: 1000px; }
 .workspace-page h1 { font-size: clamp(1.8rem, 3vw, 2.35rem); }

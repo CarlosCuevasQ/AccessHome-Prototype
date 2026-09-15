@@ -14,7 +14,6 @@
 .nav-link:hover { background: var(--background); }
 .nav-link.active { background: var(--light-blue); color: var(--primary); font-weight: 650; border-left: 3px solid var(--action); padding-left: 13px; }
 .sidebar-bottom { margin-top: auto; padding: 40px 12px 0; }
-.sidebar-bottom a { display: inline-flex; align-items: center; min-height: 44px; font-size: 0.875rem; }
 .sidebar-bottom p { color: var(--muted); font-size: 0.7rem; margin: 12px 0 0; }
 .workspace-main { padding: clamp(28px, 5vw, 64px); }
 .menu-toggle { display: none; background: transparent; border: 1px solid #9db7d2; border-radius: 4px; color: white; padding: 10px 12px; min-height: 44px; }

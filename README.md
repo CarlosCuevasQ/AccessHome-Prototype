@@ -4,9 +4,9 @@ Prototipo funcional para una presentación universitaria sobre seguridad residen
 
 ## Estado actual
 
-Etapa 1: infraestructura del frontend. Incluye React, Vite, TypeScript, React Router, acceso temporal por perfil, layouts público/administrador/residente, navegación adaptable y páginas 404.
+Etapa 2: autenticación simulada. Incluye React, Vite, TypeScript, React Router, login por correo y contraseña, logout, sesión persistente, protección de rutas por rol, restauración de datos demo y los layouts responsive de la etapa 1.
 
-El acceso temporal no autentica usuarios. Las rutas de administrador y residente son públicas durante esta etapa. No se requieren credenciales ni se guardan datos. No hay backend, servicios externos ni módulos de gestión.
+La autenticación es exclusivamente de demostración: los datos y contraseñas demo están disponibles en el frontend y se guardan localmente. Las restricciones de navegación no constituyen seguridad real. No utilizar cuentas ni datos personales reales. No hay backend ni servicios externos.
 
 ## Ejecutar
 
@@ -21,6 +21,7 @@ Abre http://127.0.0.1:5173. El puerto es fijo: si está ocupado, detén el proce
 
 ```sh
 npm run build
+npm test
 npm run preview
 ```
 
@@ -30,43 +31,63 @@ El build valida TypeScript y genera `dist/`. La vista previa del build está en 
 
 | Ruta | Resultado |
 | --- | --- |
-| `/` | Redirige a `/login` |
-| `/login` | Selección temporal de perfil |
-| `/admin` | Inicio con layout de administrador |
-| `/residente` | Inicio con layout de residente |
+| `/` | Lleva al login o al inicio del perfil si existe sesión |
+| `/login` | Formulario de acceso; con sesión redirige al inicio del perfil |
+| `/admin` | Inicio exclusivo del administrador |
+| `/residente` | Inicio exclusivo del residente |
 | Cualquier ruta desconocida | Página 404 |
-| `/admin/no-existe` o `/residente/no-existe` | 404 dentro del layout correspondiente |
+| `/admin/no-existe` o `/residente/no-existe` | 404 dentro del layout correspondiente, solo con el rol adecuado |
 
-Desde el acceso temporal, elige **Administrador** o **Residente**. Usa **Cambiar de perfil** para volver y explorar el otro espacio. En teléfono, abre **Abrir menú** para ver la navegación. Recarga cada ruta para comprobar el acceso directo.
+Sin sesión, cualquier ruta de perfil redirige al login. Con un rol distinto, redirige al inicio propio con un aviso de acceso restringido.
 
-Datos de prueba: únicamente los dos perfiles de demostración; no hay correos, contraseñas ni registros precargados.
+### Datos de prueba
+
+| Perfil | Nombre | Correo | Contraseña |
+| --- | --- | --- | --- |
+| Administrador | Administrador Demo | `admin@accesshome.demo` | `Access123` |
+| Residente | Daniel Cuevas | `residente@accesshome.demo` | `Access123` |
+
+Semilla centralizada en `src/data/demo.ts`: Residencial Los Encinos, Casa 24 y Casa 25, con dos vehículos asociados a Casa 24 (`DEMO-024`, Nissan Versa gris; `DEMO-124`, Toyota Corolla blanco). Daniel está asociado a Casa 24. Son datos ficticios; esta etapa muestra el contexto de perfil, sin implementar gestión de residencias ni vehículos.
+
+1. En el login, prueba la contraseña `incorrecta`: debe aparecer **Correo o contraseña incorrectos**.
+2. Ingresa como administrador con `Access123`: debe abrir `/admin` y mostrar Administrador Demo.
+3. Pulsa **Cerrar sesión** en el menú: vuelve al login. En móvil, primero pulsa **Abrir menú**.
+4. Ingresa como residente: debe abrir `/residente`, mostrar Daniel Cuevas y Casa 24.
+5. Escribe `/admin` en la dirección: vuelve a `/residente` con un aviso; no muestra administración.
+6. Recarga: la sesión y el perfil se conservan.
+
+### Restaurar la demostración
+
+Cierra sesión y pulsa **Restaurar datos demo** en el login, después **Confirmar restauración**. Reemplaza todos los datos del prototipo por la semilla original y elimina la sesión compartida entre las pestañas del mismo origen. No modifica datos de otras aplicaciones. La función es `demoService.resetDemoData()`.
+
+La persistencia usa únicamente la clave `accesshome.demo.v1`. La sesión dura hasta cerrar sesión, restaurar o borrar los datos del navegador. Se comparte entre pestañas del mismo origen; `localhost`, `127.0.0.1` y distintos puertos tienen almacenamientos separados. No se sobrescriben automáticamente datos corruptos: se ofrece restauración explícita. Si el navegador bloquea localStorage, se muestra un error y no se simula un guardado exitoso.
 
 ## Organización
 
 ```text
 src/
-  components/   Marca, navegación y foco entre rutas
+  components/   Marca, navegación, protección de rutas y herramientas demo
   layouts/      Layout público y layouts de perfiles
-  pages/        Acceso temporal, inicio de perfil y 404
-  services/     Límite de persistencia para futuros módulos
-  data/         Configuración de navegación por perfil
+  pages/        Login, inicio de perfil y 404
+  services/     Autenticación, restauración, validación y persistencia local
+  data/         Semilla demo y navegación por perfil
   types/        Tipos compartidos
-  hooks/        Título de página
-  utils/        Reservada para utilidades compartidas
+  hooks/        Estado de sesión y título de página
+  utils/        Destino inicial por rol
   styles/       Estilos globales, layouts y páginas
   main.tsx      Montaje de React
   router.tsx    Árbol principal de rutas
 ```
 
-Cuando se añadan datos, las pantallas consumirán servicios asíncronos tipados. Solo `services/` accederá a localStorage; posteriormente se podrá sustituir esa implementación por una API Django conservando los contratos. La etapa actual no necesita persistencia.
+Las pantallas consumen los servicios asíncronos `authService` y `demoService`. Solo `services/demoStorage.ts` accede a localStorage. `AuthProvider` mantiene el estado de presentación y se suscribe a cambios del servicio; `ProtectedRoute` aplica la navegación por rol. La sesión persistida contiene únicamente `userId`; el servicio resuelve los datos del usuario y nunca devuelve la contraseña en el objeto de sesión. Una futura API Django podrá sustituir los servicios conservando sus contratos.
 
 La interfaz usa azul oscuro `#123B5D`, azul principal `#1E5A88` y acentos amarillos `#F2B705` sobre amarillo suave `#FFF4CC` en los indicadores de etapa. Los botones principales siguen siendo azules. Utiliza fuentes del sistema, separadores discretos y navegación por teclado. No requiere fuentes, imágenes ni recursos externos en ejecución.
 
-El alcance final contempla condominios, residencias, residentes, vehículos, contactos frecuentes, invitaciones con QR y enlace público, simulación de entrada/salida, historial y reportes. Estas funciones aún no están implementadas; su checklist se mantiene en el documento de estado. La presentación final incluirá `docs/PRESENTATION_DEMO.md`.
+Los módulos de gestión, contactos frecuentes, invitaciones con QR y enlace público, simulación de entrada/salida, historial y reportes quedan pendientes. Su checklist se mantiene en el documento de estado. La presentación final incluirá `docs/PRESENTATION_DEMO.md`.
 
 ## Documentación
 
-Verificado: instalación, `npm run dev`, `npm run build`, vista previa del build, navegación entre perfiles, páginas 404 y adaptación a escritorio y móvil. Consulta el registro de pruebas para el detalle y sus límites.
+Pruebas automatizadas sin dependencias adicionales: `npm test` compila los servicios en `.test-build/` y ejecuta 11 pruebas con el ejecutor nativo de Node. Cubren credenciales, persistencia, logout, restauración, aislamiento de datos y fallos de almacenamiento. La guía acumulativa registra además las pruebas en navegador, incluidas restricciones por rol y sesión entre pestañas.
 
 - [Estado y fases previstas](docs/PROTOTYPE_STATUS.md)
 - [Guía acumulativa de pruebas](docs/PROTOTYPE_TESTING.md)

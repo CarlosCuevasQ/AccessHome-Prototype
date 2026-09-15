@@ -5,6 +5,7 @@ import { ResidentLayout } from './layouts/ResidentLayout'
 import { LoginPage } from './pages/LoginPage'
 import { WorkspacePage } from './pages/WorkspacePage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 export const router = createBrowserRouter([
   {
@@ -16,19 +17,27 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: '/admin',
-    element: <AdminLayout />,
+    element: <ProtectedRoute role="admin" />,
     children: [
-      { index: true, element: <WorkspacePage role="admin" /> },
-      { path: '*', element: <NotFoundPage homePath="/admin" /> },
+      {
+        path: '/admin', element: <AdminLayout />,
+        children: [
+          { index: true, element: <WorkspacePage role="admin" /> },
+          { path: '*', element: <NotFoundPage homePath="/admin" /> },
+        ],
+      },
     ],
   },
   {
-    path: '/residente',
-    element: <ResidentLayout />,
+    element: <ProtectedRoute role="resident" />,
     children: [
-      { index: true, element: <WorkspacePage role="resident" /> },
-      { path: '*', element: <NotFoundPage homePath="/residente" /> },
+      {
+        path: '/residente', element: <ResidentLayout />,
+        children: [
+          { index: true, element: <WorkspacePage role="resident" /> },
+          { path: '*', element: <NotFoundPage homePath="/residente" /> },
+        ],
+      },
     ],
   },
 ])

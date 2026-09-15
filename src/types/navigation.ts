@@ -1,4 +1,6 @@
-export type WorkspaceRole = 'admin' | 'resident'
+import type { UserRole } from './auth'
+
+export type WorkspaceRole = UserRole
 
 export interface NavigationItem {
   label: string

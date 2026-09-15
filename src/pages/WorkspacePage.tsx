@@ -1,31 +1,56 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { workspaces } from '../data/navigation'
 import { usePageTitle } from '../hooks/usePageTitle'
 import type { WorkspaceRole } from '../types/navigation'
+import { useAuth } from '../hooks/useAuth'
+import { demoService } from '../services/demoService'
+
+type ProfileContext = Awaited<ReturnType<typeof demoService.getProfileContext>>
 
 export function WorkspacePage({ role }: { role: WorkspaceRole }) {
   const workspace = workspaces[role]
   usePageTitle(workspace.label)
+  const { user } = useAuth()
+  const location = useLocation()
+  const [profile, setProfile] = useState<ProfileContext | null>(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let active = true
+    setProfile(null)
+    setError('')
+    if (user) {
+      demoService.getProfileContext(user.id).then(
+        (data) => { if (active) setProfile(data) },
+        (error: unknown) => { if (active) setError(error instanceof Error ? error.message : 'No se pudo cargar el perfil.') },
+      )
+    }
+    return () => { active = false }
+  }, [user])
 
   return (
     <section className="workspace-page">
       <p className="eyebrow">{workspace.label} / Inicio</p>
+      {location.state?.accessDenied && <p className="access-notice" role="alert">Tu perfil no tiene acceso a esa sección. Te llevamos a tu inicio.</p>}
       <h1>{workspace.title}</h1>
+      <p>Bienvenido, <strong>{user?.name}</strong>.</p>
       <p className="lead">{workspace.description}</p>
       <div className="stage-banner">
-        <span className="status-badge">Etapa 1</span>
-        <p>Navegación inicial disponible</p>
+        <span className="status-badge">Etapa 2</span>
+        <p>Sesión de demostración activa</p>
       </div>
       <section className="scope-section" aria-labelledby="scope-title">
-        <h2 id="scope-title">Qué puedes explorar</h2>
+        <h2 id="scope-title">Tu perfil</h2>
+        {error && <p className="form-error" role="alert">{error}</p>}
         <dl className="feature-list">
-          <div><dt>Tu espacio</dt><dd>Un espacio propio para el perfil de {workspace.label.toLowerCase()}.</dd></div>
-          <div><dt>Vista adaptable</dt><dd>Menú lateral en escritorio y menú desplegable en teléfono.</dd></div>
-          <div><dt>Cambio de perfil</dt><dd>Vuelve al acceso temporal para conocer el otro espacio.</dd></div>
+          <div><dt>Correo</dt><dd>{user?.email}</dd></div>
+          <div><dt>Rol</dt><dd>{workspace.label}</dd></div>
+          <div><dt>Condominio</dt><dd>{profile?.condominium.name ?? 'Cargando…'}</dd></div>
+          {role === 'resident' && <div><dt>Residencia</dt><dd>{profile?.residence?.name ?? 'Cargando…'}</dd></div>}
         </dl>
       </section>
-      <p className="muted">Los módulos de gestión y los datos de la comunidad estarán disponibles en etapas posteriores.</p>
-      <Link className="button-link" to="/login">Volver al acceso temporal</Link>
+      <p className="muted">Tu sesión se conserva al recargar. Para probar el otro perfil, cierra sesión desde el menú e ingresa con su cuenta. Los módulos de gestión estarán disponibles en etapas posteriores.</p>
     </section>
   )
 }

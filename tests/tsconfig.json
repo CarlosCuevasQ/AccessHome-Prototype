@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": "../src",
+    "outDir": "../.test-build"
+  },
+  "include": ["../src/services/**/*.ts", "../src/data/demo.ts", "../src/types/auth.ts", "../src/types/demo.ts"]
+}

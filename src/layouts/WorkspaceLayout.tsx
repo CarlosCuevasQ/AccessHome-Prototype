@@ -1,14 +1,31 @@
 import { useState } from 'react'
-import { Link, Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import { Brand } from '../components/Brand'
 import { Navigation } from '../components/Navigation'
 import { RouteFocus } from '../components/RouteFocus'
 import { workspaces } from '../data/navigation'
 import type { WorkspaceRole } from '../types/navigation'
+import { useAuth } from '../hooks/useAuth'
+import { authService } from '../services/authService'
 
 export function WorkspaceLayout({ role }: { role: WorkspaceRole }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const workspace = workspaces[role]
+  const { user } = useAuth()
+  const [loggingOut, setLoggingOut] = useState(false)
+  const [error, setError] = useState('')
+
+  async function logout() {
+    setLoggingOut(true)
+    setError('')
+    try {
+      await authService.logout()
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'No se pudo cerrar la sesión.')
+    } finally {
+      setLoggingOut(false)
+    }
+  }
 
   return (
     <div className="workspace-layout">
@@ -28,7 +45,9 @@ export function WorkspaceLayout({ role }: { role: WorkspaceRole }) {
           document.getElementById('main-content')?.focus({ preventScroll: true })
         }} />
         <div className="sidebar-bottom">
-          <Link to="/login">Cambiar de perfil</Link>
+          <p className="session-name">{user?.name}</p>
+          <button type="button" className="text-button" disabled={loggingOut} onClick={() => { void logout() }}>{loggingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</button>
+          {error && <div className="form-error" role="alert">{error}</div>}
           <p>Entorno de demostración</p>
         </div>
       </aside>
