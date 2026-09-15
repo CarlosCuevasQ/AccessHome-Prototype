@@ -1,4 +1,5 @@
-import type { DemoDatabase, DemoDatabaseV2, LegacyDemoDatabase } from '../types/demo.js'
+import type { DemoDatabase, DemoDatabaseV2, DemoDatabaseV3, LegacyDemoDatabase } from '../types/demo.js'
+import { validStoredContacts } from './contactValidation.js'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -8,7 +9,7 @@ function hasStrings(value: unknown, keys: string[]): value is Record<string, str
   return isRecord(value) && keys.every((key) => typeof value[key] === 'string' && value[key].trim() !== '')
 }
 
-function isDatabase(value: unknown, version: 1 | 2 | 3): boolean {
+function isDatabase(value: unknown, version: 1 | 2 | 3 | 4): boolean {
   if (!isRecord(value) || value.version !== version) return false
   const { users, condominiums, residences, vehicles, session } = value
   if (!Array.isArray(users) || !Array.isArray(condominiums) || !Array.isArray(residences) || !Array.isArray(vehicles)) return false
@@ -28,7 +29,7 @@ function isDatabase(value: unknown, version: 1 | 2 | 3): boolean {
     if (!vehicles.every((vehicle) => typeof vehicle.active === 'boolean')) return false
     if (version === 2 && !vehicles.every((vehicle) => vehicle.ownerId === null || users.some((user) => user.id === vehicle.ownerId && user.role === 'resident' && user.residenceId === vehicle.residenceId))) return false
   }
-  if (version === 3) {
+  if (version >= 3) {
     const { inhabitants } = value
     if (!Array.isArray(inhabitants)) return false
     if (!inhabitants.every((person) => hasStrings(person, ['id', 'residenceId', 'firstName'])
@@ -45,13 +46,14 @@ function isDatabase(value: unknown, version: 1 | 2 | 3): boolean {
   }
   if ([users, condominiums, residences, vehicles].some((items) => new Set(items.map((item) => item.id)).size !== items.length)) return false
   if (new Set(users.map((user) => user.email.toLowerCase())).size !== users.length) return false
+  if (version === 4 && !validStoredContacts(value.contacts, users)) return false
   return session === null || (hasStrings(session, ['userId']) && users.some((user) => user.id === session.userId))
 }
 
 export function isDemoDatabase(value: unknown): value is DemoDatabase {
-  return isDatabase(value, 3)
+  return isDatabase(value, 4)
 }
 
-export function isLegacyDemoDatabase(value: unknown): value is LegacyDemoDatabase | DemoDatabaseV2 {
-  return isDatabase(value, 1) || isDatabase(value, 2)
+export function isLegacyDemoDatabase(value: unknown): value is LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3 {
+  return isDatabase(value, 1) || isDatabase(value, 2) || isDatabase(value, 3)
 }

@@ -8,7 +8,7 @@ import type { WorkspaceRole } from '../types/navigation'
 import { useAuth } from '../hooks/useAuth'
 import { authService } from '../services/authService'
 
-export function WorkspaceLayout({ role }: { role: WorkspaceRole }) {
+export function WorkspaceLayout({ role, showContacts = false }: { role: WorkspaceRole; showContacts?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const workspace = workspaces[role]
   const { user } = useAuth()
@@ -40,7 +40,7 @@ export function WorkspaceLayout({ role }: { role: WorkspaceRole }) {
       </header>
       <aside id="workspace-sidebar" className={`sidebar${menuOpen ? ' is-open' : ''}`}>
         <p className="sidebar-label">{workspace.label}</p>
-        <Navigation items={workspace.navigation} onNavigate={() => {
+        <Navigation items={workspace.navigation.filter((item) => item.path !== '/residente/contactos' || showContacts)} onNavigate={() => {
           setMenuOpen(false)
           document.getElementById('main-content')?.focus({ preventScroll: true })
         }} />

@@ -1,6 +1,37 @@
 # Estado del prototipo AccessHome
 
-## Etapa 3 · Corrección de responsabilidades (vigente)
+## Etapa 4 · Contactos frecuentes (vigente)
+
+- [x] Agenda privada vinculada al residente propietario, independiente de la residencia y de sus habitantes.
+- [x] Solo el principal consulta o modifica su agenda; validación en cada operación del servicio.
+- [x] Cambio de principal no transfiere contactos; administrador y cuentas adicionales sin acceso.
+- [x] Nombre obligatorio, teléfono/correo/notas opcionales y estado activo/inactivo.
+- [x] Cero, uno o varios vehículos por contacto; placas obligatorias y resto de datos opcionales.
+- [x] Vehículos de contactos separados de los vehículos permanentes, sin alterar los contadores de comunidad.
+- [x] Listado compacto, búsqueda por nombre/teléfono/correo/placas, detalle, creación y edición.
+- [x] Desactivación y reactivación de contactos/vehículos conservando sus datos.
+- [x] Formularios en una columna, botones de al menos 48 px y navegación responsive.
+- [x] Invitar visible, con ruta preparada que informa que no se ha generado autorización.
+- [x] Datos demo de Carlos López, María González y Pedro Ramírez para Daniel.
+- [x] Esquema 4 y migración de versiones 1/2/3 sin reinicio de comunidad ni sesión.
+- [x] Restauración de datos incluye contactos y vehículos de contactos.
+- [x] README y guía acumulativa con los ocho casos manuales solicitados.
+- [x] `npm run build` correcto; `npm test` con 45 pruebas correctas, incluidas las 32 de etapas anteriores.
+- [x] Verificación de navegador: alta, edición, varios vehículos, desactivación/reactivación, búsqueda, persistencia, privacidad y ruta Invitar.
+
+### Verificación y datos conservados
+
+Se creó para Daniel el contacto Laura Sánchez Ruiz, teléfono ficticio 3312345099, nota “Visita habitual de demostración”. Tiene LRS-9001 (Mazda 3 azul, inactivo) y LRS-9002 (Honda Civic, activo); contacto activo. Se comprobó que esos vehículos no aparecen en el registro permanente de Casa 24. La cuenta de Ana no puede abrir este contacto y la cuenta adicional de Mariana no accede a la agenda.
+
+Interfaz revisada a 375 × 812, 768 × 1024 y 1366 × 1000, sin desbordamiento horizontal en las vistas medidas. El servidor Vite se reinició para resolver una caché de importación de la nueva hoja CSS y funciona en http://127.0.0.1:5173. Se conservaron los datos y asignaciones de etapas anteriores.
+
+Archivos principales: `src/types/contacts.ts`, `src/data/contacts.ts`, `src/services/contactsService.ts`, `contactRules.ts`, `contactValidation.ts`, `demoMigration.ts`, `demoValidation.ts`, `src/components/contacts/`, `src/components/PrincipalRoute.tsx`, `src/pages/ContactsPage.tsx`, `ContactPage.tsx`, navegación/layouts, `src/router.tsx`, `src/styles/contacts.css` y `tests/contacts.test.mjs`.
+
+No se añadieron dependencias ni se implementó la creación de invitaciones. No se realizó commit ni push.
+
+Mensaje de commit sugerido: `feat: agregar agenda privada de contactos frecuentes`.
+
+## Etapa 3 · Corrección de responsabilidades (conservada)
 
 Esta sección sustituye el modelo de permisos de la implementación inicial. Las secciones históricas se conservan como registro de entregas, no como requisitos actuales.
 
@@ -86,7 +117,7 @@ Mensaje de commit sugerido (sin ejecutarlo): `feat: gestionar condominio, reside
 
 ## Etapa 1 · Infraestructura del frontend (histórico)
 
-La entrega vigente es la etapa 3. Los resultados siguientes conservan el historial de la infraestructura inicial.
+La entrega vigente es la etapa 4. Los resultados siguientes conservan el historial de la infraestructura inicial.
 
 - [x] React, Vite y TypeScript con comprobación estricta.
 - [x] Router principal con redirección inicial.
@@ -104,16 +135,16 @@ La entrega vigente es la etapa 3. Los resultados siguientes conservan el histori
 
 ## Fases previstas
 
-El objetivo general actualizado define las funciones finales. Esta división organiza su implementación; se debe detener el trabajo al terminar cada etapa y esperar la indicación de continuar. Las fases 1, 2 y 3 están implementadas.
+El objetivo general actualizado define las funciones finales. Esta división organiza su implementación; se debe detener el trabajo al terminar cada etapa y esperar la indicación de continuar. Las fases 1, 2, 3 y 4 están implementadas.
 
 - [x] **Fase 1 — Infraestructura:** implementación y verificación completadas.
 - [x] **Fase 2 — Datos, servicios y perfiles:** modelos tipados, datos demo, sesión simulada por rol y localStorage encapsulado en servicios sustituibles por API.
   - [x] Relaciones tipadas entre condominio, usuarios, residencias y vehículos; semilla inicial del prototipo.
   - [x] Casa 24 como residencia del recorrido de presentación.
 - [x] **Fase 3 — Comunidad y permisos:** el administrador gestiona estructura, estado y principal de cada casa; el principal administra habitantes y vehículos propios. Consulta administrativa y restricciones en servicios verificadas.
-- [ ] **Fase 4 — Contactos frecuentes:** alta, edición y eliminación de contactos propios del residente.
-  - [ ] Nombre, teléfono/correo/notas opcionales y varios vehículos con placas y marca/modelo/color opcionales.
-  - [ ] Un contacto guardado no concede autorización permanente de entrada.
+- [x] **Fase 4 — Contactos frecuentes:** agenda privada del principal, alta, búsqueda, detalle, edición y desactivación/reactivación de contactos y sus vehículos.
+  - [x] Nombre obligatorio, teléfono/correo/notas opcionales y varios vehículos con placas obligatorias y marca/modelo/color opcionales.
+  - [x] Un contacto guardado no concede autorización permanente de entrada; Invitar abre una pantalla preparada sin crear invitaciones.
 - [ ] **Fase 5 — Invitaciones:** creación desde contacto o para visitante ocasional sin guardar contacto.
   - [ ] Visitante ocasional: nombre, vehículo sí/no y placas cuando corresponda; demás datos opcionales.
   - [ ] Residente, residencia destino, copia de datos del visitante/vehículo, vigencia, usos permitidos/utilizados, estado y token único simulado.
@@ -132,7 +163,7 @@ Una integración de producción con API queda fuera del prototipo y requiere una
 - Las rutas están protegidas en el frontend; es una simulación que no ofrece seguridad frente a la manipulación del navegador o del código.
 - La sesión y los datos demo se guardan en `accesshome.demo.v1`; no hay backend ni cuentas reales.
 - Las contraseñas demo están en la semilla local. No se devuelven en los objetos de sesión.
-- Contactos, invitaciones, accesos y reportes siguen pendientes.
+- Creación de invitaciones, accesos y reportes siguen pendientes. Contactos frecuentes está implementado.
 - Las bajas son desactivaciones reversibles. No hay eliminación física, traslado entre casas ni cambio de contraseñas. Las cuentas adicionales consultan su casa; solo el principal de una casa activa puede gestionarla.
 - La migración conserva Casa 25 y otros registros anteriores; restaurar recupera exactamente las cuatro casas de la nueva semilla.
 - La sesión no tiene vencimiento automático y se comparte entre pestañas del mismo origen.

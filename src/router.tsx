@@ -9,6 +9,9 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { CondominiumPage } from './pages/CondominiumPage'
 import { ResidencesPage } from './pages/ResidencesPage'
 import { ResidencePage } from './pages/ResidencePage'
+import { ContactsPage } from './pages/ContactsPage'
+import { ContactPage } from './pages/ContactPage'
+import { PrincipalRoute } from './components/PrincipalRoute'
 
 export const router = createBrowserRouter([
   {
@@ -41,6 +44,11 @@ export const router = createBrowserRouter([
         path: '/residente', element: <ResidentLayout />,
         children: [
           { index: true, element: <ResidencePage /> },
+          { element: <PrincipalRoute />, children: [
+            { path: 'contactos', element: <ContactsPage /> },
+            { path: 'contactos/:contactId', element: <ContactPage /> },
+            { path: 'contactos/:contactId/invitar', element: <ContactPage invitation /> },
+          ] },
           { path: 'perfil', element: <WorkspacePage role="resident" /> },
           { path: '*', element: <NotFoundPage homePath="/residente" /> },
         ],

@@ -2,6 +2,7 @@
 @import './pages.css';
 @import './auth.css';
 @import './community.css';
+@import './contacts.css';
 
 :root {
   font-family: 'Segoe UI', Arial, sans-serif;

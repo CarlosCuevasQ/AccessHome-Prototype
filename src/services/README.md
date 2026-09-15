@@ -7,7 +7,7 @@ Las pantallas consumen contratos asíncronos. Solo `demoStorage.ts` lee/escribe 
 | `authService` | Login, logout, sesión pública sin contraseña y suscripción a cambios. Rechaza cuentas de habitantes inactivos. |
 | `demoService` | Ayuda de credenciales, contexto propio y restauración de la semilla completa. |
 | `demoStorage` | Clave `accesshome.demo.v1`, lectura validada, escritura y notificaciones locales/entre pestañas. |
-| `demoValidation` / `demoMigration` | Valida esquema 3 y relaciones; migra versiones 1/2 conservando datos y sesión. |
+| `demoValidation` / `demoMigration` | Valida esquema 4 y relaciones; migra versiones 1/2/3 conservando datos y sesión. |
 | `communityService` | Resumen/listado administrativo, detalle autorizado y operaciones de estructura. Expone las operaciones de los dos servicios siguientes. |
 | `principalService` | Asignación administrativa de principal existente de esa casa o creación de principal con cuenta demo. |
 | `householdService` | Alta/edición de habitantes y vehículos por el principal de su propia casa activa. Las bajas son cambios de estado reversibles. |
@@ -37,8 +37,21 @@ Número de casa único por condominio; correo de acceso único entre cuentas; pl
 
 La escritura completa se hace con un único `setItem`; el servicio solo notifica después de guardar. Si falla, devuelve error y conserva los datos almacenados. No hay escrituras parciales de principal, cuenta y habitante.
 
-La migración convierte usuarios residentes anteriores en habitantes, conserva propietarios y asigna un principal a cada casa con residentes. Los vehículos sin propietario permanecen sin asignar. El esquema v3 mantiene la clave histórica y migra una sola vez. Las cuentas y la sesión se conservan.
+La migración convierte usuarios residentes anteriores en habitantes, conserva propietarios y asigna un principal a cada casa con residentes. Los vehículos sin propietario permanecen sin asignar. El esquema 4 mantiene la clave histórica y conserva la migración previa de comunidad. Las cuentas y la sesión se conservan.
 
 `resetDemoData()` reemplaza todos los datos propios, incluidas asignaciones, habitantes y estados, por una copia de la semilla. Cierra sesión y conserva claves de otras aplicaciones; nunca llama `localStorage.clear()`.
 
 `AuthProvider` y `useCommunityQuery` escuchan notificaciones. La implementación es una simulación local, no una barrera frente a la manipulación directa del navegador; la futura API deberá aplicar estos permisos en el servidor.
+
+## Contactos frecuentes · Etapa 4
+
+- `contactsService`: `getAccess`, `listContacts`, `getContact`, `createContact`, `updateContact`, `createVehicle` y `updateVehicle`. Usa los mismos eventos de persistencia que la comunidad.
+- `contactRules`: valida sesión, condición de principal, propietario, actividad de residencia y campos. Todas las operaciones por ID verifican `contact.ownerUserId === session.userId`; actualizar un vehículo comprueba también su pertenencia al contacto.
+- `contactValidation`: valida las agendas persistidas, cuentas propietarias, campos, IDs y placas únicas por contacto. La cuenta propietaria puede dejar de ser principal sin invalidar sus datos conservados.
+- `types/contacts.ts`: contactos y vehículos de contacto separados del vehículo permanente. `DemoDatabase.contacts` contiene agendas; cada contacto contiene sus propios vehículos.
+
+No se recibe el propietario desde el formulario. Crear o editar un contacto no crea cuentas, habitantes, vehículos permanentes ni autorizaciones. Marca, modelo y color son opcionales; las placas son obligatorias y se normalizan para evitar duplicados dentro del mismo contacto. Contactos y vehículos se desactivan y reactivan mediante edición del estado, sin eliminación física.
+
+El administrador y las cuentas adicionales no acceden a estas consultas. Un principal de casa inactiva solo puede consultar su agenda. Cambiar de principal revoca el acceso del anterior y no transfiere sus contactos al nuevo principal. La UI refleja estas reglas, pero los servicios las revalidan siempre.
+
+El esquema 4 añade los contactos demo al migrar desde el esquema 3 sin modificar la comunidad previa; mantiene la clave histórica. La restauración incluye toda la agenda. La ruta `contactos/:contactId/invitar` consulta un contacto propio y solo muestra una pantalla informativa de la próxima etapa.

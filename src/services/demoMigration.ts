@@ -1,5 +1,6 @@
 import { createDemoData } from '../data/demo.js'
-import type { DemoDatabase, DemoDatabaseV2, LegacyDemoDatabase } from '../types/demo.js'
+import type { DemoDatabase, DemoDatabaseV2, DemoDatabaseV3, LegacyDemoDatabase } from '../types/demo.js'
+import { createDemoContacts } from '../data/contacts.js'
 import { inhabitantFromAccount } from '../utils/people.js'
 
 function migrateVersionOne(legacy: LegacyDemoDatabase): DemoDatabaseV2 {
@@ -42,7 +43,7 @@ function migrateVersionOne(legacy: LegacyDemoDatabase): DemoDatabaseV2 {
   return data
 }
 
-export function migrateDemoData(legacy: LegacyDemoDatabase | DemoDatabaseV2): DemoDatabase {
+function migrateVersionTwo(legacy: LegacyDemoDatabase | DemoDatabaseV2): DemoDatabaseV3 {
   const previous = legacy.version === 1 ? migrateVersionOne(legacy) : structuredClone(legacy)
   const inhabitants = previous.users.filter((user) => user.role === 'resident').map(inhabitantFromAccount)
   const daniel = previous.users.find((user) => user.id === 'user-daniel' && user.role === 'resident')
@@ -62,5 +63,13 @@ export function migrateDemoData(legacy: LegacyDemoDatabase | DemoDatabaseV2): De
     vehicles: previous.vehicles.map((vehicle) => ({
       ...vehicle, ownerId: vehicle.ownerId === null ? null : inhabitants.find((person) => person.userId === vehicle.ownerId && person.residenceId === vehicle.residenceId)?.id ?? null,
     })),
+  }
+}
+
+export function migrateDemoData(legacy: LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3): DemoDatabase {
+  const previous = legacy.version === 3 ? structuredClone(legacy) : migrateVersionTwo(legacy)
+  return {
+    ...previous, version: 4,
+    contacts: createDemoContacts().filter((contact) => previous.users.some((user) => user.id === contact.ownerUserId && user.role === 'resident')),
   }
 }

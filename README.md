@@ -4,10 +4,10 @@ Prototipo funcional para una presentación universitaria sobre seguridad residen
 
 ## Estado actual
 
-Etapa 3, con responsabilidades corregidas:
+Etapa 4: contactos frecuentes privados, conservando el modelo de responsabilidades de la comunidad:
 
 - **Administrador:** crea residencias, edita número/calle y estado, asigna o cambia al principal y consulta habitantes y vehículos.
-- **Residente principal:** administra los habitantes y vehículos de su propia residencia activa. Puede agregarlos, consultar su detalle, editarlos, desactivarlos y reactivarlos.
+- **Residente principal:** administra habitantes y vehículos de su casa, además de su agenda privada de contactos frecuentes. Puede crear, consultar, editar, desactivar y reactivar registros.
 - **Habitante adicional:** puede existir sin cuenta. Las cuentas adicionales conservadas de etapas anteriores solo consultan su casa hasta que el administrador las designe como principal.
 
 Los permisos se verifican en las pantallas y en cada operación del servicio. Se mantienen autenticación, roles, navegación, sesión persistente, restauración y diseño responsive azul con acentos amarillos.
@@ -42,6 +42,9 @@ Build comprueba TypeScript y genera `dist/`. Preview sirve el build en [http://1
 | `/admin/residencias` | Listado, búsqueda y alta de casas |
 | `/admin/residencias/:residenceId` | Estructura, estado, asignación del principal y consulta de habitantes/vehículos |
 | `/residente` | Mi residencia; gestión si el usuario es su principal y la casa está activa |
+| `/residente/contactos` | Agenda privada: listado, buscador y alta de contactos |
+| `/residente/contactos/:contactId` | Detalle y edición del contacto y sus vehículos |
+| `/residente/contactos/:contactId/invitar` | Pantalla preparada; no crea invitaciones ni autoriza accesos |
 | `/admin/perfil`, `/residente/perfil` | Perfil del usuario autenticado |
 | Ruta desconocida | Página 404, dentro del layout cuando corresponde |
 
@@ -70,7 +73,29 @@ Al asignar un principal, el administrador puede elegir un habitante activo de es
 
 Los vehículos pertenecen a la residencia. Su propietario opcional debe ser un habitante de esa misma casa. Se usa desactivación reversible para conservar registros. El principal actual no puede desactivarse hasta que la administración nombre a su reemplazo. Una casa inactiva permite consulta y bloquea su gestión cotidiana hasta reactivarse.
 
-## Prueba rápida
+## Contactos frecuentes
+
+Entra con Daniel (`residente@accesshome.demo` / `Access123`) y abre **Contactos frecuentes** en el menú. En móvil, pulsa primero **Abrir menú**.
+
+| Contacto demo | Teléfono | Vehículos del contacto |
+| --- | --- | --- |
+| Carlos López | 3312345678 | Mazda 3 · `JKL-1234` |
+| María González | Opcional, sin registrar | Sin vehículos |
+| Pedro Ramírez | Opcional, sin registrar | Nissan Versa · `HJK-7821` |
+
+1. Pulsa **Nuevo contacto**; solo el nombre es obligatorio. Teléfono, correo y notas son opcionales.
+2. Al guardar se abre su detalle. Pulsa **Agregar vehículo**; solo las placas son obligatorias. Puedes registrar varios.
+3. Usa **Editar contacto** o **Editar** junto a un vehículo para cambiar datos o seleccionar Inactivo. Los datos se conservan y pueden reactivarse.
+4. Busca por nombre, teléfono, correo o placas. La búsqueda ignora mayúsculas y acentos e incluye contactos inactivos.
+5. **Invitar** abre la pantalla de la próxima etapa. No crea una invitación, QR ni autorización de acceso. El botón se deshabilita para contactos o residencias inactivos.
+
+Los contactos pertenecen a la cuenta del principal y no se comparten con el administrador ni con otros residentes, incluso de su misma casa. Si cambia el principal, su agenda no se transfiere: queda conservada para su propietario, que volverá a acceder si recupera la condición de principal. Una casa inactiva permite consultar la agenda, pero no modificarla.
+
+Los vehículos del contacto se guardan dentro del contacto, separados de `vehicles`, que contiene los vehículos permanentes de las casas. Las placas no pueden repetirse dentro de un contacto; sí pueden figurar en otra agenda o registro sin que eso conceda acceso permanente.
+
+La verificación dejó un contacto adicional de Daniel: **Laura Sánchez Ruiz**, teléfono ficticio `3312345099`, con `LRS-9001` (Mazda 3 azul, inactivo) y `LRS-9002` (Honda Civic, activo). El contacto quedó activo. Usa otros nombres/placas si repites pruebas; no hace falta restaurar.
+
+## Prueba rápida de comunidad
 
 1. Entra como administrador, abre **Residencias → Agregar residencia** y crea Casa `91`, calle `Circuito Cedros`.
 2. Abre Casa 91, pulsa **Asignar residente principal** y registra a **Sofía Ramos**, correo `sofia91@accesshome.demo`. Comprueba que solo aparecen acciones administrativas y de consulta.
@@ -84,7 +109,7 @@ Si un número, correo o placas ya existen, utiliza otros. Durante la verificaci�
 
 ## Persistencia y restauración
 
-Solo `services/demoStorage.ts` accede a localStorage, bajo `accesshome.demo.v1`. El esquema interno es **versión 3**. Migra automáticamente versiones 1 y 2 conservando casas, usuarios, credenciales, vehículos, propietarios, ediciones y sesión. Los antiguos residentes se convierten en habitantes vinculados a su cuenta. Daniel queda como principal de su Casa 24; en las demás casas se asigna al primer residente existente. Las casas sin residentes quedan sin principal. Andrea y Carlos se añaden a la casa de Daniel si faltan.
+Solo `services/demoStorage.ts` accede a localStorage, bajo `accesshome.demo.v1`. El esquema interno es **versión 4**. La migración desde versión 3 conserva íntegramente la comunidad, los principales asignados, los estados y la sesión; añade una sola vez los tres contactos demo a Daniel. Las versiones 1/2 pasan además por la migración de habitantes y principales de la etapa anterior. Las agendas existentes en versión 4 no se reinician al recargar. Restaurar datos demo también restaura contactos y sus vehículos.
 
 La migración desde versión 1 también conserva Casa 25 y completa los datos demo de la etapa anterior. Por eso una instalación migrada puede tener más casas y cantidades distintas de la semilla.
 
@@ -110,14 +135,14 @@ src/
 
 `communityService` ofrece las consultas y operaciones estructurales; delega la gestión de habitantes/vehículos a `householdService` y la asignación a `principalService`. `communityRules` resuelve al usuario desde la sesión persistida, verifica principal/casa/estado y valida campos, números, correos y placas. Las pantallas no eligen el usuario que autoriza una operación. Las consultas no devuelven contraseñas.
 
-Los componentes consumen contratos asíncronos y notificaciones de los servicios; una futura API podrá sustituir su implementación sin trasladar persistencia a las pantallas. No se añaden dependencias de componentes ni recursos externos.
+`contactsService` concentra consultas y modificaciones de agenda, con validación del principal y propietario en cada llamada. Los componentes consumen contratos asíncronos y notificaciones de los servicios; una futura API podrá sustituir su implementación sin trasladar persistencia a las pantallas. No se añaden dependencias de componentes ni recursos externos.
 
 ## Verificación y documentación
 
-`npm test` ejecuta **32 pruebas** con TypeScript y el ejecutor nativo de Node: autenticación, permisos de lectura/escritura, asignación y revocación del principal, desactivación, duplicados, migraciones, restauración y errores de almacenamiento. Build y recorridos de navegador comprobados; guía acumulativa con casos manuales y alcance de la revisión.
+`npm test` ejecuta **45 pruebas** con TypeScript y el ejecutor nativo de Node: autenticación, permisos de lectura/escritura, asignación y revocación del principal, desactivación, duplicados, privacidad de contactos, separación de vehículos, migraciones, restauración y errores de almacenamiento. Build y recorridos de navegador comprobados; guía acumulativa con casos manuales y alcance de la revisión.
 
 - [Estado y checklist de fases](docs/PROTOTYPE_STATUS.md)
 - [Guía acumulativa de pruebas](docs/PROTOTYPE_TESTING.md)
 - [Contratos y reglas de servicios](src/services/README.md)
 
-Contactos frecuentes, invitaciones, accesos y reportes siguen pendientes. No se ha iniciado el siguiente módulo ni se han realizado commits o push.
+Siguen pendientes la creación de invitaciones, el registro de accesos y los reportes. No se ha iniciado el siguiente módulo ni se han realizado commits o push.

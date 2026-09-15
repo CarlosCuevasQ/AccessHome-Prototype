@@ -1,10 +1,12 @@
 import type { DemoDatabase } from '../types/demo.js'
 import { inhabitantFromAccount } from '../utils/people.js'
+import { createDemoContacts } from './contacts.js'
 
 export const DEMO_PASSWORD = 'Access123'
 
 const initialData: DemoDatabase = {
-  version: 3,
+  version: 4,
+  contacts: createDemoContacts(),
   users: [
     { id: 'user-admin', name: 'Administrador Demo', email: 'admin@accesshome.demo', password: DEMO_PASSWORD, role: 'admin', condominiumId: 'condo-encinos', residenceId: null },
     { id: 'user-daniel', name: 'Daniel Cuevas', email: 'residente@accesshome.demo', password: DEMO_PASSWORD, role: 'resident', condominiumId: 'condo-encinos', residenceId: 'house-24' },

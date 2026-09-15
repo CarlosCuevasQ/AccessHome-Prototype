@@ -9,7 +9,76 @@ Esta guía se amplía en cada etapa. Al incorporar funciones nuevas, repetir tam
 3. Ejecutar `npm run dev` y mantener esa terminal abierta.
 4. Abrir http://127.0.0.1:5173.
 
-## Etapa 3 · Permisos y residencia propia (pruebas vigentes)
+## Etapa 4 · Contactos frecuentes (vigente)
+
+### Preparación y datos
+
+- Daniel, principal de Casa 24: `residente@accesshome.demo` / `Access123`.
+- Ana, principal de Casa 12 y agenda independiente: `ana@accesshome.demo` / `Access123`.
+- Mariana, habitante adicional sin acceso a agenda: `mariana@accesshome.demo` / `Access123`.
+- Administrador: `admin@accesshome.demo` / `Access123`; no consulta agendas privadas.
+- Ruta del módulo: `/residente/contactos`. En móvil abrir el menú para acceder.
+- Contactos demo de Daniel: Carlos López (3312345678, Mazda 3 / JKL-1234), María González (sin vehículo), Pedro Ramírez (Nissan Versa / HJK-7821).
+- Para nuevas pruebas usa **Julia Herrera**, teléfono 3312345088 y placas **JHR-8001** / **JHR-8002**. Si ya existen dentro del contacto, utiliza otras.
+
+La migración a esquema 4 conserva casas, principales, habitantes, vehículos permanentes y sesión. No es necesario restaurar el navegador. Restaurar desde el login descarta las modificaciones locales y recupera también los tres contactos y dos vehículos de contacto originales.
+
+### Ocho casos solicitados
+
+| ID | Pasos | Resultado esperado |
+| --- | --- | --- |
+| E4-01 | Como Daniel, abrir Contactos frecuentes → Nuevo contacto. Guardar solo el nombre Julia Herrera. | Abre el detalle del nuevo contacto activo, sin vehículos; teléfono, correo y notas no son obligatorios. |
+| E4-02 | Editar contacto. Cambiar nombre a Julia Herrera Díaz, teléfono a 3312345088 y notas a Visita de prueba; guardar. | Muestra los datos actualizados y conserva el propietario. Recargar mantiene sesión y contacto. |
+| E4-03 | Agregar vehículo con solo placas JHR-8001; guardar. Agregar otro con JHR-8002, Honda, Civic y sin color. | Dos vehículos del contacto; marca/modelo/color opcionales. Ninguno aparece en Mi residencia → Vehículos registrados. |
+| E4-04 | Editar JHR-8001: añadir Mazda, modelo 3 y color Azul. Guardar y recargar. | Cambios persistidos en ese vehículo; el segundo vehículo permanece intacto. |
+| E4-05 | Editar JHR-8001 y seleccionar Inactivo. Luego volver a editarlo y seleccionar Activo. | Baja reversible: aparece su estado y conserva sus datos. No cambia el estado del contacto ni del otro vehículo. |
+| E4-06 | Volver a contactos. Buscar `maria`, `LÓPEZ`, `331234`, `JHR-8002` y un texto inexistente; limpiar búsqueda. | Filtra sin distinguir acentos/mayúsculas, incluye teléfono/correo/placas y muestra estado vacío cuando corresponde. |
+| E4-07 | Copiar la URL del detalle de Julia. Cerrar sesión, entrar como Ana y abrir esa URL. Probar además la llamada directa indicada abajo. | Contacto no disponible, sin datos ni edición. Su agenda no incluye los contactos de Daniel. El servicio rechaza modificaciones ajenas. |
+| E4-08 | Como Daniel, repetir listado, creación, edición y búsqueda a 375 px; revisar también a 768 px y escritorio. | Formularios en una columna, botones cómodos, Ver/Invitar claros, listado sin tabla ancha y sin desplazamiento horizontal. |
+
+### E4-07 · Llamada directa al servicio
+
+Con `npm run dev`, sesión de **Ana** y la consola de desarrollo abierta, ejecutar:
+
+```js
+const { contactsService } = await import('/src/services/contactsService.ts');
+try {
+  await contactsService.updateContact('contact-carlos', {
+    name: 'Cambio no permitido', phone: '', email: '', notes: '', active: true,
+  });
+  console.error('FALLO: se permitió modificar un contacto ajeno');
+} catch (error) {
+  console.log(error.message);
+}
+```
+
+Debe mostrar **Contacto no disponible. Solo puedes acceder a tus propios contactos.** Volver con Daniel y confirmar que Carlos López conserva sus datos. Este ejemplo funciona con Vite en desarrollo, no en `npm run preview`. Las pruebas automatizadas comprueban también lectura y todas las mutaciones de vehículos contra IDs ajenos, sin escribir cambios.
+
+### Casos adicionales y regresión
+
+| ID | Pasos | Resultado esperado |
+| --- | --- | --- |
+| E4-09 | Editar contacto → Inactivo. Consultar sus vehículos y volver a activarlo. | No se borran datos ni cambian los estados individuales de sus vehículos. Invitar deshabilitado mientras el contacto está inactivo. |
+| E4-10 | Pulsar Invitar desde un contacto activo, tanto en lista como en detalle; volver al contacto. | Ruta preparada con su nombre y aviso de próxima etapa. No crea invitación, QR ni autorización de acceso. |
+| E4-11 | Intentar guardar nombre vacío, correo inválido, placas vacías o placas repetidas dentro del mismo contacto (también variando espacios/guiones/mayúsculas). | Validación legible; no duplica ni guarda parcialmente. Las placas de otro contacto o de una residencia no se mezclan con este registro. |
+| E4-12 | Entrar como Mariana y abrir `/residente/contactos`; repetir como administrador. | Mariana no ve enlace y la ruta muestra Agenda no disponible. El administrador es redirigido a su inicio por la protección de roles. Los servicios también rechazan ambos perfiles. |
+| E4-13 | En una copia de prueba, cambiar principal de Casa 24 a Mariana desde administración. Entrar con cada cuenta. Restaurar luego a Daniel como principal existente. | Daniel deja de acceder, Mariana tiene su propia agenda vacía y no hereda contactos de Daniel. Al recuperar la asignación, Daniel vuelve a ver los suyos. |
+| E4-14 | Como administrador, desactivar una residencia y entrar con su principal. Después reactivarla. | La agenda conserva lectura privada pero bloquea creación/edición e Invitar mientras la casa está inactiva. |
+| E4-15 | Crear/editar contactos y vehículos; recargar, salir y volver a entrar. Probar también dos pestañas del mismo origen. | Datos persistentes y cambios sincronizados. Se mantienen login, logout, rol y datos de comunidad. |
+| E4-16 | Restaurar la demostración en un navegador destinado a pruebas. | Recupera los tres contactos/dos vehículos demo de Daniel y la comunidad original; cierra sesión. No modifica claves de otras aplicaciones. |
+
+### Resultado de esta etapa
+
+- `npm test`: **45/45** pruebas correctas: 32 de regresión y 13 de contactos. Cubren permisos por propietario/principal, asignación, estados, separación de vehículos, campos opcionales, duplicados, búsqueda, migración desde v3, corrupción, errores de escritura y restauración.
+- `npm run build`: TypeScript y Vite correctos. `npm run dev` funciona en el puerto 5173; se reinició Vite para resolver una caché de importación CSS durante la integración.
+- Navegador: E4-01 a E4-08 comprobados con **Laura Sánchez**, luego **Laura Sánchez Ruiz**, teléfono 3312345099, nota Visita habitual de demostración y dos vehículos: **LRS-9001** (creado solo con placas, luego Mazda 3 azul/inactivo) y **LRS-9002** (Honda Civic, sin color, activo). Los datos se conservaron para revisión. La reactivación del vehículo está cubierta por tests; el recorrido de navegador verificó su desactivación.
+- Desactivación/reactivación del contacto comprobada; quedó activo. Invitar deshabilitado al desactivarlo y ruta preparada comprobada al reactivarlo. Búsqueda `maria` encontró María González; las variantes restantes están cubiertas por tests y disponibles en el recorrido manual.
+- Como Ana: agenda vacía y detalle de Laura bloqueado. Como Mariana: menú sin contactos y ruta bloqueada. Llamadas directas de modificación ajena verificadas en tests de servicio; la guía incluye cómo reproducirlas manualmente.
+- Vehículos de Casa 24 conservados y separados de LRS-9001/LRS-9002. No se reiniciaron datos anteriores del navegador.
+- Lista y formularios inspeccionados a 375 × 812; lista a 768 × 1024 y escritorio a 1366 × 1000. Sin desbordamiento horizontal en las vistas medidas. Azul/amarillo, botones grandes y formularios de una columna conservados.
+- No se añadieron dependencias ni se implementaron invitaciones completas. Sin commit ni push.
+
+## Etapa 3 · Permisos y residencia propia (regresión)
 
 Esta corrección sustituye los casos E3 antiguos que daban al administrador altas/edición cotidianas o limitaban al principal a consulta. La autenticación, navegación, búsqueda, 404 y pruebas de almacenamiento de etapas anteriores siguen aplicando.
 

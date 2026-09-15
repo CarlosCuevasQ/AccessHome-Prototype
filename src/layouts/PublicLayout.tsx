@@ -14,7 +14,7 @@ export function PublicLayout() {
       <main id="main-content" tabIndex={-1} className="public-main"><Outlet /></main>
       <footer className="public-footer">
         <span>AccessHome · Prototipo universitario</span>
-        <span>Etapa 3 / Comunidad</span>
+        <span>Etapa 4 / Contactos frecuentes</span>
       </footer>
     </div>
   )
