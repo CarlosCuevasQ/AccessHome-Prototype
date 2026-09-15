@@ -1,0 +1,39 @@
+.login-page { display: grid; grid-template-columns: 1.2fr 1fr; align-items: center; gap: clamp(40px, 7vw, 100px); }
+.login-introduction h1 { max-width: 580px; }
+.login-introduction .lead { max-width: 460px; }
+.project-note { margin-top: 44px; padding-top: 24px; border-top: 1px solid var(--border); max-width: 460px; }
+.project-note p { margin: 12px 0 0; color: var(--muted); font-size: 0.875rem; }
+.login-access { border-left: 1px solid var(--border); padding-left: clamp(24px, 4vw, 56px); }
+.login-access h2 { font-size: 1.65rem; margin-bottom: 12px; }
+.login-access > p:not(.eyebrow) { color: var(--muted); }
+.profile-options { margin: 28px 0; border-top: 1px solid var(--border); }
+.profile-option { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px 8px; border-bottom: 1px solid var(--border); text-decoration: none; }
+.profile-option:hover { background: var(--light-blue); }
+.profile-option strong { display: block; font-weight: 650; color: var(--primary); margin-bottom: 6px; }
+.profile-option span span { display: block; font-size: 0.875rem; line-height: 1.5; color: var(--muted); }
+.profile-arrow { font-size: 1.5rem; }
+.access-note { font-size: 0.8rem; }
+.workspace-page { max-width: 1000px; }
+.workspace-page h1 { font-size: clamp(1.8rem, 3vw, 2.35rem); }
+.stage-banner { display: flex; align-items: center; gap: 16px; margin: 32px 0 48px; padding: 16px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.stage-banner p { margin: 0; font-size: 0.875rem; color: var(--muted); }
+.stage-banner .status-badge { flex-shrink: 0; }
+.scope-section h2 { font-size: 1.15rem; }
+.feature-list { margin: 24px 0 32px; }
+.feature-list > div { display: grid; grid-template-columns: 190px 1fr; gap: 20px; border-bottom: 1px solid var(--border); padding: 20px 0; }
+.feature-list dt { font-weight: 600; font-size: 0.95rem; }
+.feature-list dd { margin: 0; color: var(--muted); font-size: 0.95rem; }
+.workspace-page > .muted { font-size: 0.875rem; margin-bottom: 24px; }
+.not-found { padding: 40px 0; max-width: 650px; }
+.not-found p:not(.eyebrow) { color: var(--muted); margin-bottom: 28px; }
+
+@media (max-width: 900px) {
+  .login-page { grid-template-columns: 1fr; gap: 40px; max-width: 640px; margin: auto; }
+  .login-access { border-left: 0; border-top: 1px solid var(--border); padding: 32px 0 0; }
+  .project-note { margin-top: 24px; }
+}
+@media (max-width: 480px) {
+  .feature-list > div { grid-template-columns: 1fr; gap: 8px; }
+  .stage-banner { align-items: flex-start; }
+  .public-footer { flex-direction: column; }
+}
