@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate, useOutletContext } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useOutletContext } from 'react-router-dom'
 import type { ContactAccess } from '../types/contacts'
 import { contactsService } from '../services/contactsService'
 import { useCommunityQuery } from '../hooks/useCommunityQuery'
@@ -10,6 +10,7 @@ import { InviteLink } from '../components/contacts/InviteLink'
 export function ContactsPage() {
   usePageTitle('Contactos frecuentes')
   const navigate = useNavigate()
+  const location = useLocation()
   const { canManage } = useOutletContext<ContactAccess>()
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
@@ -17,6 +18,7 @@ export function ContactsPage() {
   const { data, error, loading } = useCommunityQuery(load)
   return <section className="community-page contacts-page">
     <p className="eyebrow">Residente / Agenda privada</p>
+    {location.state?.contactDeleted === true && <p className="form-success" role="status">Contacto eliminado correctamente.</p>}
     <div className="page-heading"><div><h1>Contactos frecuentes</h1><p className="lead">Guarda a tus visitantes habituales y sus vehículos.</p></div>{canManage && <button className="button-link" onClick={() => setCreating(true)}>Nuevo contacto</button>}</div>
     <p className="agenda-notice">Guardar un contacto no concede acceso permanente al condominio. Las invitaciones se habilitarán en la siguiente etapa.</p>
     {!canManage && <p className="access-notice">Tu residencia está inactiva. Puedes consultar tu agenda; solicita su reactivación para gestionarla.</p>}

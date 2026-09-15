@@ -50,8 +50,14 @@ La migración convierte usuarios residentes anteriores en habitantes, conserva p
 - `contactValidation`: valida las agendas persistidas, cuentas propietarias, campos, IDs y placas únicas por contacto. La cuenta propietaria puede dejar de ser principal sin invalidar sus datos conservados.
 - `types/contacts.ts`: contactos y vehículos de contacto separados del vehículo permanente. `DemoDatabase.contacts` contiene agendas; cada contacto contiene sus propios vehículos.
 
-No se recibe el propietario desde el formulario. Crear o editar un contacto no crea cuentas, habitantes, vehículos permanentes ni autorizaciones. Marca, modelo y color son opcionales; las placas son obligatorias y se normalizan para evitar duplicados dentro del mismo contacto. Contactos y vehículos se desactivan y reactivan mediante edición del estado, sin eliminación física.
+No se recibe el propietario desde el formulario. Crear o editar un contacto no crea cuentas, habitantes, vehículos permanentes ni autorizaciones. Marca, modelo y color son opcionales; las placas son obligatorias y se normalizan para evitar duplicados dentro del mismo contacto. Contactos y vehículos se desactivan y reactivan mediante edición del estado, con eliminación definitiva adicional disponible mediante los métodos de borrado.
 
 El administrador y las cuentas adicionales no acceden a estas consultas. Un principal de casa inactiva solo puede consultar su agenda. Cambiar de principal revoca el acceso del anterior y no transfiere sus contactos al nuevo principal. La UI refleja estas reglas, pero los servicios las revalidan siempre.
 
 El esquema 4 añade los contactos demo al migrar desde el esquema 3 sin modificar la comunidad previa; mantiene la clave histórica. La restauración incluye toda la agenda. La ruta `contactos/:contactId/invitar` consulta un contacto propio y solo muestra una pantalla informativa de la próxima etapa.
+
+## Eliminación definitiva
+
+`contactsService.deleteContact(id)` valida al propietario principal y elimina el contacto completo, incluidos sus vehículos anidados. `contactsService.deleteVehicle(contactId, id)` elimina solo el vehículo de ese contacto. `householdService.deleteVehicle(residenceId, id)`, expuesto por `communityService`, elimina solo un vehículo permanente de la casa autorizada. Los tres requieren residencia activa y rechazan registros inexistentes/ajenos, administrador, cuentas adicionales y sesiones no válidas.
+
+La escritura y notificación mantienen el comportamiento existente: si falla `setItem`, los datos anteriores permanecen y no se notifica éxito. No cambia el esquema. No se crean funciones para eliminar casas ni habitantes. `DeleteAction` confirma la operación en la interfaz y permite cancelar; el servicio no depende de la visibilidad de ese control para autorizar la acción.

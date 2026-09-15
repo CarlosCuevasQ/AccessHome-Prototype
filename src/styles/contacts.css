@@ -9,6 +9,8 @@
 .contact-summary p { margin: 4px 0; font-size: 0.9rem; }
 .contact-vehicles-preview { color: var(--muted); font-size: 0.9rem; line-height: 1.7; }
 .contact-actions { display: flex; gap: 10px; flex-shrink: 0; }
+.contact-vehicle-actions { display: flex; flex-direction: column; align-items: stretch; gap: 10px; max-width: 420px; }
+.contact-vehicle-actions .delete-action { margin-top: 0; }
 .contacts-page .secondary-button { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .contacts-page .button-link, .contacts-page .secondary-button { min-height: 48px; }
 .contacts-page button:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -18,6 +20,7 @@
 .contact-notes { grid-column: 1 / -1; }
 .contact-notes dd { white-space: pre-wrap; }
 @media (max-width: 600px) {
+  .contact-vehicle-actions { max-width: none; }
   .contact-row { align-items: stretch; flex-direction: column; gap: 14px; padding: 20px 0; }
   .contact-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .contact-search { max-width: none; }

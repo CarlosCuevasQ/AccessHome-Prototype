@@ -9,6 +9,25 @@ Esta guía se amplía en cada etapa. Al incorporar funciones nuevas, repetir tam
 3. Ejecutar `npm run dev` y mantener esa terminal abierta.
 4. Abrir http://127.0.0.1:5173.
 
+## Eliminación de contactos y vehículos · Pruebas vigentes
+
+Cuenta: Daniel, `residente@accesshome.demo` / `Access123`. Para probar el borrado usa registros creados específicamente para la prueba: contacto **Prueba eliminación**, vehículos de contacto **BOR-1001** y **BOR-1002**, vehículo de residencia **BOR-2001** (Honda, Civic, Gris). Los registros se eliminan definitivamente al confirmar.
+
+| ID | Pasos | Resultado esperado |
+| --- | --- | --- |
+| DEL-01 | Abrir el contacto de prueba, pulsar Eliminar contacto y después Cancelar. | Se explican contacto y vehículos afectados; Cancelar no modifica nada y devuelve el foco al botón original. |
+| DEL-02 | En ese contacto, Eliminar vehículo BOR-1001 → Confirmar eliminación. Recargar. | Desaparece solo BOR-1001; contacto y BOR-1002 permanecen. |
+| DEL-03 | Eliminar contacto → Confirmar eliminación. | Vuelve al listado con mensaje de éxito. Desaparecen el contacto y sus vehículos; su antigua URL muestra Contacto no disponible. |
+| DEL-04 | Mi residencia → Ver detalle de BOR-2001 → Eliminar vehículo → Cancelar; repetir y confirmar. | Cancelar conserva el vehículo. Confirmar lo elimina; cierra el detalle y actualiza el listado. Al recargar no reaparece. |
+| DEL-05 | Entrar como administrador y consultar Casa 24 y resumen. | Ve el registro permanente actualizado, sin acciones de eliminación cotidiana. Las casas y habitantes permanecen. |
+| DEL-06 | Intentar borrar un vehículo de Casa 12 como Daniel, o un contacto de Daniel como Ana. Repetir con cuenta adicional o sin sesión. | Los servicios rechazan la operación sin escribir. También rechazan un ID de vehículo ajeno enviado con un contacto/casa propio. |
+| DEL-07 | Abrir confirmaciones de las tres acciones en móvil, recorrer con teclado y cancelar. | Botones legibles, sin desbordamiento. El foco inicial está en Cancelar; no se elimina con el primer clic. |
+| DEL-08 | Con almacenamiento bloqueado/sin espacio en una copia de prueba, confirmar una eliminación. | Error visible, registro conservado y sin mensaje de éxito. Puede cancelar o reintentar tras resolver el almacenamiento. |
+
+Las funciones son `contactsService.deleteContact(id)`, `contactsService.deleteVehicle(contactId, vehicleId)` y `communityService.deleteVehicle(residenceId, vehicleId)`. Cada llamada vuelve a verificar la sesión, el principal actual, la pertenencia y el estado de la residencia. Cambiar el principal mientras una confirmación está abierta no mantiene permisos antiguos.
+
+Resultados: `npm test` **51/51** pruebas correctas, incluidas seis nuevas pruebas de eliminación con almacenamiento aislado. Cubren cascada del contacto, conservación de registros no afectados, contadores, permisos, IDs cruzados, residencia inactiva, revocación de principal, fallos de escritura y restauración demo. Build correcto. En navegador se verificaron las tres confirmaciones y Cancelar; revisión móvil a 375 × 812 sin desbordamiento. No se borraron los registros existentes del navegador durante esta verificación.
+
 ## Etapa 4 · Contactos frecuentes (vigente)
 
 ### Preparación y datos

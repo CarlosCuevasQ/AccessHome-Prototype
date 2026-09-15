@@ -6,6 +6,7 @@ import { VehicleForm } from './VehicleForm'
 import { PrincipalForm } from './PrincipalForm'
 import { HouseholdDetail } from './HouseholdDetail'
 import { InhabitantsTable, VehiclesTable } from './ResidenceTables'
+import { communityService } from '../../services/communityService'
 
 type Editor = { type: 'residence' | 'principal' } | { type: 'inhabitant' | 'vehicle'; id?: string; editing: boolean } | null
 
@@ -44,7 +45,7 @@ export function ResidenceContent({ data }: { data: ResidenceDetails }) {
         <div className="section-heading"><h2 id="vehicles-heading">Vehículos registrados <span className="count-label">{vehicles.length}</span></h2>{permissions.manageHousehold && <button className="secondary-button" onClick={() => open({ type: 'vehicle', editing: true })}>Registrar vehículo</button>}</div>
         {editor?.type === 'vehicle' && (editor.editing && permissions.manageHousehold
           ? <VehicleForm key={editor.id ?? 'new-vehicle'} residenceId={residence.id} inhabitants={inhabitants} vehicle={selectedVehicle} onSaved={saved} onCancel={close} />
-          : selectedVehicle && <HouseholdDetail vehicle={selectedVehicle} inhabitants={inhabitants} onClose={close} onEdit={permissions.manageHousehold ? () => open({ ...editor, editing: true }) : undefined} />)}
+          : selectedVehicle && <HouseholdDetail vehicle={selectedVehicle} inhabitants={inhabitants} onClose={close} onEdit={permissions.manageHousehold ? () => open({ ...editor, editing: true }) : undefined} onDelete={permissions.manageHousehold ? () => communityService.deleteVehicle(residence.id, selectedVehicle.id) : undefined} onDeleted={() => { close(); setMessage('Vehículo eliminado correctamente.') }} />)}
         <VehiclesTable vehicles={vehicles} inhabitants={inhabitants} onView={(vehicle) => open({ type: 'vehicle', id: vehicle.id, editing: false })} />
       </section>
     </>

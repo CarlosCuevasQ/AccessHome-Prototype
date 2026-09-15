@@ -41,6 +41,13 @@ export const contactsService = {
     saveDemoData(data)
   },
 
+  async deleteContact(id: string): Promise<void> {
+    const data = readDemoData()
+    requireOwnContact(data, id, true)
+    data.contacts = data.contacts.filter((contact) => contact.id !== id)
+    saveDemoData(data)
+  },
+
   async createVehicle(contactId: string, input: ContactVehicleInput): Promise<void> {
     const data = readDemoData()
     const contact = requireOwnContact(data, contactId, true)
@@ -54,6 +61,14 @@ export const contactsService = {
     const vehicle = contact.vehicles.find((item) => item.id === id)
     if (!vehicle) throw new Error('No se encontró ese vehículo en el contacto.')
     Object.assign(vehicle, contactVehicleFields(contact, input, id))
+    saveDemoData(data)
+  },
+
+  async deleteVehicle(contactId: string, id: string): Promise<void> {
+    const data = readDemoData()
+    const contact = requireOwnContact(data, contactId, true)
+    if (!contact.vehicles.some((vehicle) => vehicle.id === id)) throw new Error('No se encontró ese vehículo en el contacto.')
+    contact.vehicles = contact.vehicles.filter((vehicle) => vehicle.id !== id)
     saveDemoData(data)
   },
 }

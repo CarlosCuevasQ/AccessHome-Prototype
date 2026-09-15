@@ -39,4 +39,12 @@ export const householdService = {
     Object.assign(vehicle, vehicleFields(data, residence, input, id))
     saveDemoData(data)
   },
+
+  async deleteVehicle(residenceId: string, id: string): Promise<void> {
+    const data = readDemoData()
+    requireHouseholdManager(data, residenceId)
+    if (!data.vehicles.some((vehicle) => vehicle.id === id && vehicle.residenceId === residenceId)) throw new Error('No se encontró ese vehículo en la casa.')
+    data.vehicles = data.vehicles.filter((vehicle) => vehicle.id !== id)
+    saveDemoData(data)
+  },
 }

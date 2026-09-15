@@ -6,6 +6,11 @@
 .page-heading > div { flex: 1; min-width: 0; }
 .page-heading .lead { margin-bottom: 0; }
 .community-section { margin: 32px 0; }
+.delete-action { margin-top: 16px; min-width: 0; }
+.delete-button { color: #922b32; border-color: #c69b9f; }
+.delete-confirmation { max-width: 560px; padding: 16px; margin-top: 12px; border: 1px solid var(--border); border-left: 3px solid var(--accent); background: white; border-radius: 4px; overflow-wrap: anywhere; }
+.delete-confirmation .form-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.delete-confirmation button { min-height: 48px; }
 .principal-section { border-block: 1px solid var(--border); padding: 24px 0; margin-top: 24px; }
 .principal-section .section-heading { margin-bottom: 8px; }
 .principal-section p { margin-bottom: 0; }

@@ -1,5 +1,22 @@
 # Estado del prototipo AccessHome
 
+## Ajuste vigente · Eliminación de contactos y vehículos
+
+- [x] Eliminar un contacto propio y sus vehículos asociados.
+- [x] Eliminar un vehículo de un contacto sin eliminar el contacto ni sus otros vehículos.
+- [x] Eliminar un vehículo permanente de la propia casa sin afectar habitantes, casa ni agenda.
+- [x] Confirmación explícita con descripción del registro, Cancelar y errores de guardado visibles.
+- [x] Permisos revalidados en servicios: propietario/principal, pertenencia y residencia activa.
+- [x] Cambios persistentes; resumen y listados se actualizan mediante las notificaciones existentes.
+- [x] 51 pruebas automatizadas correctas, build correcto y revisión de confirmaciones/cancelación a 375 px.
+- [x] README y guía acumulativa actualizados. Sin cambios de esquema, dependencias, commit ni push.
+
+El borrado es definitivo. Continúa la desactivación reversible como alternativa. No se añadió eliminación de casas ni habitantes. Las confirmaciones se revisaron en el navegador sin borrar registros guardados; las eliminaciones se ejecutaron en pruebas automatizadas con almacenamiento aislado.
+
+Archivos principales: `src/components/DeleteAction.tsx`, `src/services/contactsService.ts`, `src/services/householdService.ts`, `src/components/contacts/ContactDetail.tsx`, `src/components/community/HouseholdDetail.tsx`, `ResidenceContent.tsx`, `src/pages/ContactsPage.tsx`, estilos de comunidad/contactos y `tests/deletion.test.mjs`.
+
+Commit sugerido: `feat: permitir eliminar contactos y vehículos propios`.
+
 ## Etapa 4 · Contactos frecuentes (vigente)
 
 - [x] Agenda privada vinculada al residente propietario, independiente de la residencia y de sus habitantes.
@@ -164,7 +181,7 @@ Una integración de producción con API queda fuera del prototipo y requiere una
 - La sesión y los datos demo se guardan en `accesshome.demo.v1`; no hay backend ni cuentas reales.
 - Las contraseñas demo están en la semilla local. No se devuelven en los objetos de sesión.
 - Creación de invitaciones, accesos y reportes siguen pendientes. Contactos frecuentes está implementado.
-- Las bajas son desactivaciones reversibles. No hay eliminación física, traslado entre casas ni cambio de contraseñas. Las cuentas adicionales consultan su casa; solo el principal de una casa activa puede gestionarla.
+- Contactos y vehículos admiten eliminación definitiva o desactivación reversible. Los habitantes solo se desactivan. No hay traslado entre casas ni cambio de contraseñas. Las cuentas adicionales consultan su casa; solo el principal de una casa activa puede gestionarla.
 - La migración conserva Casa 25 y otros registros anteriores; restaurar recupera exactamente las cuatro casas de la nueva semilla.
 - La sesión no tiene vencimiento automático y se comparte entre pestañas del mismo origen.
 - La secuencia de fases futuras puede ajustarse sin omitir los requisitos del objetivo final.

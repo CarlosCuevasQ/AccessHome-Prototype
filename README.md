@@ -95,6 +95,18 @@ Los vehículos del contacto se guardan dentro del contacto, separados de `vehicl
 
 La verificación dejó un contacto adicional de Daniel: **Laura Sánchez Ruiz**, teléfono ficticio `3312345099`, con `LRS-9001` (Mazda 3 azul, inactivo) y `LRS-9002` (Honda Civic, activo). El contacto quedó activo. Usa otros nombres/placas si repites pruebas; no hace falta restaurar.
 
+## Eliminar contactos y vehículos
+
+Con la cuenta de Daniel (`residente@accesshome.demo` / `Access123`):
+
+- **Contacto:** Contactos frecuentes → Ver → Eliminar contacto. La confirmación indica que también se eliminarán todos sus vehículos. Al confirmar, vuelve al listado.
+- **Vehículo de contacto:** abrir el contacto → Eliminar vehículo junto a sus placas → Confirmar eliminación.
+- **Vehículo permanente:** Mi residencia → Ver detalle del vehículo → Eliminar vehículo → Confirmar eliminación.
+
+Cancelar conserva los datos. La eliminación es definitiva en los datos locales y se mantiene al recargar; desactivar/reactivar sigue disponible como alternativa. Eliminar un vehículo no elimina al contacto, la casa ni sus habitantes. Se mantienen los permisos: solo el principal de una casa activa puede borrar vehículos de esa casa y únicamente contactos/vehículos de su propia agenda. El administrador continúa en consulta para estos registros.
+
+Las pruebas automatizadas utilizan datos aislados para verificar borrado, permisos, persistencia y fallos de escritura. En el navegador se comprobaron confirmaciones y cancelación sin eliminar los registros existentes.
+
 ## Prueba rápida de comunidad
 
 1. Entra como administrador, abre **Residencias → Agregar residencia** y crea Casa `91`, calle `Circuito Cedros`.
@@ -139,7 +151,7 @@ src/
 
 ## Verificación y documentación
 
-`npm test` ejecuta **45 pruebas** con TypeScript y el ejecutor nativo de Node: autenticación, permisos de lectura/escritura, asignación y revocación del principal, desactivación, duplicados, privacidad de contactos, separación de vehículos, migraciones, restauración y errores de almacenamiento. Build y recorridos de navegador comprobados; guía acumulativa con casos manuales y alcance de la revisión.
+`npm test` ejecuta **51 pruebas** con TypeScript y el ejecutor nativo de Node: autenticación, permisos de lectura/escritura, asignación y revocación del principal, desactivación, duplicados, privacidad de contactos, separación de vehículos, migraciones, restauración y errores de almacenamiento. Build y recorridos de navegador comprobados; guía acumulativa con casos manuales y alcance de la revisión.
 
 - [Estado y checklist de fases](docs/PROTOTYPE_STATUS.md)
 - [Guía acumulativa de pruebas](docs/PROTOTYPE_TESTING.md)
