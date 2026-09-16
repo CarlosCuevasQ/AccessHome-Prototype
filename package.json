@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "tsc -p tests/tsconfig.json && node --test tests/auth.test.mjs tests/community.test.mjs tests/migration.test.mjs tests/contacts.test.mjs tests/deletion.test.mjs"
+    "test": "tsc -p tests/tsconfig.json && node --test tests/*.test.mjs"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

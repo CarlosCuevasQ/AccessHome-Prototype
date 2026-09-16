@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { communityService } from '../services/communityService'
 
-export function useCommunityQuery<T>(fetchData: () => Promise<T>) {
+export function useCommunityQuery<T>(fetchData: () => Promise<T>, refreshMs = 0) {
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -23,9 +23,10 @@ export function useCommunityQuery<T>(fetchData: () => Promise<T>) {
       }
     }
     const unsubscribe = communityService.subscribe(() => { void refresh() })
+    const timer = refreshMs > 0 ? window.setInterval(() => { void refresh() }, refreshMs) : undefined
     void refresh()
-    return () => { active = false; unsubscribe() }
-  }, [fetchData])
+    return () => { active = false; unsubscribe(); window.clearInterval(timer) }
+  }, [fetchData, refreshMs])
 
   return { data, error, loading }
 }

@@ -1,6 +1,31 @@
 # Estado del prototipo AccessHome
 
-## Ajuste vigente · Eliminación de contactos y vehículos
+## Etapa 5 · Invitaciones (vigente)
+
+- [x] Dos flujos: contacto frecuente con vehículo guardado/ninguno/otro y visitante ocasional.
+- [x] Guardado opcional como contacto desmarcado, sin exigir cuenta ni datos extra.
+- [x] Hoy, 24 horas y rango personalizado, con validación de fechas y captura en hora local.
+- [x] Destino e invitador definidos desde sesión; token único y usos iniciales 0 de 2.
+- [x] Snapshot de visitante, teléfono y vehículo; historial conservado tras editar/eliminar contactos.
+- [x] Listado compacto, búsqueda, filtros de cuatro estados, detalle y cancelación confirmada de activas.
+- [x] Datos principales inmutables; espacio informativo para QR sin implementarlo.
+- [x] Servicios validan residencia, principal, estado y pertenencia del contacto/vehículo.
+- [x] Consulta de la propia casa para cuentas adicionales; gestión exclusiva del principal activo.
+- [x] Esquema 5: migración desde v4 conserva todos sus datos y añade invitaciones vacías. Reset actualizado.
+- [x] 69 pruebas automatizadas correctas; build de TypeScript/Vite correcto.
+- [x] Documentación acumulativa con los ocho recorridos solicitados y casos adicionales.
+
+El estado Completada ya se reconoce al alcanzar los usos máximos; aún no hay interfaz para consumirlos. El QR, enlace público y simulador de accesos siguen pendientes. No se instalaron dependencias ni se realizaron commits/push.
+
+Navegador: probados contacto con vehículo activo, contacto sin vehículo, otro vehículo, ocasional, guardado opcional, fechas personalizadas, cancelación, búsqueda/filtro y persistencia. Snapshot conservado tras cambiar nombre y vehículo del contacto de prueba; acceso ajeno rechazado y cuenta adicional en consulta. Se corrigió y verificó la captura inmediata de fecha/hora. Se conservaron datos anteriores y registros de prueba; detalle en la guía acumulativa.
+
+Expiración automática observada sin recargar, con cancelación bloqueada y filtro correcto. Revisión responsive a 375, 768 y 1366 px sin desbordamientos; consola sin errores/advertencias. Build final correcto. Servidor de desarrollo disponible en http://127.0.0.1:5173.
+
+Archivos principales: `src/types/invitations.ts`, `src/services/invitationsService.ts`, `invitationRules.ts`, `invitationSnapshot.ts`, `invitationValidation.ts`, migración/validación/semilla, `src/components/invitations/`, `src/pages/InvitationsPage.tsx`, `NewInvitationPage.tsx`, `InvitationPage.tsx`, router/navegación, `src/styles/invitations.css`, `src/utils/dates.ts`, `tests/invitations.test.mjs` y documentación.
+
+Commit sugerido: `feat: implementar invitaciones con snapshots y permisos por residencia`.
+
+## Ajuste conservado · Eliminación de contactos y vehículos
 
 - [x] Eliminar un contacto propio y sus vehículos asociados.
 - [x] Eliminar un vehículo de un contacto sin eliminar el contacto ni sus otros vehículos.
@@ -17,7 +42,9 @@ Archivos principales: `src/components/DeleteAction.tsx`, `src/services/contactsS
 
 Commit sugerido: `feat: permitir eliminar contactos y vehículos propios`.
 
-## Etapa 4 · Contactos frecuentes (vigente)
+## Etapa 4 · Contactos frecuentes (conservada)
+
+El botón Invitar descrito en el registro de esta etapa fue sustituido por el flujo funcional de la etapa 5.
 
 - [x] Agenda privada vinculada al residente propietario, independiente de la residencia y de sus habitantes.
 - [x] Solo el principal consulta o modifica su agenda; validación en cada operación del servicio.
@@ -134,7 +161,7 @@ Mensaje de commit sugerido (sin ejecutarlo): `feat: gestionar condominio, reside
 
 ## Etapa 1 · Infraestructura del frontend (histórico)
 
-La entrega vigente es la etapa 4. Los resultados siguientes conservan el historial de la infraestructura inicial.
+La entrega vigente es la etapa 5. Los resultados siguientes conservan el historial de la infraestructura inicial.
 
 - [x] React, Vite y TypeScript con comprobación estricta.
 - [x] Router principal con redirección inicial.
@@ -152,7 +179,7 @@ La entrega vigente es la etapa 4. Los resultados siguientes conservan el histori
 
 ## Fases previstas
 
-El objetivo general actualizado define las funciones finales. Esta división organiza su implementación; se debe detener el trabajo al terminar cada etapa y esperar la indicación de continuar. Las fases 1, 2, 3 y 4 están implementadas.
+El objetivo general actualizado define las funciones finales. Esta división organiza su implementación; se debe detener el trabajo al terminar cada etapa y esperar la indicación de continuar. Las fases 1 a 5 están implementadas; QR/enlace público se separa como siguiente entrega pendiente.
 
 - [x] **Fase 1 — Infraestructura:** implementación y verificación completadas.
 - [x] **Fase 2 — Datos, servicios y perfiles:** modelos tipados, datos demo, sesión simulada por rol y localStorage encapsulado en servicios sustituibles por API.
@@ -161,12 +188,13 @@ El objetivo general actualizado define las funciones finales. Esta división org
 - [x] **Fase 3 — Comunidad y permisos:** el administrador gestiona estructura, estado y principal de cada casa; el principal administra habitantes y vehículos propios. Consulta administrativa y restricciones en servicios verificadas.
 - [x] **Fase 4 — Contactos frecuentes:** agenda privada del principal, alta, búsqueda, detalle, edición y desactivación/reactivación de contactos y sus vehículos.
   - [x] Nombre obligatorio, teléfono/correo/notas opcionales y varios vehículos con placas obligatorias y marca/modelo/color opcionales.
-  - [x] Un contacto guardado no concede autorización permanente de entrada; Invitar abre una pantalla preparada sin crear invitaciones.
-- [ ] **Fase 5 — Invitaciones:** creación desde contacto o para visitante ocasional sin guardar contacto.
-  - [ ] Visitante ocasional: nombre, vehículo sí/no y placas cuando corresponda; demás datos opcionales.
-  - [ ] Residente, residencia destino, copia de datos del visitante/vehículo, vigencia, usos permitidos/utilizados, estado y token único simulado.
-  - [ ] Editar un contacto no modifica invitaciones históricas.
-  - [ ] Consulta de invitaciones, QR y enlace público con destino, vigencia, vehículo y estado; visitante sin cuenta ni instalación.
+  - [x] Un contacto guardado no concede autorización permanente de entrada; Invitar abre el formulario de visita.
+- [x] **Fase 5 — Invitaciones:** creación desde contacto o para visitante ocasional sin guardar contacto.
+  - [x] Visitante ocasional: nombre, vehículo sí/no y placas cuando corresponda; demás datos opcionales.
+  - [x] Residente, residencia destino, copia de visitante/vehículo, vigencia, usos, estado y token único simulado.
+  - [x] Editar o eliminar un contacto no modifica invitaciones históricas.
+  - [x] Consulta, búsqueda, estados, cancelación y confirmación responsive.
+- [ ] **Fase 5B — QR y visitante:** QR y enlace público con destino, vigencia, vehículo y estado; visitante sin cuenta ni instalación.
 - [ ] **Fase 6 — Accesos:** simulador del administrador que valida QR/token, registra entrada, registra salida y completa la invitación según sus usos.
   - [ ] Historial consultable por administrador y residente con validaciones de vigencia, estado y usos.
 - [ ] **Fase 7 — Reportes:** residente crea y consulta reportes; administrador los consulta y cambia su estado.
@@ -180,7 +208,7 @@ Una integración de producción con API queda fuera del prototipo y requiere una
 - Las rutas están protegidas en el frontend; es una simulación que no ofrece seguridad frente a la manipulación del navegador o del código.
 - La sesión y los datos demo se guardan en `accesshome.demo.v1`; no hay backend ni cuentas reales.
 - Las contraseñas demo están en la semilla local. No se devuelven en los objetos de sesión.
-- Creación de invitaciones, accesos y reportes siguen pendientes. Contactos frecuentes está implementado.
+- Invitaciones implementadas. QR/enlace público, consumo de usos, accesos y reportes pendientes.
 - Contactos y vehículos admiten eliminación definitiva o desactivación reversible. Los habitantes solo se desactivan. No hay traslado entre casas ni cambio de contraseñas. Las cuentas adicionales consultan su casa; solo el principal de una casa activa puede gestionarla.
 - La migración conserva Casa 25 y otros registros anteriores; restaurar recupera exactamente las cuatro casas de la nueva semilla.
 - La sesión no tiene vencimiento automático y se comparte entre pestañas del mismo origen.

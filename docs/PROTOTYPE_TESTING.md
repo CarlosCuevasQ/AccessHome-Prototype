@@ -9,7 +9,79 @@ Esta guía se amplía en cada etapa. Al incorporar funciones nuevas, repetir tam
 3. Ejecutar `npm run dev` y mantener esa terminal abierta.
 4. Abrir http://127.0.0.1:5173.
 
-## Eliminación de contactos y vehículos · Pruebas vigentes
+## Etapa 5 · Invitaciones (vigente)
+
+### Preparación y datos
+
+- Daniel / Casa 24: `residente@accesshome.demo` / `Access123`.
+- Ana / Casa 12: `ana@accesshome.demo` / `Access123`, para comprobar aislamiento.
+- Mariana / Casa 24: `mariana@accesshome.demo` / `Access123`, consulta sin gestión.
+- Semilla: Carlos López, teléfono 3312345678, Mazda 3 / JKL-1234; María González sin vehículo; Pedro Ramírez, Nissan Versa / HJK-7821.
+- Visitante ocasional de prueba: Lucía Pérez; vehículo solo placas `VIS-9001`. Otro vehículo: Toyota Tacoma / `VIS-9002`.
+- Las invitaciones empiezan vacías. La migración respeta contactos y vehículos previamente eliminados. Si falta Carlos, puedes crear un contacto ficticio equivalente o usar otro. No es necesario reiniciar el navegador.
+
+### Ocho recorridos solicitados
+
+| ID | Pasos | Resultado esperado |
+| --- | --- | --- |
+| I5-01 | Daniel → Contactos frecuentes → Carlos López → Invitar. Mantener Mazda 3 · JKL-1234 y Hoy → Generar invitación. | Nombre/teléfono precargados; destino Casa 24 fijo; confirmación con Mazda 3, placas, token, estado Activa y 0 de 2 usos. Hoy vence a la próxima medianoche local. |
+| I5-02 | Invitar a Carlos seleccionando Sin vehículo. Repetir con María, que no tiene vehículo. | Invitaciones válidas sin campos de placas ni vehículo; el detalle indica Sin vehículo. |
+| I5-03 | Invitaciones → Nuevo visitante → Lucía Pérez. Dejar teléfono vacío, elegir Sí, en vehículo; completar solo VIS-9001. Dejar Guardar como contacto frecuente desmarcado; seleccionar 24 horas y generar. | No exige marca/modelo/color; la agenda y los vehículos permanentes no cambian. Vigencia exacta de 24 horas, Casa 24 automática. |
+| I5-04 | Carlos → Invitar → Otro vehículo → VIS-9002, Toyota, Tacoma → Generar. | La invitación conserva el nuevo vehículo. Carlos sigue teniendo su Mazda en la agenda; no se registra un vehículo permanente. |
+| I5-05 | Nuevo visitante → Personalizada → seleccionar inicio mañana a las 10:00 y fin mañana a las 12:00. Alternar 24 horas y Personalizada; generar. | Conserva fechas elegidas; detalle muestra ese intervalo y aviso de inicio programado. Fin igual/anterior al inicio, fecha inválida o fin pasado se rechazan. |
+| I5-06 | Abrir una activa → Cancelar invitación → Mantener invitación. Repetir y Confirmar cancelación. | Primero conserva Activa; después muestra Cancelada, mantiene el historial y oculta la acción. Aparece en filtro Cancelada; recarga conserva el estado. |
+| I5-07 | Crear un contacto de prueba con Mazda 3 / SNP-9001 y generar invitación. Editar nombre, teléfono y vehículo a Toyota Tacoma / SNP-9999. Volver a la URL de la invitación y recargar. | Conserva nombre, teléfono y Mazda 3 / SNP-9001 originales. Eliminar el vehículo/contacto de prueba tampoco invalida la invitación histórica. |
+| I5-08 | Con Daniel intentar enviar otra residencia al servicio (ejemplo inferior). Copiar URL de una invitación de Casa 24, entrar como Ana y abrirla. | Servicio rechaza generar para Casa 12, sin escribir. Ana no ve el detalle ni puede cancelarlo; su listado solo contiene invitaciones de Casa 12. |
+
+### Casos adicionales y regresión
+
+| ID | Pasos | Resultado esperado |
+| --- | --- | --- |
+| I5-09 | Crear ocasional marcando Guardar como contacto frecuente, con y sin vehículo. | Crea contacto privado y vehículo opcional junto con la invitación, sin cuenta funcional ni vehículo permanente. |
+| I5-10 | Buscar por nombre sin acentos, teléfono y placas. Combinar con cada filtro; buscar un texto inexistente. | Resultados correctos y estado vacío claro. Los cuatro filtros están disponibles. |
+| I5-11 | Crear personalizada que finalice dentro de dos minutos y mantener abierto el detalle hasta su fin. | Cambia a Expirada sin recargar; no puede cancelarse. El filtro Expirada la muestra. |
+| I5-12 | Mariana entra en Invitaciones de Casa 24 e intenta abrir directamente `/residente/invitaciones/nueva`. | Consulta permitida; no hay acciones de crear/cancelar; la ruta de creación explica la restricción. |
+| I5-13 | Desactivar Casa 24 desde administrador en datos de prueba; volver como Daniel. Reasignar principal en otra prueba. | Casa inactiva mantiene consulta y bloquea crear/cancelar; el principal anterior pierde gestión al ser reemplazado. Reactivar/restablecer asignación al terminar. |
+| I5-14 | Contacto o vehículo inactivo, IDs ajenos, usuario anónimo, intento de modificar invitador/usos/estado al crear. | Validaciones del servicio impiden eludir permisos y valores iniciales; no se crean datos parciales. |
+| I5-15 | Crear y recargar; cerrar sesión y volver a entrar; abrir segunda pestaña del mismo origen. | Historial y sesión conservados; los cambios se notifican entre pestañas. Login y navegación anteriores siguen funcionando. |
+| I5-16 | A 375 px: abrir menú, Invitar, elegir vehículo, vigencia, generar, consultar y cancelar. Probar fechas con teclado. Repetir listado a 768 y 1366 px. | Formularios de una columna, acciones de 48 px, texto legible y sin desbordamiento horizontal. Foco de confirmación en Mantener invitación. |
+| I5-17 | Probar fallo de escritura en entorno aislado al generar con contacto opcional y al cancelar. | Error visible, sin éxito ni guardado parcial. Datos previos conservados. Cubierto automáticamente. |
+| I5-18 | Migrar datos v4 editados o restaurar demo en un perfil destinado a pruebas. | Migración conserva datos/sesión/bajas y añade invitaciones vacías una sola vez. Restauración recupera semilla, vacía invitaciones y cierra sesión. |
+
+**Completadas:** se derivan de `usedUses >= maxUses`. No hay interfaz para consumir usos en esta etapa; `npm test` utiliza una invitación aislada con 2 de 2 usos para verificar filtro/estado y bloqueo de cancelación. QR, validación de entrada/salida y enlace público quedan pendientes.
+
+### Verificación directa del servicio
+
+En desarrollo, con Daniel autenticado, ejecutar en la consola del navegador:
+
+```js
+const { invitationsService } = await import('/src/services/invitationsService.ts')
+await invitationsService.createInvitation({
+  source: 'occasional', visitorName: 'Prueba de permisos', phone: '',
+  vehicle: null, saveAsContact: false, validity: { kind: '24hours' },
+  residenceId: 'house-12',
+})
+```
+
+Debe rechazar con **No puedes generar invitaciones para otra residencia** y no añadir registros. El contrato TypeScript excluye `residenceId`; esta llamada JavaScript comprueba la defensa contra un dato manipulado. La residencia siempre se obtiene de la sesión. Para acceso por ID, usar `getInvitation(id)` o `cancelInvitation(id)` con el ID de una invitación de otra casa; ambos deben rechazar.
+
+### Verificación automatizada
+
+`npm test`: **69/69** pruebas correctas, incluidas 18 de invitaciones. Cubren los dos flujos, snapshots tras edición/eliminación, vigencias y estados, tokens, permisos por rol/casa/contacto/vehículo, cambios de principal, guardado opcional atómico, búsqueda, migración v4, corrupción de datos, fallos de guardado y reset. Se conservan las 51 pruebas de autenticación, comunidad, agenda y eliminación. `npm run build` comprueba TypeScript y genera el sitio sin dependencias nuevas.
+
+### Recorridos verificados en navegador · 15 de septiembre de 2026
+
+- Login de Daniel, navegación a agenda e invitaciones, creación, cancelación con confirmación, búsqueda combinada con estado y persistencia tras recarga.
+- Contacto existente Laura Sánchez Ruiz: solo se ofreció su Honda Civic activo LRS-9002; el vehículo inactivo quedó fuera del selector. Su invitación de prueba quedó Cancelada. Carlos ya había sido eliminado del navegador: se respetó esa baja y su caso específico se comprobó con la semilla aislada de `npm test`.
+- María González invitada sin vehículo; Pedro Ramírez invitado con otro vehículo, solo placas VIS-9002 y vigencia de 24 horas.
+- Ocasional “Prueba fechas” sin vehículo, con inicio 16/09/2026 10:00 y fin 12:00; intervalo y aviso de visita programada correctos. Se corrigió la captura de `datetime-local` para conservar inmediatamente las fechas editadas y se verificó al alternar vigencias y generar.
+- Ocasional “Prueba snapshot” guardado voluntariamente como contacto, Mazda 3 / SNP-9001. Después se cambió el contacto a “Prueba snapshot editada”, Toyota Tacoma / SNP-9999. La invitación siguió mostrando el nombre y Mazda originales.
+- Ana no pudo consultar esa invitación de Casa 24. Mariana pudo listar invitaciones de su propia casa y la ruta de creación rechazó su condición de habitante adicional.
+- Formulario personalizado y confirmación de cancelación revisados a 375 × 812; contenido sin desbordamiento horizontal. Foco inicial en Mantener invitación. Sin errores/advertencias de consola en la comprobación final.
+- “Prueba expiración” pasó de Activa a Expirada al llegar al fin, sin recargar; desapareció Cancelar invitación y se encontró usando el filtro Expirada. Listado revisado a 375 × 812, 768 × 1024 y 1366 × 1000 sin desbordamiento horizontal. Build final correcto después de corregir las fechas.
+- Los datos anteriores no se restauraron ni eliminaron. Se conservaron las invitaciones y el contacto de prueba. La primera invitación ocasional “Lucía Pérez · Prueba visita”, usada durante la corrección de fechas, quedó Cancelada.
+
+## Eliminación de contactos y vehículos · Pruebas conservadas
 
 Cuenta: Daniel, `residente@accesshome.demo` / `Access123`. Para probar el borrado usa registros creados específicamente para la prueba: contacto **Prueba eliminación**, vehículos de contacto **BOR-1001** y **BOR-1002**, vehículo de residencia **BOR-2001** (Honda, Civic, Gris). Los registros se eliminan definitivamente al confirmar.
 
@@ -28,7 +100,9 @@ Las funciones son `contactsService.deleteContact(id)`, `contactsService.deleteVe
 
 Resultados: `npm test` **51/51** pruebas correctas, incluidas seis nuevas pruebas de eliminación con almacenamiento aislado. Cubren cascada del contacto, conservación de registros no afectados, contadores, permisos, IDs cruzados, residencia inactiva, revocación de principal, fallos de escritura y restauración demo. Build correcto. En navegador se verificaron las tres confirmaciones y Cancelar; revisión móvil a 375 × 812 sin desbordamiento. No se borraron los registros existentes del navegador durante esta verificación.
 
-## Etapa 4 · Contactos frecuentes (vigente)
+## Etapa 4 · Contactos frecuentes (conservada)
+
+El recorrido de Invitar de esta sección es histórico: la pantalla preparada fue sustituida por I5-01 a I5-18.
 
 ### Preparación y datos
 

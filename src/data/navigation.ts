@@ -11,6 +11,6 @@ export const workspaces: Record<WorkspaceRole, WorkspaceConfig> = {
     label: 'Residente',
     title: 'Espacio del residente',
     description: 'Consulta tus datos de acceso y la residencia a la que perteneces.',
-    navigation: [{ label: 'Mi residencia', path: '/residente' }, { label: 'Contactos frecuentes', path: '/residente/contactos', end: false }, { label: 'Mi perfil', path: '/residente/perfil' }],
+    navigation: [{ label: 'Mi residencia', path: '/residente' }, { label: 'Contactos frecuentes', path: '/residente/contactos', end: false }, { label: 'Invitaciones', path: '/residente/invitaciones', end: false }, { label: 'Mi perfil', path: '/residente/perfil' }],
   },
 }

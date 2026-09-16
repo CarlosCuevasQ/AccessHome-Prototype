@@ -1,0 +1,39 @@
+.invitations-page { max-width: 980px; }
+.invitations-page .editor-form { max-width: 640px; }
+.invitations-page .form-grid { grid-template-columns: minmax(0, 1fr); }
+.invitations-page .secondary-button { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.invitations-page .button-link, .invitations-page .secondary-button { min-height: 48px; }
+.invitations-page button:disabled { opacity: 0.6; cursor: not-allowed; }
+.invitation-destination { padding: 12px 0; border-block: 1px solid var(--border); color: var(--primary); }
+.invitation-visitor p { margin: 8px 0 0; }
+.editor-form .invitation-fieldset { padding-top: 12px; }
+.invitation-fieldset legend { color: var(--primary); font-weight: 600; }
+.choice-label { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 12px; border: 1px solid var(--border); border-radius: 4px; background: white; cursor: pointer; overflow-wrap: anywhere; }
+.choice-label:has(input:checked) { border-color: var(--action); background: var(--light-blue); }
+.choice-label input { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--action); margin: 0; }
+.vehicle-options, .visit-vehicle-fields, .custom-validity { display: grid; gap: 12px; }
+.visit-vehicle-fields, .custom-validity { margin-top: 20px; }
+.validity-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.form-grid .save-contact-option { font-weight: 400; }
+.invitation-filters { display: grid; grid-template-columns: minmax(0, 2fr) minmax(160px, 1fr); gap: 16px; margin: 28px 0 20px; }
+.invitation-list { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--border); }
+.invitation-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 0; border-bottom: 1px solid var(--border); }
+.invitation-row > a { flex-shrink: 0; }
+.invitation-summary { min-width: 0; overflow-wrap: anywhere; }
+.invitation-summary h2 { font-size: 1.05rem; margin-bottom: 8px; }
+.invitation-summary p { color: var(--muted); font-size: 0.9rem; margin: 8px 0 0; }
+.invitation-status { display: inline-block; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; color: var(--muted); background: #eef0f2; }
+.invitation-status-activa { color: var(--primary); background: var(--light-blue); }
+.invitation-status-completada { color: var(--primary); background: var(--light-yellow); }
+.qr-placeholder { margin: 28px 0; padding: 20px 0; border-block: 1px solid var(--border); }
+.qr-placeholder p { margin: 10px 0 0; color: var(--muted); }
+.cancel-invitation { margin-bottom: 20px; }
+.invitation-contact-link a { display: inline-flex; align-items: center; min-height: 44px; }
+@media (max-width: 600px) {
+  .invitation-filters, .validity-options { grid-template-columns: minmax(0, 1fr); }
+  .invitation-row { align-items: stretch; flex-direction: column; gap: 16px; }
+  .invitations-page .page-heading > .button-link { width: 100%; }
+  .invitations-page .form-actions { display: flex; flex-direction: column; align-items: stretch; }
+  .invitations-page .form-actions button { width: 100%; }
+  .custom-validity input { min-width: 0; }
+}

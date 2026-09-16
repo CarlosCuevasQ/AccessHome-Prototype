@@ -5,7 +5,8 @@ import { createDemoContacts } from './contacts.js'
 export const DEMO_PASSWORD = 'Access123'
 
 const initialData: DemoDatabase = {
-  version: 4,
+  version: 5,
+  invitations: [],
   contacts: createDemoContacts(),
   users: [
     { id: 'user-admin', name: 'Administrador Demo', email: 'admin@accesshome.demo', password: DEMO_PASSWORD, role: 'admin', condominiumId: 'condo-encinos', residenceId: null },

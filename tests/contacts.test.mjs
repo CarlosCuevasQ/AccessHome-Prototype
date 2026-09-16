@@ -163,7 +163,7 @@ test('migración v3 añade agenda una vez y preserva comunidad, principal y sesi
   assert.equal((await contacts.listContacts()).length, 3)
   const migrated = read()
   for (const key of ['users', 'residences', 'inhabitants', 'vehicles', 'session']) assert.deepEqual(migrated[key], old[key])
-  assert.equal(migrated.version, 4)
+  assert.equal(migrated.version, 5)
   await contacts.updateContact('contact-carlos', { ...input, name: 'Nombre editado' })
   assert.equal((await contacts.getContact('contact-carlos')).name, 'Nombre editado')
   assert.equal((await contacts.listContacts()).length, 3)

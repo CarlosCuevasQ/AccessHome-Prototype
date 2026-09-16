@@ -7,9 +7,10 @@ interface EditorFormProps {
   save: () => Promise<unknown>
   onSaved: () => void
   onCancel: () => void
+  submitLabel?: string
 }
 
-export function EditorForm({ title, children, save, onSaved, onCancel }: EditorFormProps) {
+export function EditorForm({ title, children, save, onSaved, onCancel, submitLabel = 'Guardar' }: EditorFormProps) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const formRef = useRef<HTMLFormElement>(null)
@@ -32,7 +33,7 @@ export function EditorForm({ title, children, save, onSaved, onCancel }: EditorF
         <div className="form-grid">{children}</div>
         {error && <p className="form-error" role="alert">{error}</p>}
         <div className="form-actions">
-          <button className="button-link" type="submit">{saving ? 'Guardando…' : 'Guardar'}</button>
+          <button className="button-link" type="submit">{saving ? 'Guardando…' : submitLabel}</button>
           <button className="secondary-button" type="button" onClick={onCancel}>Cancelar</button>
         </div>
       </fieldset>

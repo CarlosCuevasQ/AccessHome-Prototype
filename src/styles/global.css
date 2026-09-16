@@ -3,6 +3,7 @@
 @import './auth.css';
 @import './community.css';
 @import './contacts.css';
+@import './invitations.css';
 
 :root {
   font-family: 'Segoe UI', Arial, sans-serif;

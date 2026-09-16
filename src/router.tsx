@@ -12,6 +12,9 @@ import { ResidencePage } from './pages/ResidencePage'
 import { ContactsPage } from './pages/ContactsPage'
 import { ContactPage } from './pages/ContactPage'
 import { PrincipalRoute } from './components/PrincipalRoute'
+import { InvitationsPage } from './pages/InvitationsPage'
+import { InvitationPage } from './pages/InvitationPage'
+import { NewInvitationPage } from './pages/NewInvitationPage'
 
 export const router = createBrowserRouter([
   {
@@ -47,8 +50,11 @@ export const router = createBrowserRouter([
           { element: <PrincipalRoute />, children: [
             { path: 'contactos', element: <ContactsPage /> },
             { path: 'contactos/:contactId', element: <ContactPage /> },
-            { path: 'contactos/:contactId/invitar', element: <ContactPage invitation /> },
+            { path: 'contactos/:contactId/invitar', element: <NewInvitationPage /> },
           ] },
+          { path: 'invitaciones', element: <InvitationsPage /> },
+          { path: 'invitaciones/nueva', element: <NewInvitationPage /> },
+          { path: 'invitaciones/:invitationId', element: <InvitationPage /> },
           { path: 'perfil', element: <WorkspacePage role="resident" /> },
           { path: '*', element: <NotFoundPage homePath="/residente" /> },
         ],

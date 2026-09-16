@@ -1,5 +1,6 @@
 import type { SessionUser } from './auth.js'
 import type { FrequentContact } from './contacts.js'
+import type { Invitation } from './invitations.js'
 
 export interface DemoAccount extends SessionUser {
   password: string
@@ -45,17 +46,22 @@ export interface Vehicle {
 }
 
 export interface DemoDatabase {
-  version: 4
+  version: 5
   users: DemoAccount[]
   condominiums: Condominium[]
   residences: Residence[]
   inhabitants: Inhabitant[]
   vehicles: Vehicle[]
   contacts: FrequentContact[]
+  invitations: Invitation[]
   session: { userId: string } | null
 }
 
-export interface DemoDatabaseV3 extends Omit<DemoDatabase, 'version' | 'contacts'> {
+export interface DemoDatabaseV4 extends Omit<DemoDatabase, 'version' | 'invitations'> {
+  version: 4
+}
+
+export interface DemoDatabaseV3 extends Omit<DemoDatabaseV4, 'version' | 'contacts'> {
   version: 3
 }
 

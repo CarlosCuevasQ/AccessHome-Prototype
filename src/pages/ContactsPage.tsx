@@ -20,7 +20,7 @@ export function ContactsPage() {
     <p className="eyebrow">Residente / Agenda privada</p>
     {location.state?.contactDeleted === true && <p className="form-success" role="status">Contacto eliminado correctamente.</p>}
     <div className="page-heading"><div><h1>Contactos frecuentes</h1><p className="lead">Guarda a tus visitantes habituales y sus vehículos.</p></div>{canManage && <button className="button-link" onClick={() => setCreating(true)}>Nuevo contacto</button>}</div>
-    <p className="agenda-notice">Guardar un contacto no concede acceso permanente al condominio. Las invitaciones se habilitarán en la siguiente etapa.</p>
+    <p className="agenda-notice">Guardar un contacto no concede acceso permanente al condominio. Genera una invitación para cada visita.</p>
     {!canManage && <p className="access-notice">Tu residencia está inactiva. Puedes consultar tu agenda; solicita su reactivación para gestionarla.</p>}
     {creating && canManage && <ContactForm onSaved={(id) => navigate(`/residente/contactos/${id}`)} onCancel={() => setCreating(false)} />}
     <label className="form-field contact-search">Buscar contacto<input type="search" placeholder="Nombre, teléfono, correo o placas" value={search} onChange={(event) => setSearch(event.target.value)} /></label>

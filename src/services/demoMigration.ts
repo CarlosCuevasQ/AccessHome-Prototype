@@ -1,5 +1,5 @@
 import { createDemoData } from '../data/demo.js'
-import type { DemoDatabase, DemoDatabaseV2, DemoDatabaseV3, LegacyDemoDatabase } from '../types/demo.js'
+import type { DemoDatabase, DemoDatabaseV2, DemoDatabaseV3, DemoDatabaseV4, LegacyDemoDatabase } from '../types/demo.js'
 import { createDemoContacts } from '../data/contacts.js'
 import { inhabitantFromAccount } from '../utils/people.js'
 
@@ -66,10 +66,15 @@ function migrateVersionTwo(legacy: LegacyDemoDatabase | DemoDatabaseV2): DemoDat
   }
 }
 
-export function migrateDemoData(legacy: LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3): DemoDatabase {
+function migrateVersionThree(legacy: LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3): DemoDatabaseV4 {
   const previous = legacy.version === 3 ? structuredClone(legacy) : migrateVersionTwo(legacy)
   return {
     ...previous, version: 4,
     contacts: createDemoContacts().filter((contact) => previous.users.some((user) => user.id === contact.ownerUserId && user.role === 'resident')),
   }
+}
+
+export function migrateDemoData(legacy: LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3 | DemoDatabaseV4): DemoDatabase {
+  const previous = legacy.version === 4 ? structuredClone(legacy) : migrateVersionThree(legacy)
+  return { ...previous, version: 5, invitations: [] }
 }
