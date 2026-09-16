@@ -4,10 +4,10 @@ Prototipo funcional para una presentación universitaria sobre seguridad residen
 
 ## Estado actual
 
-Etapa 6: QR, vista pública del visitante y simulación de entrada/salida, conservando las responsabilidades de la comunidad:
+Etapa 7: historial de accesos, reportes y dashboards calculados desde los datos guardados, conservando las responsabilidades de la comunidad:
 
-- **Administrador:** gestiona la estructura y principales del condominio; consulta habitantes/vehículos y opera Control de acceso con historial de movimientos autorizados.
-- **Residente principal:** administra habitantes, vehículos y su agenda privada; genera y cancela invitaciones para su propia casa.
+- **Administrador:** gestiona la estructura y principales del condominio; consulta habitantes/vehículos, opera Control de acceso, filtra el historial y procesa reportes de su condominio.
+- **Residente principal:** administra habitantes, vehículos y su agenda privada; genera y cancela invitaciones, consulta los accesos de su casa y crea/consulta sus propios reportes.
 - **Habitante adicional:** puede existir sin cuenta. Las cuentas adicionales conservadas de etapas anteriores solo consultan su casa hasta que el administrador las designe como principal.
 - **Visitante:** abre su invitación por token sin iniciar sesión; ve su QR y puede añadir un vehículo si la invitación se creó sin él, antes de la entrada.
 
@@ -49,11 +49,17 @@ Para repetir la prueba: recarga la aplicación en el navegador donde apareció e
 | Ruta | Función |
 | --- | --- |
 | `/`, `/login` | Login; con sesión redirige al inicio del rol |
-| `/admin` | Resumen y datos básicos del condominio |
+| `/admin` | Dashboard real, actividad reciente y datos básicos del condominio |
 | `/admin/residencias` | Listado, búsqueda y alta de casas |
 | `/admin/residencias/:residenceId` | Estructura, estado, asignación del principal y consulta de habitantes/vehículos |
 | `/admin/control-acceso` | Simulador de validación por token, selector de activas e historial autorizado |
-| `/residente` | Mi residencia; gestión si el usuario es su principal y la casa está activa |
+| `/admin/historial` | Historial del condominio con búsqueda y filtros |
+| `/admin/reportes`, `/admin/reportes/:reportId` | Consulta y avance de reportes |
+| `/residente` | Dashboard de la propia residencia y acciones rápidas |
+| `/residente/mi-residencia` | Gestión si el usuario es su principal y la casa está activa |
+| `/residente/historial` | Movimientos de la propia casa y sus invitaciones |
+| `/residente/reportes`, `/residente/reportes/:reportId` | Reportes del propio autor |
+| `/residente/reportes/nuevo` | Crear reporte como principal de casa activa |
 | `/residente/contactos` | Agenda privada: listado, buscador y alta de contactos |
 | `/residente/contactos/:contactId` | Detalle y edición del contacto y sus vehículos |
 | `/residente/contactos/:contactId/invitar` | Invitación con datos del contacto y selección de vehículo |
@@ -145,6 +151,24 @@ El QR se genera localmente como SVG con [qrcode.react](https://github.com/zpao/q
 
 **Alcance del enlace público:** no requiere sesión, pero los datos siguen en localStorage. Debe abrirse en el mismo navegador/perfil/origen que creó la invitación. Otro dispositivo o navegador no comparte sus datos; `127.0.0.1` en un teléfono apunta al propio teléfono. Para presentar el flujo utiliza varias pestañas del mismo origen y el modo móvil del navegador. La futura API permitirá compartirlo entre dispositivos.
 
+## Historial, reportes y dashboards
+
+1. Entra como Daniel y usa **Inicio → Nueva invitación** para crear **Visita historial de prueba**, con vigencia **24 horas**. Copia el token.
+2. Como administrador, valida ese token dos veces en **Control de acceso**: Entrada y Salida. **Historial de accesos** muestra ambos movimientos; combina búsqueda, residencia, movimiento y fechas locales. Una tercera validación rechazada no agrega registros.
+3. Como Daniel, abre **Historial de accesos**: solo aparecen movimientos de Casa 24 y sus invitaciones. El historial conserva los datos registrados aunque después cambie el contacto o el estado de la invitación.
+4. En **Crear reporte**, escribe **Lámpara de acceso apagada**, categoría **Instalaciones** y una descripción. Autor y residencia se asignan automáticamente; comienza Pendiente. Recarga para verificar persistencia.
+5. Como administrador, abre **Reportes → Ver reporte**, pulsa **Marcar en proceso** y después **Marcar completado**. Daniel verá el avance en **Mis reportes**. No se puede saltar estados, retroceder ni modificar reportes como residente.
+
+Los servicios revalidan permisos en cada llamada. El historial se limita a la casa del residente; los reportes se limitan además al autor, incluso entre cuentas de una misma casa. Se conserva el acceso de consulta de las cuentas adicionales; crear reportes requiere ser el principal de una casa activa.
+
+**Cómo leer los indicadores:**
+
+- Administrador: todas las residencias del condominio, habitantes activos, vehículos permanentes activos e inactivos, entradas y salidas autorizadas de hoy, invitaciones con estado efectivo Activa y reportes exactamente Pendientes.
+- Residente: datos de su casa; visitas recientes cuenta entradas de los últimos siete días naturales, incluido hoy. Habitantes y vehículos incluye todos los registrados; reportes pendientes cuenta solo los del propio autor.
+- Activas incluye invitaciones programadas para una fecha futura. Los vehículos de contactos no se suman a los permanentes. Actividad reciente muestra los últimos cinco movimientos, sin limitarse a hoy.
+
+Los dashboards se actualizan tras guardar cambios y revisan la vigencia cada segundo. La semilla no inventa accesos ni reportes: comienza en cero hasta realizar esos flujos. Una base migrada conserva sus cantidades existentes. En móvil, **Nueva invitación** ocupa el primer lugar y las tablas de historial/reportes se presentan como filas compactas con etiquetas.
+
 ## Eliminar contactos y vehículos
 
 Con la cuenta de Daniel (`residente@accesshome.demo` / `Access123`):
@@ -171,7 +195,7 @@ Si un número, correo o placas ya existen, utiliza otros. Durante la verificaci�
 
 ## Persistencia y restauración
 
-Solo `services/demoStorage.ts` accede a localStorage, bajo `accesshome.demo.v1`. El esquema interno es **versión 6**. Migrar desde v5 conserva todos sus datos, tokens, usos, snapshots y sesión; añade `accessRecords: []`. Las versiones anteriores pasan por las migraciones existentes, sin reinsertar contactos eliminados de agendas ya creadas. Restaurar datos demo recupera la semilla, vacía invitaciones y movimientos, y cierra sesión.
+Solo `services/demoStorage.ts` accede a localStorage, bajo `accesshome.demo.v1`. El esquema interno es **versión 7**. Migrar desde v6 conserva todos sus datos, tokens, usos, movimientos y sesión; añade `reports: []`. Las versiones anteriores pasan por las migraciones existentes, sin reinsertar contactos eliminados de agendas ya creadas. Restaurar datos demo recupera la semilla, vacía invitaciones, movimientos y reportes, y cierra sesión.
 
 La migración desde versión 1 también conserva Casa 25 y completa los datos demo de la etapa anterior. Por eso una instalación migrada puede tener más casas y cantidades distintas de la semilla.
 
@@ -205,10 +229,10 @@ src/
 
 ## Verificación y documentación
 
-`npm test` ejecuta **99 pruebas** con TypeScript y el ejecutor nativo de Node: compatibilidad sin APIs modernas, acceso público y proyección de datos, incorporación de vehículo, entrada/salida/rechazos, registros, permisos, guardado conjunto, snapshots, migraciones y regresión de las etapas anteriores. La guía acumulativa distingue pruebas de servicios y recorridos del navegador.
+`npm test` ejecuta **115 pruebas** con TypeScript y el ejecutor nativo de Node: historial y filtros, indicadores, reportes, aislamiento por casa/autor/condominio, compatibilidad sin APIs modernas, acceso público, entrada/salida/rechazos, permisos, guardado conjunto, snapshots y migraciones. La guía acumulativa distingue pruebas de servicios y recorridos del navegador.
 
 - [Estado y checklist de fases](docs/PROTOTYPE_STATUS.md)
 - [Guía acumulativa de pruebas](docs/PROTOTYPE_TESTING.md)
 - [Contratos y reglas de servicios](src/services/README.md)
 
-Siguen pendientes reportes, consulta detallada del historial desde el residente y preparación del recorrido final. No se realizaron commits ni push.
+Queda pendiente la preparación del recorrido final de presentación. No se realizaron commits ni push.

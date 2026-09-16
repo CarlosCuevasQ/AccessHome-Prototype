@@ -1,6 +1,32 @@
 # Estado del prototipo AccessHome
 
-## Corrección vigente · Compatibilidad de IDs
+## Etapa 7 · Historial, reportes y dashboards (vigente)
+
+- [x] Historial administrativo del condominio y consulta residente limitada a su casa/invitaciones.
+- [x] Visitante, casa, anfitrión, placas, entrada/salida, fecha/hora, método y autorización; búsqueda y filtros combinables por casa, movimiento y días locales.
+- [x] Tabla de escritorio y filas con etiquetas en móvil, sin desplazamiento horizontal excesivo.
+- [x] Principal crea reportes con título, categoría y descripción; autor/casa y estado Pendiente establecidos desde la sesión.
+- [x] Consulta de reportes limitada al autor; administrador consulta y avanza Pendiente → En proceso → Completado dentro de su condominio.
+- [x] Dashboard administrador con seis indicadores reales y cinco movimientos recientes.
+- [x] Dashboard residente con indicadores de su casa, reportes propios y cinco acciones rápidas; Nueva invitación prioritaria en móvil.
+- [x] Mi residencia conserva toda su gestión en `/residente/mi-residencia`; accesos rápidos abren el formulario de habitante o vehículo.
+- [x] Esquema 7 y migración v6 que conserva sesión, comunidad, agenda, tokens, usos e historial; reportes iniciales vacíos y reset actualizado.
+- [x] Validación de permisos en servicios, fallos de escritura y regresión: 115 pruebas correctas.
+- [x] Build y documentación acumulativa. Sin nuevas dependencias, reset de datos, commit ni push.
+
+Verificación de navegador: creación y procesamiento completo de **Lámpara de acceso apagada · Prueba**; entrada/salida de **Visita historial · Prueba**; filtros combinados y persistencia; indicadores actualizados, accesos rápidos y vistas de 375 y 1366 px. Los datos de prueba quedaron guardados. La guía de pruebas detalla el recorrido y distingue verificaciones automatizadas y de navegador.
+
+Archivos principales modificados/creados:
+
+- Servicios: `accessHistoryService.ts`, `accessHistoryRules.ts`, `reportsService.ts`, `reportRules.ts`, `reportValidation.ts`, `dashboardService.ts`, `demoMigration.ts`, `demoValidation.ts` y `src/services/README.md`.
+- Modelos/semilla: `src/types/reports.ts`, `access.ts`, `demo.ts` y `src/data/demo.ts`.
+- Páginas: `AccessHistoryPage.tsx`, `ReportsPage.tsx`, `NewReportPage.tsx`, `ReportPage.tsx`, `ResidentDashboardPage.tsx`, `CondominiumPage.tsx` y `ResidencePage.tsx`.
+- Componentes/integración: `AccessHistory.tsx`, `RecentAccess.tsx`, `ReportStatusLabel.tsx`, `ResidenceContent.tsx`, router, navegación, layout público, `dashboard.css` y estilos globales.
+- Pruebas: `tests/dashboard-history.test.mjs`, `tests/reports.test.mjs` y expectativas de versión en cinco archivos de regresión. README y ambas guías actualizados.
+
+Commit sugerido: `feat: agregar historial de accesos, reportes y dashboards con datos reales`.
+
+## Corrección conservada · Compatibilidad de IDs
 
 - [x] `generateId()` compartido por las 12 altas/generaciones que dependían directamente de `crypto.randomUUID()`.
 - [x] Prioridad: UUID nativo, UUID v4 con `getRandomValues`, timestamp + contador + aleatorio como último recurso del prototipo.
@@ -16,7 +42,7 @@ Archivos de esta corrección: `src/utils/id.ts`, `src/utils/clone.ts`; `src/serv
 
 Commit sugerido: `fix: generar identificadores compatibles sin crypto.randomUUID`.
 
-## Etapa 6 · QR, visitante y control de acceso (vigente)
+## Etapa 6 · QR, visitante y control de acceso (conservada)
 
 - [x] QR local en el detalle y vista pública; representa la URL absoluta `/invitacion/{token}` del origen actual.
 - [x] Ruta pública sin sesión, con visitante, casa, anfitrión, vigencia, vehículo, placas, estado y QR de 288 px adaptable.
@@ -251,8 +277,8 @@ El objetivo general actualizado define las funciones finales. Esta división org
 - [x] **Fase 5B — QR y visitante:** QR y enlace público con destino, vigencia, vehículo y estado; visitante sin cuenta ni instalación, con vehículo opcional posterior.
 - [x] **Fase 6 — Accesos:** simulador del administrador que valida QR/token, registra entrada, registra salida y completa la invitación según sus usos.
   - [x] Historial administrativo con validaciones de vigencia, estado, condominio y usos.
-  - [ ] Ampliación posterior: consulta detallada de movimientos desde el residente (no solicitada en esta entrega).
-- [ ] **Fase 7 — Reportes:** residente crea y consulta reportes; administrador los consulta y cambia su estado.
+  - [x] Consulta detallada de movimientos desde el residente, búsqueda y filtros responsive.
+- [x] **Fase 7 — Reportes y dashboards:** principal crea y consulta sus reportes; administrador los consulta y cambia su estado. Indicadores y actividad reciente con datos reales y permisos por residencia.
 - [ ] **Fase 8 — Presentación:** recorrido completo, regresión, pruebas a 375–430 px, 768 px y 1280 px o más; adaptación de formularios/tablas/listas y revisión de accesibilidad.
   - [ ] Crear `docs/PRESENTATION_DEMO.md` con datos y guion reproducible del recorrido final.
 
@@ -263,7 +289,7 @@ Una integración de producción con API queda fuera del prototipo y requiere una
 - Las rutas están protegidas en el frontend; es una simulación que no ofrece seguridad frente a la manipulación del navegador o del código.
 - La sesión y los datos demo se guardan en `accesshome.demo.v1`; no hay backend ni cuentas reales.
 - Las contraseñas demo están en la semilla local. No se devuelven en los objetos de sesión.
-- Invitaciones, QR/enlace público y control administrativo implementados. Reportes y consulta detallada de movimientos desde el residente pendientes.
+- Invitaciones, QR/enlace público, control administrativo, historial por rol, reportes y dashboards implementados. La preparación final de presentación sigue pendiente.
 - El QR contiene una URL con token; no lleva los datos ni los sincroniza entre dispositivos. Otro navegador/perfil/origen no tendrá la invitación. No hay lector de cámara ni hardware de acceso.
 - El simulador representa un puesto local. Una API futura deberá validar permisos y aplicar transacciones para varios puestos simultáneos; localStorage no ofrece seguridad ni transacciones entre dispositivos.
 - Contactos y vehículos admiten eliminación definitiva o desactivación reversible. Los habitantes solo se desactivan. No hay traslado entre casas ni cambio de contraseñas. Las cuentas adicionales consultan su casa; solo el principal de una casa activa puede gestionarla.

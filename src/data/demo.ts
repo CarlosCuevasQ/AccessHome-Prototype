@@ -6,7 +6,8 @@ import { cloneJsonData } from '../utils/clone.js'
 export const DEMO_PASSWORD = 'Access123'
 
 const initialData: DemoDatabase = {
-  version: 6,
+  version: 7,
+  reports: [],
   invitations: [],
   accessRecords: [],
   contacts: createDemoContacts(),

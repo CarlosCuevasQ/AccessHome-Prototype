@@ -17,6 +17,11 @@ import { InvitationPage } from './pages/InvitationPage'
 import { NewInvitationPage } from './pages/NewInvitationPage'
 import { PublicInvitationPage } from './pages/PublicInvitationPage'
 import { AccessControlPage } from './pages/AccessControlPage'
+import { AccessHistoryPage } from './pages/AccessHistoryPage'
+import { ReportsPage } from './pages/ReportsPage'
+import { ReportPage } from './pages/ReportPage'
+import { NewReportPage } from './pages/NewReportPage'
+import { ResidentDashboardPage } from './pages/ResidentDashboardPage'
 
 export const router = createBrowserRouter([
   {
@@ -41,6 +46,9 @@ export const router = createBrowserRouter([
           { path: 'residencias', element: <ResidencesPage /> },
           { path: 'residencias/:residenceId', element: <ResidencePage administrative /> },
           { path: 'control-acceso', element: <AccessControlPage /> },
+          { path: 'historial', element: <AccessHistoryPage /> },
+          { path: 'reportes', element: <ReportsPage /> },
+          { path: 'reportes/:reportId', element: <ReportPage /> },
           { path: 'perfil', element: <WorkspacePage role="admin" /> },
           { path: '*', element: <NotFoundPage homePath="/admin" /> },
         ],
@@ -53,7 +61,12 @@ export const router = createBrowserRouter([
       {
         path: '/residente', element: <ResidentLayout />,
         children: [
-          { index: true, element: <ResidencePage /> },
+          { index: true, element: <ResidentDashboardPage /> },
+          { path: 'mi-residencia', element: <ResidencePage /> },
+          { path: 'historial', element: <AccessHistoryPage /> },
+          { path: 'reportes', element: <ReportsPage /> },
+          { path: 'reportes/nuevo', element: <NewReportPage /> },
+          { path: 'reportes/:reportId', element: <ReportPage /> },
           { element: <PrincipalRoute />, children: [
             { path: 'contactos', element: <ContactsPage /> },
             { path: 'contactos/:contactId', element: <ContactPage /> },

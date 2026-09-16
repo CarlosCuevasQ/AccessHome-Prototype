@@ -1,0 +1,33 @@
+.dashboard-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.resident-metrics { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.dashboard-actions, .dashboard-links { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0; }
+.dashboard-actions a { min-height: 48px; }
+.dashboard-links { gap: 24px; }
+.activity-list { list-style: none; margin: 0; padding: 0; }
+.activity-list li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.activity-list li > div { min-width: 0; }
+.activity-list li > div:last-child { text-align: right; }
+.history-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: end; margin: 28px 0 16px; }
+.history-filters input, .history-filters select, .history-filters button { min-height: 48px; min-width: 0; }
+.reports-page { max-width: 800px; }
+.reports-page .form-grid { grid-template-columns: 1fr; }
+.reports-page textarea { width: 100%; min-width: 0; padding: 12px; resize: vertical; font: inherit; color: #17212b; border: 1px solid #9caab7; border-radius: 4px; }
+.reports-page .form-actions, .dashboard-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.dashboard-actions .secondary-button, .reports-page .secondary-button { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.report-description { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 16px; }
+.report-status { display: inline-block; justify-self: start; border-radius: 4px; padding: 5px 9px; font-size: 0.8rem; color: var(--primary); }
+.report-pendiente { background: var(--light-yellow); }
+.report-en_proceso { background: var(--light-blue); }
+.report-completado { background: #eef0f2; color: #44515c; }
+@media (max-width: 1100px) {
+  .resident-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .history-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .history-filters { grid-template-columns: 1fr; }
+  .resident-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .resident-actions a { text-align: center; padding-inline: 12px; }
+  .resident-actions .primary-invitation { grid-column: 1 / -1; min-height: 52px; }
+  .activity-list li { align-items: start; }
+}

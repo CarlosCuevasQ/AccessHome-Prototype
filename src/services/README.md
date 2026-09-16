@@ -7,7 +7,10 @@ Las pantallas consumen contratos asíncronos. Solo `demoStorage.ts` lee/escribe 
 | `authService` | Login, logout, sesión pública sin contraseña y suscripción a cambios. Rechaza cuentas de habitantes inactivos. |
 | `demoService` | Ayuda de credenciales, contexto propio y restauración de la semilla completa. |
 | `demoStorage` | Clave `accesshome.demo.v1`, lectura validada, escritura y notificaciones locales/entre pestañas. |
-| `demoValidation` / `demoMigration` | Valida esquema 6 y relaciones; migra versiones 1/2/3/4/5 conservando datos y sesión. |
+| `demoValidation` / `demoMigration` | Valida esquema 7 y relaciones; migra versiones 1–6 conservando datos y sesión. |
+| `accessHistoryService` | Historial autorizado, búsqueda y filtros por residencia, movimiento y día local. |
+| `reportsService` | Creación y consulta privada de reportes; avance de estado administrativo. |
+| `dashboardService` | Indicadores y actividad reciente calculados desde los datos permitidos a la sesión. |
 | `communityService` | Resumen/listado administrativo, detalle autorizado y operaciones de estructura. Expone las operaciones de los dos servicios siguientes. |
 | `principalService` | Asignación administrativa de principal existente de esa casa o creación de principal con cuenta demo. |
 | `householdService` | Alta/edición de habitantes y vehículos por el principal de su propia casa activa. Las bajas son cambios de estado reversibles. |
@@ -37,7 +40,7 @@ Número de casa único por condominio; correo de acceso único entre cuentas; pl
 
 La escritura completa se hace con un único `setItem`; el servicio solo notifica después de guardar. Si falla, devuelve error y conserva los datos almacenados. No hay escrituras parciales de principal, cuenta y habitante.
 
-La migración convierte usuarios residentes anteriores en habitantes, conserva propietarios y asigna un principal a cada casa con residentes. Los vehículos sin propietario permanecen sin asignar. El esquema 6 conserva la clave histórica y las migraciones anteriores; desde v4 se añaden invitaciones y desde v5, movimientos vacíos. Cuentas, comunidad, agenda, bajas, invitaciones y sesión se conservan. No se inventan accesos históricos para usos que ya existieran en v5.
+La migración convierte usuarios residentes anteriores en habitantes, conserva propietarios y asigna un principal a cada casa con residentes. Los vehículos sin propietario permanecen sin asignar. El esquema 7 conserva la clave histórica y las migraciones anteriores; desde v4 se añaden invitaciones, desde v5 movimientos vacíos y desde v6 reportes vacíos. Cuentas, comunidad, agenda, bajas, invitaciones, movimientos y sesión se conservan. No se inventan accesos históricos para usos que ya existieran en v5.
 
 `resetDemoData()` reemplaza todos los datos propios, incluidas asignaciones, habitantes y estados, por una copia de la semilla. Cierra sesión y conserva claves de otras aplicaciones; nunca llama `localStorage.clear()`.
 
@@ -54,7 +57,7 @@ No se recibe el propietario desde el formulario. Crear o editar un contacto no c
 
 El administrador y las cuentas adicionales no acceden a estas consultas. Un principal de casa inactiva solo puede consultar su agenda. Cambiar de principal revoca el acceso del anterior y no transfiere sus contactos al nuevo principal. La UI refleja estas reglas, pero los servicios las revalidan siempre.
 
-El paso de esquema 3 a 4 añade contactos demo sin modificar la comunidad previa; después se migra hasta v6. La restauración incluye toda la agenda. La ruta `contactos/:contactId/invitar` utiliza el formulario funcional de invitaciones.
+El paso de esquema 3 a 4 añade contactos demo sin modificar la comunidad previa; después se migra hasta v7. La restauración incluye toda la agenda. La ruta `contactos/:contactId/invitar` utiliza el formulario funcional de invitaciones.
 
 ## Invitaciones · Etapa 5
 
@@ -84,6 +87,18 @@ Validar vuelve a leer datos y tiempo actual. Rechaza tokens inexistentes, cancel
 El registro contiene ID propio, ID de invitación, visitante, ID/nombre de casa, ID/nombre de anfitrión, vehículo/placas opcional, tipo, método `QR`, fecha ISO y `authorized: true`. `accessValidation` valida forma/referencias, fechas, IDs, método/autorización y movimientos duplicados. El historial no reconstruye datos desde contactos. La migración v5→v6 no modifica tokens ni invitaciones y el reset también vacía los movimientos.
 
 La generación del QR es presentación: `InvitationQr` usa la URL construida por `utils/invitationLinks.ts` y `qrcode.react`, sin llamadas externas. Los datos del QR no son una fuente de autorizaciones ni incluyen datos personales: solo la URL con token. La vista pública escucha cambios locales/entre pestañas; no sincroniza dispositivos. La persistencia y los permisos siguen siendo simulados; una API deberá aplicar validación y transacciones de servidor para múltiples puestos simultáneos.
+
+## Historial, reportes e indicadores · Etapa 7
+
+`accessHistoryService.getContext()` entrega únicamente los IDs/nombres de casas permitidas; `listRecords(filters)` vuelve a resolver la sesión y restringe registros antes de aplicar filtros. El administrador consulta su condominio y el residente exclusivamente su casa y las invitaciones dirigidas a ella, incluidos movimientos anteriores a un cambio de principal. Una residencia ajena enviada como filtro se rechaza. El servicio administrativo de validación de tokens conserva sus permisos originales.
+
+`accessHistoryRules` comparte este alcance con los dashboards. Busca sin distinguir acentos o mayúsculas en visitante, nombre de casa, anfitrión y placas. Los filtros se combinan con AND. `from` y `to` son días locales YYYY-MM-DD, ambos incluidos; límites inválidos o invertidos se rechazan. Se leen snapshots de movimientos autorizados, sin reconstruirlos desde la agenda ni cambiar el estado histórico por una cancelación posterior.
+
+`reportsService` ofrece `getContext`, `listReports`, `getReport`, `createReport` y `updateStatus`. `reportRules` limita por condominio y, para residentes, por casa y autor. Crear exige principal actual y casa activa, como el resto de la gestión cotidiana; las cuentas adicionales conservan consulta. El input contiene solo título (1–120), categoría y descripción (1–3000). El servicio fija autor, destino, fechas y Pendiente, y rechaza una residencia ajena inyectada. Los nombres se copian al crear; los permisos usan IDs. Las categorías se centralizan en `types/reports.ts`.
+
+Actualizar estado exige administrador del mismo condominio y el siguiente paso exacto: `pendiente → en_proceso → completado`. No hay edición de contenido ni reapertura. Cada operación escribe una sola vez y solo anuncia éxito después de persistir. `reportValidation` comprueba campos, fechas, estados, IDs únicos y relaciones. Migrar v6 conserva el historial existente y añade `reports: []`; reset vacía también reportes.
+
+`dashboardService.getAdminDashboard()` calcula seis indicadores en el condominio y los últimos cinco movimientos. `getResidentDashboard()` aplica el alcance de su casa y la privacidad por autor en reportes. Vehículos significa permanentes activos/inactivos, sin agenda; habitantes activos solo se filtran en el dashboard admin. Accesos de hoy cuenta entrada y salida en el día local; visitas recientes cuenta entradas en siete días naturales, incluido hoy. Pendientes excluye En proceso y Completado. Invitaciones activas usa `invitationStatus` y admite futuras. No se guardan totales precalculados. Las pantallas escuchan cambios y los dashboards revisan vigencias cada segundo.
 
 ## Eliminación definitiva
 

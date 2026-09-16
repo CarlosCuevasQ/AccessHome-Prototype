@@ -1,5 +1,5 @@
 import { createDemoData } from '../data/demo.js'
-import type { DemoDatabase, DemoDatabaseV2, DemoDatabaseV3, DemoDatabaseV4, DemoDatabaseV5, LegacyDemoDatabase } from '../types/demo.js'
+import type { DemoDatabase, DemoDatabaseV2, DemoDatabaseV3, DemoDatabaseV4, DemoDatabaseV5, DemoDatabaseV6, LegacyDemoDatabase } from '../types/demo.js'
 import { createDemoContacts } from '../data/contacts.js'
 import { inhabitantFromAccount } from '../utils/people.js'
 import { cloneJsonData } from '../utils/clone.js'
@@ -80,7 +80,12 @@ function migrateVersionFour(legacy: LegacyDemoDatabase | DemoDatabaseV2 | DemoDa
   return { ...previous, version: 5, invitations: [] }
 }
 
-export function migrateDemoData(legacy: LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3 | DemoDatabaseV4 | DemoDatabaseV5): DemoDatabase {
+function migrateVersionFive(legacy: LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3 | DemoDatabaseV4 | DemoDatabaseV5): DemoDatabaseV6 {
   const previous = legacy.version === 5 ? cloneJsonData(legacy) : migrateVersionFour(legacy)
   return { ...previous, version: 6, accessRecords: [] }
+}
+
+export function migrateDemoData(legacy: LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3 | DemoDatabaseV4 | DemoDatabaseV5 | DemoDatabaseV6): DemoDatabase {
+  const previous = legacy.version === 6 ? cloneJsonData(legacy) : migrateVersionFive(legacy)
+  return { ...previous, version: 7, reports: [] }
 }

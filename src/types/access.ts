@@ -29,3 +29,11 @@ export interface AccessInvitationOption {
   expiresAt: string
   usedUses: number
 }
+
+export interface AccessHistoryFilters {
+  search?: string
+  residenceId?: string
+  type?: 'entrada' | 'salida' | ''
+  from?: string
+  to?: string
+}

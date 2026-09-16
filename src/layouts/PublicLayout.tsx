@@ -14,7 +14,7 @@ export function PublicLayout({ visitor = false }: { visitor?: boolean }) {
       <main id="main-content" tabIndex={-1} className="public-main"><Outlet /></main>
       <footer className="public-footer">
         <span>AccessHome · Prototipo universitario</span>
-        {!visitor && <span>Etapa 6 / Control de acceso</span>}
+        {!visitor && <span>Etapa 7 / Historial y reportes</span>}
       </footer>
     </div>
   )

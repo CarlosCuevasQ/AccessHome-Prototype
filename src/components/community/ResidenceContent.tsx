@@ -10,8 +10,8 @@ import { communityService } from '../../services/communityService'
 
 type Editor = { type: 'residence' | 'principal' } | { type: 'inhabitant' | 'vehicle'; id?: string; editing: boolean } | null
 
-export function ResidenceContent({ data }: { data: ResidenceDetails }) {
-  const [editor, setEditor] = useState<Editor>(null)
+export function ResidenceContent({ data, initialAction }: { data: ResidenceDetails; initialAction?: 'vehicle' | 'inhabitant' }) {
+  const [editor, setEditor] = useState<Editor>(initialAction && data.permissions.manageHousehold ? { type: initialAction, editing: true } : null)
   const [message, setMessage] = useState('')
   const { residence, inhabitants, vehicles, primaryResident, permissions } = data
   const close = () => setEditor(null)

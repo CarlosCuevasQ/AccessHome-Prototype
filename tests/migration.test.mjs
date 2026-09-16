@@ -45,7 +45,7 @@ test('migra v2 conservando casas y personas creadas, credenciales, propietarios 
   storage.set(DEMO_STORAGE_KEY, JSON.stringify(old))
   assert.equal((await authService.getSession()).name, 'Daniel editado')
   const migrated = JSON.parse(storage.get(DEMO_STORAGE_KEY))
-  assert.equal(migrated.version, 6)
+  assert.equal(migrated.version, 7)
   assert.deepEqual(migrated.users, old.users)
   assert.deepEqual(migrated.session, old.session)
   assert.equal(migrated.residences.find((house) => house.id === 'house-custom').principalUserId, 'user-custom')
@@ -58,7 +58,7 @@ test('migra v2 conservando casas y personas creadas, credenciales, propietarios 
   assert.equal(storage.get(DEMO_STORAGE_KEY), once)
 })
 
-test('migra v1 hasta v6 conservando Casa 25, ediciones y relaciones', async () => {
+test('migra v1 hasta v7 conservando Casa 25, ediciones y relaciones', async () => {
   const old = versionOne()
   old.vehicles[0].color = 'Azul marino'
   storage.set(DEMO_STORAGE_KEY, JSON.stringify(old))
@@ -70,7 +70,7 @@ test('migra v1 hasta v6 conservando Casa 25, ediciones y relaciones', async () =
   assert.equal(house.vehicles[0].active, true)
   assert.equal(house.vehicles[0].ownerId, null)
   const migrated = JSON.parse(storage.get(DEMO_STORAGE_KEY))
-  assert.equal(migrated.version, 6)
+  assert.equal(migrated.version, 7)
   assert.ok(migrated.residences.some((item) => item.id === 'house-25'))
   assert.ok(migrated.residences.some((item) => item.number === '51'))
 })

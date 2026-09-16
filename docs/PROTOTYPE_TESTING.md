@@ -9,6 +9,57 @@ Esta guía se amplía en cada etapa. Al incorporar funciones nuevas, repetir tam
 3. Ejecutar `npm run dev` y mantener esa terminal abierta.
 4. Abrir http://127.0.0.1:5173.
 
+## Etapa 7 · Historial, reportes y dashboards (vigente)
+
+### Datos y preparación
+
+Utiliza el mismo navegador y origen; no hace falta restaurar los datos. Daniel: `residente@accesshome.demo`; administrador: `admin@accesshome.demo`; Ana, principal de Casa 12: `ana@accesshome.demo`. Contraseña para los tres: `Access123`. Mariana (`mariana@accesshome.demo`) conserva consulta de Casa 24. Si se cambiaron principales en pruebas anteriores, revisa la asignación administrativa antes de comenzar.
+
+Datos nuevos sugeridos: visitante **Visita historial de prueba**, sin vehículo, vigencia **24 horas**; reporte **Lámpara de acceso apagada**, categoría **Instalaciones**, descripción **La lámpara junto al acceso de Casa 24 no enciende por la noche. Solicito su revisión.** Anota los indicadores iniciales y el ID del reporte para comparar. La semilla empieza sin movimientos ni reportes; una base migrada conserva lo existente.
+
+### Siete recorridos solicitados
+
+| Caso | Pasos | Resultado esperado |
+| --- | --- | --- |
+| H7-01 Entrada y salida | Daniel: Inicio → Nueva invitación, crear el visitante de prueba y copiar token. Administrador: Control de acceso, validarlo dos veces y repetir una tercera. | Primera Entrada, segunda Salida y Completada. Dos nuevos registros QR autorizados; tercera rechazada, sin nuevo movimiento. |
+| H7-02 Historial admin | Abrir Historial de accesos, buscar el nombre y combinar Casa 24, Salida, Desde/Hasta con la fecha local de la prueba. Limpiar filtros. | Una salida de esa visita; incluye visitante, casa, anfitrión, placas o Sin vehículo, hora, método y Autorizado. Limpiar recupera todos los registros permitidos. |
+| H7-03 Historial residente | Entrar como Daniel y abrir Historial de accesos. Buscar la visita y alternar Entrada/Salida. Recargar. | Ambos movimientos de Casa 24 persisten. No hay selector de otras casas. El estado Autorizado del movimiento se conserva aunque la invitación esté Completada. |
+| H7-04 Crear reporte | Daniel: Inicio → Crear reporte. Probar campos vacíos; completar título, categoría y descripción de prueba y enviar una vez. Recargar detalle. | Validación de obligatorios. Reporte Pendiente de Daniel, Casa 24, con fecha y descripción. Aparece en Mis reportes. No se pide elegir casa o autor. |
+| H7-05 Procesar reporte | Administrador: Reportes → Ver reporte → Marcar en proceso → Marcar completado. Volver a entrar como Daniel. | Datos del autor/casa/categoría/fecha visibles, avance persistente. Desaparece la acción al completar. Daniel consulta el estado pero no puede modificarlo. |
+| H7-06 Indicadores | Comparar ambos inicios antes y después de crear la invitación, validar entrada/salida y crear/procesar el reporte. Probar acciones Registrar vehículo y Agregar habitante; cancelar sin guardar. | Invitación +1 activa al crear y −1 tras salida; accesos admin +2 hoy y visitas residente +1. Reporte +1 pendiente al crear y −1 al pasar a En proceso. Formularios rápidos abren la propia casa; cancelar no modifica cifras. |
+| H7-07 Aislamiento | Guardar URL del reporte de Daniel, salir y entrar como Ana. Abrir Inicio, Historial y Mis reportes, buscar la visita de Casa 24 y pegar la URL guardada. Repetir consulta del reporte con Mariana. | Ana ve solo Casa 12 y sus indicadores; no aparecen movimientos de Casa 24. Reporte ajeno no disponible, incluso para Mariana de la misma casa. Acceder a `/admin/historial` como residente redirige a su inicio por rol. |
+
+### Definición de cifras y casos adicionales
+
+- **Administrador:** residencias todas; habitantes solo activos; vehículos permanentes todos, incluso inactivos; accesos hoy incluye entradas y salidas autorizadas en el día local; invitaciones Activas incluye futuras; reportes pendientes excluye En proceso y Completado. Actividad reciente muestra los últimos cinco movimientos, también de días anteriores.
+- **Residente:** cifras de su propia casa; Habitantes y Vehículos incluye activos/inactivos. Visitas recientes cuenta entradas en los últimos siete días naturales incluido hoy; no duplica por la salida. Reportes pendientes cuenta exclusivamente al propio autor. Agregar vehículos a contactos no cambia los vehículos permanentes de ningún dashboard.
+- En la semilla limpia admin muestra 4 casas, 8 habitantes activos, 5 vehículos, 0 accesos, 0 invitaciones y 0 reportes. Daniel: 0 invitaciones, 0 visitas, 4 habitantes, 2 vehículos y 0 reportes. No comparar esos valores fijos con una base previamente modificada.
+- Probar Desde posterior a Hasta: error legible sin registros fuera del alcance. Buscar sin acentos y por placas; combinar filtros sin perder las fechas introducidas. Probar un día sin movimientos y Limpiar filtros.
+- A 375 px: abrir menú, Nueva invitación debe ser prioritaria; reporte en una columna; historial y reportes con filas etiquetadas legibles, sin tabla ancha. Repetir en escritorio. Revisar foco de teclado, etiquetas y mensajes de error.
+- Casa inactiva o usuario adicional: consulta conservada; no permite crear reportes ni gestionar habitantes/vehículos. Administrador no crea reportes como residente. Desactivar un habitante con cuenta invalida su acceso como en etapas anteriores.
+- Editar contacto/nombre de casa después del acceso no reescribe los snapshots del historial. El anfitrión refleja a quien invitó. Rechazos del control no incrementan actividad ni totales.
+- Recargar y cerrar/abrir sesión conserva reportes y movimientos. La migración a esquema 7 añade reportes vacíos sin restaurar la comunidad, agenda, invitaciones o sesión. Reset solo debe usarse si se desea recuperar la semilla y perder los datos demo actuales.
+
+### Verificación directa de permisos de servicios
+
+Con Daniel autenticado, en la consola de desarrollo del prototipo Vite, la siguiente consulta debe rechazar el filtro ajeno:
+
+```js
+const { accessHistoryService } = await import('/src/services/accessHistoryService.ts')
+await accessHistoryService.listRecords({ residenceId: 'house-12' })
+```
+
+Para probar reportes ajenos, copia el ID real creado por Daniel, entra como Ana y ejecuta `getReport(id)` de `reportsService` importado desde `/src/services/reportsService.ts`: debe rechazarlo. `updateStatus(id, 'en_proceso')` como residente también debe fallar. `createReport` con `residenceId: 'house-24'` mientras Ana está autenticada debe rechazar el destino ajeno, aunque título/categoría/descripción sean válidos. Estas verificaciones están también automatizadas; los botones ocultos no son la protección del servicio.
+
+### Verificación realizada
+
+- **115 pruebas automatizadas correctas**: 99 de regresión y 16 nuevas en `tests/reports.test.mjs` y `tests/dashboard-history.test.mjs`. Incluyen ambas casas y otro condominio, privacidad por autor, roles, filtros/medianoche, ventana de siete días, contadores reales, transiciones inválidas, escritura fallida, datos corruptos, migración v6 con invitación/entrada existentes y reset.
+- **Navegador, 15–16 de septiembre de 2026:** reporte **Lámpara de acceso apagada · Prueba** creado por Daniel y llevado hasta Completado; visita **Visita historial · Prueba** con Entrada/Salida el día 15 a las 19:17 y estado Completada. Se conservaron ambos registros y los datos anteriores.
+- En esa sesión, admin pasó de 2 a 4 accesos del día y de 1 a 0 reportes pendientes al procesar. El día 16 el contador de accesos de hoy mostró 0, conservando los cuatro movimientos en el historial. Daniel vio 2 visitas recientes, 5 habitantes, 2 vehículos y 0 reportes pendientes. Las invitaciones activas bajaron también al expirar visitas del día anterior, como corresponde.
+- Daniel vio sus cuatro movimientos y su reporte Completado tras volver a entrar. Ana vio Casa 12, 2 habitantes, 1 vehículo, sin actividad; el historial no mostró movimientos de Casa 24 y la URL del reporte de Daniel indicó **Reporte no disponible para tu cuenta**.
+- Búsqueda + casa + movimiento + fechas comprobadas, incluido estado vacío. Se corrigió la captura de fechas para conservarlas al cambiar otros filtros. Revisión visual de dashboard, formularios e historial a 375 px y tabla administrativa a 1366 px, sin desbordamiento en las vistas medidas. Acciones rápidas abrieron los formularios correctos; cancelar no guardó registros.
+- Build final con TypeScript/Vite correcto. Sin dependencias nuevas, restauración de datos, commit ni push. El guion general de presentación queda para una etapa posterior.
+
 ## Corrección · Compatibilidad de identificadores
 
 Cuenta: `residente@accesshome.demo` / `Access123`. Datos nuevos sugeridos: **Prueba compatibilidad**, placas **COMP-242**. Repetir en el navegador y la misma dirección donde apareció el error; no restaurar los datos ni cambiar de origen para comprobar su conservación.
@@ -28,7 +79,7 @@ La alternativa final devuelve un identificador de timestamp/contador/aleatorio, 
 
 **Verificación de esta corrección:** `npm test` 99/99; `npm run build` correcto. Las pruebas nuevas usan almacenamiento aislado. Los recorridos de navegador de la etapa 6 que siguen son el registro de esa entrega; no se atribuyen a una nueva prueba en un teléfono físico.
 
-## Etapa 6 · QR, visitante y control de acceso (vigente)
+## Etapa 6 · QR, visitante y control de acceso (conservada)
 
 ### Preparación y datos
 

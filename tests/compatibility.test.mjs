@@ -91,7 +91,7 @@ test('migrar sin structuredClone conserva valores y no modifica la base anterior
   const legacy = { ...seed, version: 5, session: { userId: 'user-daniel' } }
   const before = JSON.stringify(legacy)
   const migrated = migrateDemoData(legacy)
-  assert.equal(migrated.version, 6)
+  assert.equal(migrated.version, 7)
   assert.deepEqual(migrated.accessRecords, [])
   assert.deepEqual(migrated.session, legacy.session)
   assert.deepEqual(migrated.contacts, legacy.contacts)

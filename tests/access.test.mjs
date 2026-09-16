@@ -180,7 +180,7 @@ test('migración v5 conserva tokens/snapshots/usos/cancelación y añade histori
   old.version = 5
   write(old)
   await invitations.getInvitation(invitation.id)
-  assert.deepEqual(read(), { ...old, version: 6, accessRecords: [] })
+  assert.deepEqual(read(), { ...old, version: 7, accessRecords: [], reports: [] })
   const before = storage.get(DEMO_STORAGE_KEY)
   await invitations.getInvitation(invitation.id)
   assert.equal(storage.get(DEMO_STORAGE_KEY), before)

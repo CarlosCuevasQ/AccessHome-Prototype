@@ -1,7 +1,8 @@
-import type { DemoDatabase, DemoDatabaseV2, DemoDatabaseV3, DemoDatabaseV4, DemoDatabaseV5, LegacyDemoDatabase } from '../types/demo.js'
+import type { DemoDatabase, DemoDatabaseV2, DemoDatabaseV3, DemoDatabaseV4, DemoDatabaseV5, DemoDatabaseV6, LegacyDemoDatabase } from '../types/demo.js'
 import { validStoredContacts } from './contactValidation.js'
 import { validStoredInvitations } from './invitationValidation.js'
 import { validStoredAccessRecords } from './accessValidation.js'
+import { validStoredReports } from './reportValidation.js'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -11,7 +12,7 @@ function hasStrings(value: unknown, keys: string[]): value is Record<string, str
   return isRecord(value) && keys.every((key) => typeof value[key] === 'string' && value[key].trim() !== '')
 }
 
-function isDatabase(value: unknown, version: 1 | 2 | 3 | 4 | 5 | 6): boolean {
+function isDatabase(value: unknown, version: 1 | 2 | 3 | 4 | 5 | 6 | 7): boolean {
   if (!isRecord(value) || value.version !== version) return false
   const { users, condominiums, residences, vehicles, session } = value
   if (!Array.isArray(users) || !Array.isArray(condominiums) || !Array.isArray(residences) || !Array.isArray(vehicles)) return false
@@ -50,14 +51,15 @@ function isDatabase(value: unknown, version: 1 | 2 | 3 | 4 | 5 | 6): boolean {
   if (new Set(users.map((user) => user.email.toLowerCase())).size !== users.length) return false
   if (version >= 4 && !validStoredContacts(value.contacts, users)) return false
   if (version >= 5 && !validStoredInvitations(value.invitations, users, residences)) return false
-  if (version === 6 && !validStoredAccessRecords(value.accessRecords, value.invitations as DemoDatabase['invitations'])) return false
+  if (version >= 6 && !validStoredAccessRecords(value.accessRecords, value.invitations as DemoDatabase['invitations'])) return false
+  if (version === 7 && !validStoredReports(value.reports, users, residences)) return false
   return session === null || (hasStrings(session, ['userId']) && users.some((user) => user.id === session.userId))
 }
 
 export function isDemoDatabase(value: unknown): value is DemoDatabase {
-  return isDatabase(value, 6)
+  return isDatabase(value, 7)
 }
 
-export function isLegacyDemoDatabase(value: unknown): value is LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3 | DemoDatabaseV4 | DemoDatabaseV5 {
-  return isDatabase(value, 1) || isDatabase(value, 2) || isDatabase(value, 3) || isDatabase(value, 4) || isDatabase(value, 5)
+export function isLegacyDemoDatabase(value: unknown): value is LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3 | DemoDatabaseV4 | DemoDatabaseV5 | DemoDatabaseV6 {
+  return isDatabase(value, 1) || isDatabase(value, 2) || isDatabase(value, 3) || isDatabase(value, 4) || isDatabase(value, 5) || isDatabase(value, 6)
 }
