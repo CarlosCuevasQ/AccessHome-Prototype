@@ -1,6 +1,22 @@
 # Estado del prototipo AccessHome
 
-## Etapa 7 · Historial, reportes y dashboards (vigente)
+## Etapa 8 · Preparación del backend compartido (vigente)
+
+- [x] Inspección de estructura, Auth demo, modelos, services, invitaciones/accesos, localStorage, documentación y Git (`main`, `aee05be`, limpio al comenzar).
+- [x] `docs/SHARED_BACKEND_PLAN.md`: inventario, tablas/relaciones, permisos, Auth, adaptación de servicios, datos demo/importación, pruebas y limitaciones.
+- [x] Tres migraciones SQL versionadas y aditivas: comunidad, visitas/reportes y políticas de lectura. Diez tablas de dominio, tokens privados, FK, índices y tres roles.
+- [x] RLS y privilegios explícitos, sin lectura anónima de tablas ni escritura directa de clientes. Funciones auxiliares privadas; RPC público/operativo pendiente.
+- [x] Guardia preparado como rol de backend. Accesos de servicios y reportes de guardia documentados como entidades compartidas futuras; contratos/tablas pendientes de su alcance.
+- [x] `.env.example` con URL/clave publishable vacías, sin valores inventados ni secretos de servidor.
+- [x] Guía de reproducción SQL y auditoría de catálogo preparada; configuración manual antes del Prompt 9 documentada.
+- [x] Aplicación local, datos, servicios y rutas conservados. Sin dependencias nuevas, migraciones remotas, importación, reset, commit ni push.
+- [x] `npm run build` correcto; las 115 pruebas locales pasan. Revisión de cambios sin errores de whitespace; `.env.local` y metadatos temporales de la CLI ignorados por Git.
+- [ ] Ejecutar las migraciones y pruebas RLS/Auth en un proyecto Supabase de ensayo configurado. No hay credenciales/proyecto vinculado ni motor SQL disponible; la auditoría SQL todavía no se ha ejecutado.
+- [ ] Implementar adaptadores, Auth real, RPCs transaccionales y pruebas entre dispositivos en las siguientes etapas. El prototipo aún no comparte datos.
+
+Archivos de esta preparación: `.env.example`, `.gitignore`, `docs/SHARED_BACKEND_PLAN.md`, `supabase/README.md`, las tres migraciones de `supabase/migrations/`, `supabase/tests/security_baseline.sql`, README, STATUS, TESTING y contratos de servicios. No se modificó código funcional de `src/`.
+
+## Etapa 7 · Historial, reportes y dashboards (conservada)
 
 - [x] Historial administrativo del condominio y consulta residente limitada a su casa/invitaciones.
 - [x] Visitante, casa, anfitrión, placas, entrada/salida, fecha/hora, método y autorización; búsqueda y filtros combinables por casa, movimiento y días locales.
@@ -259,7 +275,7 @@ La entrega vigente es la etapa 6. Los resultados siguientes conservan el histori
 
 ## Fases previstas
 
-El objetivo general actualizado define las funciones finales. Esta división organiza su implementación; se debe detener el trabajo al terminar cada etapa y esperar la indicación de continuar. Las fases 1 a 6, incluido QR/enlace público y control administrativo, están implementadas. Las ampliaciones pendientes se indican por separado.
+El objetivo general actualizado define las funciones finales. Esta división organiza su implementación; se debe detener el trabajo al terminar cada etapa y esperar la indicación de continuar. Las fases 1 a 7 están implementadas en local. La etapa 8 prepara la integración compartida; la presentación final se conserva como trabajo posterior.
 
 - [x] **Fase 1 — Infraestructura:** implementación y verificación completadas.
 - [x] **Fase 2 — Datos, servicios y perfiles:** modelos tipados, datos demo, sesión simulada por rol y localStorage encapsulado en servicios sustituibles por API.
@@ -279,10 +295,12 @@ El objetivo general actualizado define las funciones finales. Esta división org
   - [x] Historial administrativo con validaciones de vigencia, estado, condominio y usos.
   - [x] Consulta detallada de movimientos desde el residente, búsqueda y filtros responsive.
 - [x] **Fase 7 — Reportes y dashboards:** principal crea y consulta sus reportes; administrador los consulta y cambia su estado. Indicadores y actividad reciente con datos reales y permisos por residencia.
-- [ ] **Fase 8 — Presentación:** recorrido completo, regresión, pruebas a 375–430 px, 768 px y 1280 px o más; adaptación de formularios/tablas/listas y revisión de accesibilidad.
+- [x] **Fase 8 — Preparación del backend compartido:** inspección, plan, SQL versionado, RLS base y configuración manual; aplicación local conservada.
+- [ ] **Prompt 9 y siguientes — Integración:** Supabase Auth, cuentas y perfiles, adaptadores por módulo, RPCs, visitante público, concurrencia y pruebas entre dispositivos; contratos de servicio/guardia cuando se soliciten.
+- [ ] **Presentación final:** recorrido completo, regresión, pruebas a 375–430 px, 768 px y 1280 px o más; adaptación de formularios/tablas/listas y revisión de accesibilidad.
   - [ ] Crear `docs/PRESENTATION_DEMO.md` con datos y guion reproducible del recorrido final.
 
-Una integración de producción con API queda fuera del prototipo y requiere una solicitud posterior.
+La integración con Supabase será para el prototipo compartido. Una versión de producción o sustitución por API Django conserva su alcance posterior.
 
 ## Límites actuales
 

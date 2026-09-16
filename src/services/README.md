@@ -2,6 +2,16 @@
 
 Las pantallas consumen contratos asíncronos. Solo `demoStorage.ts` lee/escribe localStorage; una futura API puede sustituir la implementación de estos contratos.
 
+## Preparación del backend compartido
+
+La implementación de servicios sigue siendo local. El [plan de Supabase](../../docs/SHARED_BACKEND_PLAN.md) identifica qué sustituir detrás de estos contratos y qué autorización pasará a la base. El [SQL versionado](../../supabase/README.md) está preparado sin aplicar; `.env.example` no activa ningún adaptador.
+
+La integración mantendrá DTOs independientes del SDK y convertirá nombres/campos dentro de `services`. Auth real sustituirá `DemoAccount.password` y la sesión local. Asignaciones, snapshots, usos, movimientos y cambios de estado requerirán RPCs autorizados; no se traducirá la escritura de todo `DemoDatabase` a un `upsert` remoto. Los helpers actuales continúan útiles como validación de UI, pero no protegerán el backend.
+
+La demo y el modo integrado deberán tener proveedores separados, sin fallback silencioso ante fallo remoto. `resetDemoData()` permanece exclusivo de la demo; el futuro SDK y los tipos de filas SQL no se importarán desde las pantallas. Los eventos actuales de `communityService.subscribe` deberán desacoplarse al incorporar suscripciones del proveedor. La futura API Django podrá implementar los mismos contratos de dominio.
+
+## Servicios actuales
+
 | Servicio | Responsabilidad |
 | --- | --- |
 | `authService` | Login, logout, sesión pública sin contraseña y suscripción a cambios. Rechaza cuentas de habitantes inactivos. |

@@ -9,7 +9,27 @@ Esta guía se amplía en cada etapa. Al incorporar funciones nuevas, repetir tam
 3. Ejecutar `npm run dev` y mantener esa terminal abierta.
 4. Abrir http://127.0.0.1:5173.
 
-## Etapa 7 · Historial, reportes y dashboards (vigente)
+## Etapa 8 · Preparación de backend compartido
+
+**Esta entrega no conecta Supabase.** Los datos/cuentas de etapas 1–7 siguen siendo locales. No usar `Access123` para proteger un backend publicado. El [plan](SHARED_BACKEND_PLAN.md) contiene la matriz de pruebas para la futura integración.
+
+| Caso | Pasos | Resultado esperado |
+| --- | --- | --- |
+| B8-01 Regresión local | Ejecutar `npm test` y `npm run build`. | Las 115 pruebas previas pasan y TypeScript/Vite genera el build. No se necesitan claves Supabase. |
+| B8-02 Navegación conservada | Abrir `http://127.0.0.1:5173`, login Daniel/admin con los datos demo anteriores; consultar casa, contactos, invitaciones, historial y reportes. | Rutas y datos locales conservados. No se crea sesión Supabase ni se afirma sincronización entre teléfonos. |
+| B8-03 Configuración | Revisar `.env.example`; opcionalmente copiar a `.env.local` y completar únicamente valores públicos del proyecto real. | Sin secretos en Git. La aplicación aún usa los servicios locales; estas variables no cambian proveedor. |
+| B8-04 Reproducción SQL, pendiente | En un proyecto de ensayo configurado, aplicar 001 → 002 → 003 según `supabase/README.md`. | Diez tablas de dominio y tokens privados, tres roles, FK/índices/RLS. Sin usuarios/importaciones automáticas ni escrituras API. |
+| B8-05 Auditoría SQL, pendiente | Ejecutar `supabase/tests/security_baseline.sql` como migrador. | Sin excepciones; comprueba grants/RLS/functions desde catálogo y no modifica datos. No equivale a probar RLS como usuario. |
+| B8-06 Aislamiento, pendiente | Con cuentas Auth/perfiles reales de ensayo, probar consultas directas con publishable + JWT de admin, dos residentes, adicional y guardia. Repetir sin sesión. | Admin solo su condominio; residente solo casa, agenda propia y reportes propios; guardia solo contexto básico hasta sus RPCs; anónimo sin tablas. Ninguno escribe por API en esta base. |
+| B8-07 Público/concurrencia, futuro | Tras implementar RPCs, repetir QR entre dispositivos, dos validadores, reintento del mismo `request_id`, cancelación y placas simultáneas. | Proyección pública mínima, tiempo servidor, exactamente dos usos máximos y registros atómicos; no fallback a local. |
+
+Revisar también una cuenta sin perfil, perfil/habitante inactivo e intento de elevar rol mediante metadata. Para la importación futura, mantener copias originales, usar mapa de UUIDs, comprobar cantidades y snapshots, repetir un lote sin duplicados y no importar contraseñas/sesión. Los registros locales sin operador conocido deben conservar esa ausencia (`source = local_import`), sin atribuirlos a un guardia inventado.
+
+**Límite de verificación:** no hay proyecto configurado ni PostgreSQL/CLI disponible en esta entrega. Se revisaron los archivos SQL, pero no se ejecutaron migraciones ni auditoría RLS. El build del frontend no valida SQL. No se realizaron pruebas entre dispositivos contra un backend. Las verificaciones remotas quedan explícitamente pendientes para el Prompt 9.
+
+Resultado de esta entrega: `npm run build` correcto (118 módulos) y `npm test` con 115/115 pruebas correctas. Se comprobó que `.env.local` y `supabase/.temp/` están ignorados por Git. No se cambió código funcional ni se reiniciaron datos del navegador.
+
+## Etapa 7 · Historial, reportes y dashboards (conservada)
 
 ### Datos y preparación
 

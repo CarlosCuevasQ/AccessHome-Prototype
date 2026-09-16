@@ -4,6 +4,8 @@ Prototipo funcional para una presentación universitaria sobre seguridad residen
 
 ## Estado actual
 
+**Preparación del prototipo integrado:** se inspeccionaron las etapas 1–7 y se preparó [el plan de backend compartido](docs/SHARED_BACKEND_PLAN.md), con tablas, relaciones, Supabase Auth, roles administrador/residente/guardia, RLS, frontera pública por token y adaptación gradual de los servicios. La aplicación sigue usando localStorage; no hay conexión ni migración remota activa.
+
 Etapa 7: historial de accesos, reportes y dashboards calculados desde los datos guardados, conservando las responsabilidades de la comunidad:
 
 - **Administrador:** gestiona la estructura y principales del condominio; consulta habitantes/vehículos, opera Control de acceso, filtra el historial y procesa reportes de su condominio.
@@ -14,6 +16,15 @@ Etapa 7: historial de accesos, reportes y dashboards calculados desde los datos 
 Los permisos se verifican en las pantallas y en cada operación del servicio. Se mantienen autenticación, roles, navegación, sesión persistente, restauración y diseño responsive azul con acentos amarillos.
 
 La autenticación es simulada: las contraseñas demo están en el frontend y los datos locales se pueden manipular desde el navegador. Utiliza datos ficticios. No hay seguridad de servidor.
+
+## Preparar Supabase antes del Prompt 9
+
+1. Crear o seleccionar un proyecto Supabase de ensayo y obtener su Project URL y clave **publishable** reales.
+2. Copiar `.env.example` a `.env.local` y completar esos dos valores. Nunca incluir `service_role`, claves secretas o contraseña de PostgreSQL en variables `VITE_*`. Estas variables están reservadas; todavía no activan el backend.
+3. Preparar Auth con email/contraseña, registro abierto y anonymous sign-in desactivados, cuentas de prueba con contraseñas únicas y redirects del dominio real que vaya a utilizarse. Los datos `Access123` son exclusivamente de la demo local.
+4. Revisar [migraciones e instrucciones](supabase/README.md). Hay tres migraciones aditivas, diez tablas de dominio, tokens privados y RLS de lectura; las escrituras permanecen bloqueadas hasta implementar RPCs autorizados. No se han ejecutado ni verificado en una instancia Supabase.
+
+El [plan, sección 10](docs/SHARED_BACKEND_PLAN.md#10-configuración-manual-antes-del-prompt-9) detalla la configuración manual. La siguiente etapa incorporará Auth y adaptadores; añadir claves ahora no cambia datos ni sesiones existentes. No se instaló el SDK ni se utilizó Docker.
 
 ## Ejecutar
 
@@ -234,5 +245,7 @@ src/
 - [Estado y checklist de fases](docs/PROTOTYPE_STATUS.md)
 - [Guía acumulativa de pruebas](docs/PROTOTYPE_TESTING.md)
 - [Contratos y reglas de servicios](src/services/README.md)
+- [Plan de backend compartido y configuración manual](docs/SHARED_BACKEND_PLAN.md)
+- [Migraciones SQL y auditoría de seguridad](supabase/README.md)
 
-Queda pendiente la preparación del recorrido final de presentación. No se realizaron commits ni push.
+Quedan pendientes la integración efectiva con Supabase, sus pruebas entre dispositivos y la preparación del recorrido final de presentación. No se realizaron commits ni push.
