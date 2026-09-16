@@ -5,7 +5,7 @@ export const workspaces: Record<WorkspaceRole, WorkspaceConfig> = {
     label: 'Administrador',
     title: 'Espacio de administración',
     description: 'Consulta tus datos de acceso y el condominio que administras.',
-    navigation: [{ label: 'Condominio', path: '/admin' }, { label: 'Residencias', path: '/admin/residencias', end: false }, { label: 'Mi perfil', path: '/admin/perfil' }],
+    navigation: [{ label: 'Condominio', path: '/admin' }, { label: 'Residencias', path: '/admin/residencias', end: false }, { label: 'Control de acceso', path: '/admin/control-acceso' }, { label: 'Mi perfil', path: '/admin/perfil' }],
   },
   resident: {
     label: 'Residente',

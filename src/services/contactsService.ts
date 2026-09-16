@@ -1,6 +1,7 @@
 import type { ContactAccess, ContactInput, ContactVehicleInput, FrequentContact } from '../types/contacts.js'
 import { contactFields, contactVehicleFields, requireContactUser, requireOwnContact } from './contactRules.js'
 import { readDemoData, saveDemoData, subscribeToDemoChanges } from './demoStorage.js'
+import { generateId } from '../utils/id.js'
 
 const searchKey = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim()
 
@@ -28,7 +29,7 @@ export const contactsService = {
   async createContact(input: ContactInput): Promise<string> {
     const data = readDemoData()
     const { user } = requireContactUser(data, true)
-    const id = crypto.randomUUID()
+    const id = generateId()
     data.contacts.push({ ...contactFields(input), id, ownerUserId: user.id, vehicles: [] })
     saveDemoData(data)
     return id
@@ -51,7 +52,7 @@ export const contactsService = {
   async createVehicle(contactId: string, input: ContactVehicleInput): Promise<void> {
     const data = readDemoData()
     const contact = requireOwnContact(data, contactId, true)
-    contact.vehicles.push({ ...contactVehicleFields(contact, input), id: crypto.randomUUID() })
+    contact.vehicles.push({ ...contactVehicleFields(contact, input), id: generateId() })
     saveDemoData(data)
   },
 

@@ -4,6 +4,7 @@ import { readDemoData, saveDemoData, subscribeToDemoChanges } from './demoStorag
 import { requireResidence, requireUser, requiredText, residenceFields } from './communityRules.js'
 import { householdService } from './householdService.js'
 import { assignPrincipal } from './principalService.js'
+import { generateId } from '../utils/id.js'
 
 export const communityService = {
   ...householdService,
@@ -66,7 +67,7 @@ export const communityService = {
     const data = readDemoData()
     const user = requireUser(data, true)
     const fields = residenceFields(data, user.condominiumId, input)
-    const id = crypto.randomUUID()
+    const id = generateId()
     data.residences.push({ ...fields, id, condominiumId: user.condominiumId, principalUserId: null })
     saveDemoData(data)
     return id

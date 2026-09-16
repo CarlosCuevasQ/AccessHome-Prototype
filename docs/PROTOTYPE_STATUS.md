@@ -1,6 +1,60 @@
 # Estado del prototipo AccessHome
 
-## Etapa 5 · Invitaciones (vigente)
+## Corrección vigente · Compatibilidad de IDs
+
+- [x] `generateId()` compartido por las 12 altas/generaciones que dependían directamente de `crypto.randomUUID()`.
+- [x] Prioridad: UUID nativo, UUID v4 con `getRandomValues`, timestamp + contador + aleatorio como último recurso del prototipo.
+- [x] Disponibilidad comprobada con `typeof`; contempla objeto Crypto ausente y métodos no invocables.
+- [x] Revisión adicional: seis llamadas a `structuredClone` en semilla/migraciones sustituidas por `cloneJsonData`, con alternativa JSON.
+- [x] Reglas de entidades, permisos, vigencias, snapshots y usos conservadas; no se cambian IDs/tokens guardados ni esquema.
+- [x] 99 pruebas correctas: las 90 anteriores y nueve de compatibilidad. Incluyen todas las altas, invitación, vista pública y entrada/salida sin UUID nativo y sin Crypto.
+- [x] Build correcto; documentación de repetición de la prueba actualizada. Sin dependencias nuevas, restauración de datos, commit ni push.
+
+Se revisaron llamadas directas de APIs del navegador y utilidades modernas en `src/`. Además de Crypto, se corrigió la dependencia no protegida de `structuredClone`. No se encontró uso de `showModal`, portapapeles, cámara, `toSorted`, `toReversed` ni `replaceAll` que requiriera otro ajuste en este alcance. La ausencia de APIs se simula en pruebas aisladas de Node; no se afirma haber probado todas las versiones de navegadores móviles.
+
+Archivos de esta corrección: `src/utils/id.ts`, `src/utils/clone.ts`; `src/services/invitationsService.ts`, `accessService.ts`, `communityService.ts`, `contactsService.ts`, `householdService.ts`, `principalService.ts`, `demoMigration.ts`; `src/data/demo.ts`; `tests/compatibility.test.mjs`; README, ambas guías y documentación de servicios/utilidades.
+
+Commit sugerido: `fix: generar identificadores compatibles sin crypto.randomUUID`.
+
+## Etapa 6 · QR, visitante y control de acceso (vigente)
+
+- [x] QR local en el detalle y vista pública; representa la URL absoluta `/invitacion/{token}` del origen actual.
+- [x] Ruta pública sin sesión, con visitante, casa, anfitrión, vigencia, vehículo, placas, estado y QR de 288 px adaptable.
+- [x] Proyección pública explícita: sin teléfonos, correos, habitantes, notas ni identificadores internos.
+- [x] Visitante puede añadir un vehículo una sola vez a una invitación sin vehículo y antes del primer uso; placas obligatorias, demás datos opcionales.
+- [x] Vehículo guardado exclusivamente en la invitación; contactos y vehículos permanentes permanecen separados.
+- [x] Control administrativo con selección de invitación activa o token manual y validación explícita.
+- [x] Servicio valida rol/condominio, existencia, estado, periodo, residencia activa y usos; no confía en la imagen QR.
+- [x] Primera validación registra Entrada; segunda, Salida y Completada; tercera rechazada sin nuevos registros.
+- [x] Resultados de autorización en verde y rechazo en rojo con motivo legible.
+- [x] Historial administrativo con snapshots de visita, anfitrión, residencia, vehículo, método QR y fecha/hora.
+- [x] Uso y registro persistidos en una sola escritura; fallo de almacenamiento no autoriza ni consume usos.
+- [x] Esquema 6: migración desde v5 conserva datos, sesión, tokens y usos; añade historial vacío. Restauración incluye movimientos.
+- [x] Única dependencia nueva: `qrcode.react` 4.2.0; sin servicios externos, cámara ni hardware.
+- [x] 90 pruebas automatizadas correctas: 21 nuevas y 69 de regresión.
+- [x] Documentación acumulativa y verificación de navegador, móvil y build.
+
+### Verificación y datos conservados
+
+Recorrido completo con **Visita QR demostración**, invitada por Daniel a Casa 24: consulta pública sin sesión, incorporación de solo placas **QR-9001**, recarga, entrada, salida y tercer rechazo. Quedó Completada con exactamente dos movimientos. También se verificaron tokens inexistentes, cancelados, expirados y de inicio futuro, además de un enlace público inválido. No se restauraron ni borraron datos anteriores ni se consumieron usos de otras invitaciones.
+
+Build final correcto (`tsc --noEmit` y Vite); 90 pruebas de servicios correctas. Revisión a 375, 768 y 1366 px sin desbordamiento en las vistas medidas; consola final sin errores ni advertencias. Servidor de desarrollo disponible en http://127.0.0.1:5173. Sin commit ni push.
+
+El QR y los enlaces funcionan con los datos del mismo navegador, perfil y origen. localStorage no sincroniza otro teléfono ni otro navegador. Para presentar el flujo público, cerrar sesión y abrir el enlace en ese mismo origen, o usar otra pestaña y emulación móvil. No se realizó escaneo con una cámara física.
+
+Archivos principales:
+
+- Servicios: `src/services/publicInvitationService.ts`, `accessService.ts`, `accessRules.ts`, `accessValidation.ts`, migración/validación de datos y contratos de servicios.
+- Modelos/semilla: `src/types/access.ts`, `invitations.ts`, `demo.ts`, `src/data/demo.ts`.
+- Interfaz: `src/pages/PublicInvitationPage.tsx`, `AccessControlPage.tsx`, `InvitationPage.tsx`, `src/components/access/`, `src/components/invitations/InvitationQr.tsx`, `VisitorVehicleForm.tsx`.
+- Integración: `src/router.tsx`, `src/data/navigation.ts`, `src/layouts/PublicLayout.tsx`, `src/utils/invitationLinks.ts`, estilos de acceso/invitaciones/globales y archivos de dependencias.
+- Pruebas/documentación: `tests/access.test.mjs`, `tests/public-invitation.test.mjs`, expectativas de migración existentes, README y ambas guías.
+
+Commit sugerido: `feat: agregar QR, vista pública y control de acceso simulado`.
+
+## Etapa 5 · Invitaciones (conservada)
+
+Registro histórico: el espacio pendiente de QR, enlace público y consumo de usos de esta etapa fue sustituido por la implementación funcional de la etapa 6.
 
 - [x] Dos flujos: contacto frecuente con vehículo guardado/ninguno/otro y visitante ocasional.
 - [x] Guardado opcional como contacto desmarcado, sin exigir cuenta ni datos extra.
@@ -161,7 +215,7 @@ Mensaje de commit sugerido (sin ejecutarlo): `feat: gestionar condominio, reside
 
 ## Etapa 1 · Infraestructura del frontend (histórico)
 
-La entrega vigente es la etapa 5. Los resultados siguientes conservan el historial de la infraestructura inicial.
+La entrega vigente es la etapa 6. Los resultados siguientes conservan el historial de la infraestructura inicial.
 
 - [x] React, Vite y TypeScript con comprobación estricta.
 - [x] Router principal con redirección inicial.
@@ -179,7 +233,7 @@ La entrega vigente es la etapa 5. Los resultados siguientes conservan el histori
 
 ## Fases previstas
 
-El objetivo general actualizado define las funciones finales. Esta división organiza su implementación; se debe detener el trabajo al terminar cada etapa y esperar la indicación de continuar. Las fases 1 a 5 están implementadas; QR/enlace público se separa como siguiente entrega pendiente.
+El objetivo general actualizado define las funciones finales. Esta división organiza su implementación; se debe detener el trabajo al terminar cada etapa y esperar la indicación de continuar. Las fases 1 a 6, incluido QR/enlace público y control administrativo, están implementadas. Las ampliaciones pendientes se indican por separado.
 
 - [x] **Fase 1 — Infraestructura:** implementación y verificación completadas.
 - [x] **Fase 2 — Datos, servicios y perfiles:** modelos tipados, datos demo, sesión simulada por rol y localStorage encapsulado en servicios sustituibles por API.
@@ -194,9 +248,10 @@ El objetivo general actualizado define las funciones finales. Esta división org
   - [x] Residente, residencia destino, copia de visitante/vehículo, vigencia, usos, estado y token único simulado.
   - [x] Editar o eliminar un contacto no modifica invitaciones históricas.
   - [x] Consulta, búsqueda, estados, cancelación y confirmación responsive.
-- [ ] **Fase 5B — QR y visitante:** QR y enlace público con destino, vigencia, vehículo y estado; visitante sin cuenta ni instalación.
-- [ ] **Fase 6 — Accesos:** simulador del administrador que valida QR/token, registra entrada, registra salida y completa la invitación según sus usos.
-  - [ ] Historial consultable por administrador y residente con validaciones de vigencia, estado y usos.
+- [x] **Fase 5B — QR y visitante:** QR y enlace público con destino, vigencia, vehículo y estado; visitante sin cuenta ni instalación, con vehículo opcional posterior.
+- [x] **Fase 6 — Accesos:** simulador del administrador que valida QR/token, registra entrada, registra salida y completa la invitación según sus usos.
+  - [x] Historial administrativo con validaciones de vigencia, estado, condominio y usos.
+  - [ ] Ampliación posterior: consulta detallada de movimientos desde el residente (no solicitada en esta entrega).
 - [ ] **Fase 7 — Reportes:** residente crea y consulta reportes; administrador los consulta y cambia su estado.
 - [ ] **Fase 8 — Presentación:** recorrido completo, regresión, pruebas a 375–430 px, 768 px y 1280 px o más; adaptación de formularios/tablas/listas y revisión de accesibilidad.
   - [ ] Crear `docs/PRESENTATION_DEMO.md` con datos y guion reproducible del recorrido final.
@@ -208,7 +263,9 @@ Una integración de producción con API queda fuera del prototipo y requiere una
 - Las rutas están protegidas en el frontend; es una simulación que no ofrece seguridad frente a la manipulación del navegador o del código.
 - La sesión y los datos demo se guardan en `accesshome.demo.v1`; no hay backend ni cuentas reales.
 - Las contraseñas demo están en la semilla local. No se devuelven en los objetos de sesión.
-- Invitaciones implementadas. QR/enlace público, consumo de usos, accesos y reportes pendientes.
+- Invitaciones, QR/enlace público y control administrativo implementados. Reportes y consulta detallada de movimientos desde el residente pendientes.
+- El QR contiene una URL con token; no lleva los datos ni los sincroniza entre dispositivos. Otro navegador/perfil/origen no tendrá la invitación. No hay lector de cámara ni hardware de acceso.
+- El simulador representa un puesto local. Una API futura deberá validar permisos y aplicar transacciones para varios puestos simultáneos; localStorage no ofrece seguridad ni transacciones entre dispositivos.
 - Contactos y vehículos admiten eliminación definitiva o desactivación reversible. Los habitantes solo se desactivan. No hay traslado entre casas ni cambio de contraseñas. Las cuentas adicionales consultan su casa; solo el principal de una casa activa puede gestionarla.
 - La migración conserva Casa 25 y otros registros anteriores; restaurar recupera exactamente las cuatro casas de la nueva semilla.
 - La sesión no tiene vencimiento automático y se comparte entre pestañas del mismo origen.

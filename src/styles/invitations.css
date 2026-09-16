@@ -25,8 +25,6 @@
 .invitation-status { display: inline-block; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; color: var(--muted); background: #eef0f2; }
 .invitation-status-activa { color: var(--primary); background: var(--light-blue); }
 .invitation-status-completada { color: var(--primary); background: var(--light-yellow); }
-.qr-placeholder { margin: 28px 0; padding: 20px 0; border-block: 1px solid var(--border); }
-.qr-placeholder p { margin: 10px 0 0; color: var(--muted); }
 .cancel-invitation { margin-bottom: 20px; }
 .invitation-contact-link a { display: inline-flex; align-items: center; min-height: 44px; }
 @media (max-width: 600px) {

@@ -1,0 +1,38 @@
+import type { DemoDatabase } from '../types/demo.js'
+import type { Invitation, PublicInvitation, VisitVehicle } from '../types/invitations.js'
+import { readDemoData, saveDemoData } from './demoStorage.js'
+import { invitationStatus, visitVehicle } from './invitationRules.js'
+
+function requireToken(data: DemoDatabase, token: string): Invitation {
+  const invitation = data.invitations.find((item) => item.token === token.trim())
+  if (!invitation) throw new Error('Invitación no disponible. Comprueba el enlace con tu anfitrión.')
+  return invitation
+}
+
+function canAddVehicle(data: DemoDatabase, invitation: Invitation): boolean {
+  return invitation.vehicle === null && invitation.usedUses === 0 && invitationStatus(invitation) === 'activa'
+    && data.residences.some((house) => house.id === invitation.residenceId && house.active)
+}
+
+export const publicInvitationService = {
+  async getInvitation(token: string): Promise<PublicInvitation> {
+    const data = readDemoData()
+    const invitation = requireToken(data, token)
+    // La vista por token recibe únicamente los datos necesarios para esta visita.
+    return {
+      token: invitation.token, visitorName: invitation.visitorName,
+      residenceName: invitation.residenceName, inviterName: invitation.inviterName,
+      startsAt: invitation.startsAt, expiresAt: invitation.expiresAt,
+      vehicle: invitation.vehicle, status: invitationStatus(invitation),
+      usedUses: invitation.usedUses, maxUses: invitation.maxUses, canAddVehicle: canAddVehicle(data, invitation),
+    }
+  },
+
+  async addVehicle(token: string, input: VisitVehicle): Promise<void> {
+    const data = readDemoData()
+    const invitation = requireToken(data, token)
+    if (!canAddVehicle(data, invitation)) throw new Error('Solo puedes añadir un vehículo a una invitación activa sin vehículo y antes de su primer uso.')
+    invitation.vehicle = visitVehicle(input)
+    saveDemoData(data)
+  },
+}

@@ -9,7 +9,95 @@ Esta guía se amplía en cada etapa. Al incorporar funciones nuevas, repetir tam
 3. Ejecutar `npm run dev` y mantener esa terminal abierta.
 4. Abrir http://127.0.0.1:5173.
 
-## Etapa 5 · Invitaciones (vigente)
+## Corrección · Compatibilidad de identificadores
+
+Cuenta: `residente@accesshome.demo` / `Access123`. Datos nuevos sugeridos: **Prueba compatibilidad**, placas **COMP-242**. Repetir en el navegador y la misma dirección donde apareció el error; no restaurar los datos ni cambiar de origen para comprobar su conservación.
+
+| ID | Pasos | Resultado esperado |
+| --- | --- | --- |
+| C-01 | Recargar la página actual para cargar el código corregido. Invitaciones → Nuevo visitante → Prueba compatibilidad → Sin vehículo → 24 horas → Generar. | Detalle con ID/token, QR, Casa 24, estado Activa y 0 de 2 usos, sin `crypto.randomUUID is not a function`. |
+| C-02 | Recargar el detalle, abrir el enlace público y regresar al listado. | Mismos datos, token e invitación; la sesión y las invitaciones anteriores se conservan. |
+| C-03 | Contactos frecuentes → un contacto propio activo → Invitar → elegir vehículo o Sin vehículo → Generar. | Creación correcta y snapshot del contacto, con destino automático y usos iniciales intactos. |
+| C-04 | Crear otra ocasional con COMP-242 y Guardar como contacto frecuente marcado. | Invitación, contacto y vehículo nuevos con identificadores distintos; vehículo de agenda separado del permanente. |
+| C-05 | Como administrador, validar el token de prueba tres veces. | Entrada, Salida/Completada y tercer rechazo; dos movimientos persistentes. |
+| C-06 | Ejecutar `npm test`. | 99 pruebas correctas, incluidas las alternativas descritas abajo. No modifica localStorage del navegador. |
+
+`tests/compatibility.test.mjs` simula: UUID nativo; únicamente `getRandomValues`; objeto Crypto ausente; métodos no invocables; reloj y aleatorio repetidos; ausencia de `structuredClone`. Verifica formato UUID v4 y sus bits, unicidad dentro de una misma ejecución, copias independientes y migración conservada. Dos recorridos de servicios crean casa/principal, habitante, vehículo permanente, contacto/vehículo, invitación con guardado opcional y entrada/salida, tanto sin UUID nativo como sin Crypto, también sin `structuredClone`.
+
+La alternativa final devuelve un identificador de timestamp/contador/aleatorio, que puede no tener forma UUID; el prototipo lo trata como una cadena opaca, incluido en URL y QR. No cambian los tokens existentes ni las validaciones de invitaciones. No se añadieron dependencias. La revisión adicional de APIs se limitó al código de la aplicación; no es una certificación de navegadores antiguos.
+
+**Verificación de esta corrección:** `npm test` 99/99; `npm run build` correcto. Las pruebas nuevas usan almacenamiento aislado. Los recorridos de navegador de la etapa 6 que siguen son el registro de esa entrega; no se atribuyen a una nueva prueba en un teléfono físico.
+
+## Etapa 6 · QR, visitante y control de acceso (vigente)
+
+### Preparación y datos
+
+- Residente Daniel, Casa 24: `residente@accesshome.demo` / `Access123`.
+- Administrador: `admin@accesshome.demo` / `Access123`.
+- Crear un visitante ocasional **Visita QR de prueba**, sin vehículo, vigencia **24 horas**, sin guardarlo como contacto. Usar placas **QR-9002** para la incorporación posterior.
+- En su detalle, copiar el token y el enlace **Abrir invitación pública**. Cada invitación nueva tiene un token diferente generado por `generateId()`; no copiar tokens de ejemplos históricos para probar acceso activo.
+- Ruta administrativa: `/admin/control-acceso`. Ruta pública: `/invitacion/{token}`.
+- Mantener `http://127.0.0.1:5173` durante todo el recorrido. Otra pestaña comparte datos y sesión; cerrar sesión permite comprobar acceso anónimo. Una ventana privada, otro perfil, `localhost`, otro puerto u otro dispositivo tienen datos independientes.
+
+**Límite de la demostración:** el QR codifica la URL, no transporta la base de datos. Un teléfono distinto no podrá consultar las invitaciones guardadas en el navegador del equipo. Para esta etapa usar el enlace en el mismo navegador y emulación móvil. No hace falta cámara para el simulador: se valida el token almacenado. La sincronización entre dispositivos requiere la futura API.
+
+### Nueve recorridos solicitados
+
+| ID | Pasos | Resultado esperado |
+| --- | --- | --- |
+| A6-01 | Crear la visita indicada como Daniel y abrir su detalle. Seguir Abrir invitación pública. | QR real en ambas vistas, URL `/invitacion/{token}`, visitante, Casa 24, Daniel, vigencia, estado Activa y 0 de 2 usos. Consultar el QR no consume usos. |
+| A6-02 | Copiar el enlace, cerrar sesión y abrirlo en el mismo origen. Revisar a 375 px. | Consulta sin login, QR legible y adaptable. No aparecen controles administrativos, habitantes, teléfonos/correos ni notas privadas. |
+| A6-03 | Administrador → Control de acceso → seleccionar esa invitación → Validar acceso. | Seleccionar solo carga el token. Al validar: **Acceso autorizado**, **Entrada**, 1 de 2 usos y un registro con visitante, casa, anfitrión, vehículo, método QR y fecha/hora. La vista pública indica Entrada registrada. |
+| A6-04 | Validar nuevamente el mismo token. | **Acceso autorizado**, **Salida**, 2 de 2 usos y estado Completada. Hay exactamente dos registros y deja de aparecer en el selector de activas. |
+| A6-05 | Mantener/pegar el mismo token y validar por tercera vez. Recargar el panel. | **Acceso rechazado: Invitación completada**. No se añade un tercer movimiento. Los dos existentes persisten; el resultado visual se limpia al recargar. |
+| A6-06 | Introducir `token-inexistente` y validar. Abrir `/invitacion/token-inexistente`. | Panel: **Invitación inexistente** en rojo, sin movimientos. Público: Invitación no disponible, sin datos de otra visita ni obligación de iniciar sesión. |
+| A6-07 | Daniel crea otra invitación, copia su token y la cancela. Administrador valida ese token. | **Acceso rechazado: Invitación cancelada**. Consulta pública muestra Cancelada; no permite incorporar vehículo. Sin nuevos movimientos. |
+| A6-08 | Crear una personalizada que comience ahora y termine en uno o dos minutos. Esperar a su final y validar su token. | **Acceso rechazado: Invitación expirada**. Estado público se actualiza sin recargar; ya no admite vehículo. Sin usos ni movimientos nuevos. |
+| A6-09 | En una invitación nueva sin vehículo, antes de A6-03, abrir el enlace público → Sí → completar solo QR-9002 → Guardar vehículo. Recargar; luego realizar entrada y salida. | Placas obligatorias; marca/modelo/color opcionales. El formulario desaparece tras guardar. Datos persistentes en ESA invitación y sus dos movimientos; no se crea contacto ni vehículo permanente. No se permite sustituirlos. |
+
+### Validación adicional y regresión
+
+| ID | Pasos | Resultado esperado |
+| --- | --- | --- |
+| A6-10 | Crear personalizada con inicio mañana; seleccionarla y validar antes del inicio. | Fuera del periodo permitido. Se permite preparar el vehículo, pero no consumir usos. El intervalo válido incluye el inicio y excluye el instante final. |
+| A6-11 | Crear sin vehículo, registrar entrada y abrir el enlace público. Repetir con una invitación creada originalmente con vehículo. | Ninguna permite incorporar/reemplazar vehículo. Tras entrada se conserva el snapshot para la salida. |
+| A6-12 | Abrir `/admin/control-acceso` como Daniel y repetir llamadas directas al servicio como residente o sin sesión. | Ruta y servicio impiden validar y consultar el historial administrativo. La ruta pública permanece accesible. |
+| A6-13 | En datos de prueba, desactivar la casa destino y validar una invitación activa. Reactivar después. | Rechazo por residencia inactiva y bloqueo de incorporación pública de vehículo. No consume usos. Administrador de otro condominio tampoco accede a esa invitación ni sus registros. |
+| A6-14 | Mantener el enlace público en una pestaña y validar desde otra. Editar después un contacto que originó una invitación con vehículo. | Estado/usos se actualizan. Invitación y movimientos conservan las copias del visitante, anfitrión, casa y vehículo; no reconstruyen datos desde el contacto. |
+| A6-15 | Revisar formulario, rechazo e historial a 375 × 812, 768 × 1024 y 1366 × 1000; recorrer con teclado. | Botones amplios, etiquetas visibles, foco identificable y mensajes anunciados. Tabla de movimientos pasa a lista compacta sin desbordamiento horizontal. QR sin controles administrativos alrededor. |
+| A6-16 | En almacenamiento aislado, simular cuota agotada al validar o guardar vehículo; reintentar después. | Error sin autorización, uso consumido ni registro parcial. Los datos anteriores permanecen. Cubierto por pruebas automatizadas. |
+| A6-17 | Migrar una base v5 editada; recargar. Restaurar demo solo en un perfil destinado a pruebas. | Migración añade movimientos vacíos una sola vez, conserva tokens/usos/invitaciones y sesión. No inventa movimientos de usos anteriores. Reset vacía invitaciones/movimientos, recupera semilla y cierra sesión. |
+| A6-18 | Repetir validaciones consecutivas y una cancelación después de entrada. | Máximo dos movimientos por invitación. Cancelar tras entrada impide salida. El botón bloquea envíos mientras guarda; cada validación relee estado y hora. |
+
+Para comprobar permisos en desarrollo, con Daniel autenticado, ejecutar en la consola:
+
+```js
+const { accessService } = await import('/src/services/accessService.ts')
+await accessService.validateToken('token-inexistente')
+await accessService.listAccessRecords()
+```
+
+Ejecutar las llamadas por separado: ambas deben rechazar por rol, sin guardar. Las pruebas automatizadas también verifican aislamiento entre condominios. La simulación representa un puesto local; no prueba concurrencia entre dispositivos, que requiere transacciones en la futura API.
+
+### Verificación automatizada
+
+`npm test`: **90/90** correctas. Las 21 nuevas son 12 de acceso y 9 de consulta/modificación pública. Incluyen entrada/salida, rechazos, límites exactos de tiempo, roles, condominio, residencia inactiva, snapshots, fallos de escritura, validaciones consecutivas, migración v5, corrupción de movimientos y restauración. Se conservan las 69 pruebas anteriores. Los tests usan almacenamiento aislado y no alteran los datos del navegador.
+
+`npm run build` verifica TypeScript y genera el frontend con la única dependencia nueva `qrcode.react` 4.2.0. El QR se genera localmente, sin llamadas a servicios externos.
+
+### Recorrido verificado en navegador · 15 de septiembre de 2026
+
+- Daniel creó **Visita QR demostración**, Casa 24, sin vehículo y 24 horas. QR real visible y enlace público abiertos; acceso sin sesión comprobado a 375 × 812.
+- Visitante añadió únicamente **QR-9001**; recarga conservó placas y retiró formulario. Ninguna otra invitación se modificó.
+- Administrador registró entrada y salida, comprobó Completada y tercer rechazo. Se conservaron exactamente dos movimientos con método QR; recarga mantiene historial y sesión.
+- Token inexistente, invitación cancelada anterior, expirada anterior y futura **Prueba fechas** rechazados con sus motivos. Enlace público inválido mostró el estado de error sin información privada.
+- Vista pública actualizada entre pestañas tras entrada y salida; la segunda indica Completada y que el código ya no permite accesos.
+- Formulario y registro revisados a 375 px, comprobación de anchura a 768 px y revisión de escritorio a 1366 px. Sin desbordamientos en las vistas medidas ni errores/advertencias de consola al finalizar. Se restauraron las dimensiones normales del navegador.
+- Se conservaron datos previos, incluidas las bajas realizadas por el usuario. No se reinició la demo ni se consumieron usos de invitaciones ajenas a la prueba. La visita QR de prueba quedó Completada con sus dos movimientos. No se hizo escaneo con una cámara física.
+
+## Etapa 5 · Invitaciones (conservada)
+
+Los casos siguen sirviendo como regresión. Las referencias históricas de esta sección a QR/enlace público/usos pendientes quedaron resueltas en la etapa 6.
 
 ### Preparación y datos
 

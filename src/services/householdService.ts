@@ -2,12 +2,13 @@ import type { InhabitantInput, VehicleInput } from '../types/community.js'
 import { inhabitantName } from '../utils/people.js'
 import { inhabitantFields, requireHouseholdManager, vehicleFields } from './communityRules.js'
 import { readDemoData, saveDemoData } from './demoStorage.js'
+import { generateId } from '../utils/id.js'
 
 export const householdService = {
   async createInhabitant(residenceId: string, input: InhabitantInput): Promise<void> {
     const data = readDemoData()
     requireHouseholdManager(data, residenceId)
-    data.inhabitants.push({ ...inhabitantFields(input), id: crypto.randomUUID(), residenceId, userId: null })
+    data.inhabitants.push({ ...inhabitantFields(input), id: generateId(), residenceId, userId: null })
     saveDemoData(data)
   },
 
@@ -27,7 +28,7 @@ export const householdService = {
   async createVehicle(residenceId: string, input: VehicleInput): Promise<void> {
     const data = readDemoData()
     const residence = requireHouseholdManager(data, residenceId)
-    data.vehicles.push({ ...vehicleFields(data, residence, input), id: crypto.randomUUID(), residenceId })
+    data.vehicles.push({ ...vehicleFields(data, residence, input), id: generateId(), residenceId })
     saveDemoData(data)
   },
 

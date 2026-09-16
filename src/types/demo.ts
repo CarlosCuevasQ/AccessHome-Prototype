@@ -1,6 +1,7 @@
 import type { SessionUser } from './auth.js'
 import type { FrequentContact } from './contacts.js'
 import type { Invitation } from './invitations.js'
+import type { AccessRecord } from './access.js'
 
 export interface DemoAccount extends SessionUser {
   password: string
@@ -46,7 +47,7 @@ export interface Vehicle {
 }
 
 export interface DemoDatabase {
-  version: 5
+  version: 6
   users: DemoAccount[]
   condominiums: Condominium[]
   residences: Residence[]
@@ -54,10 +55,15 @@ export interface DemoDatabase {
   vehicles: Vehicle[]
   contacts: FrequentContact[]
   invitations: Invitation[]
+  accessRecords: AccessRecord[]
   session: { userId: string } | null
 }
 
-export interface DemoDatabaseV4 extends Omit<DemoDatabase, 'version' | 'invitations'> {
+export interface DemoDatabaseV5 extends Omit<DemoDatabase, 'version' | 'accessRecords'> {
+  version: 5
+}
+
+export interface DemoDatabaseV4 extends Omit<DemoDatabaseV5, 'version' | 'invitations'> {
   version: 4
 }
 

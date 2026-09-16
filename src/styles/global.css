@@ -4,6 +4,7 @@
 @import './community.css';
 @import './contacts.css';
 @import './invitations.css';
+@import './access.css';
 
 :root {
   font-family: 'Segoe UI', Arial, sans-serif;

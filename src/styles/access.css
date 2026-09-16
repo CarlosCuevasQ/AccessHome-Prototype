@@ -1,0 +1,30 @@
+.invitation-qr { margin: 24px 0; }
+.invitation-qr svg { display: block; width: min(100%, 288px); height: auto; background: white; }
+.invitation-qr figcaption { max-width: 360px; margin-top: 12px; font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+.invitation-qr-section { margin: 28px 0; padding: 24px 0; border-block: 1px solid var(--border); }
+.visitor-layout .public-main { max-width: 640px; padding: 28px 24px 40px; }
+.visitor-layout .public-header { min-height: 72px; }
+.visitor-page h1 { font-size: clamp(1.8rem, 5vw, 2.4rem); margin-bottom: 12px; }
+.visitor-destination { color: var(--primary); font-size: 1.15rem; margin-bottom: 16px; }
+.visitor-destination span { display: block; font-size: 1rem; color: var(--muted); }
+.visitor-page .invitation-qr { text-align: center; margin: 20px 0 28px; }
+.visitor-page .invitation-qr svg, .visitor-page .invitation-qr figcaption { margin-inline: auto; }
+.visitor-details { border-block: 1px solid var(--border); padding: 24px 0; margin: 24px 0; }
+.visitor-help { font-size: 0.85rem; color: var(--muted); margin: 28px 0 0; }
+.visitor-vehicle-section { margin: 28px 0; }
+.visitor-vehicle-choice { border: 0; margin: 0; padding: 0; min-width: 0; }
+.visitor-vehicle-choice legend { margin-bottom: 12px; font-size: 1.15rem; color: var(--primary); font-weight: 600; }
+.visitor-vehicle-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.access-validation-form { margin: 28px 0; max-width: 700px; padding-block: 24px; border-block: 1px solid var(--border); }
+.access-validation-form fieldset { display: grid; gap: 20px; border: 0; margin: 0; padding: 0; min-width: 0; }
+.access-validation-form button { justify-self: start; min-height: 48px; }
+.access-result { max-width: 700px; padding: 20px; border: 1px solid; border-left-width: 4px; border-radius: 4px; overflow-wrap: anywhere; }
+.access-result h2 { color: inherit; margin-bottom: 12px; }
+.access-result p { margin: 8px 0 0; }
+.access-authorized { color: #1d5734; background: #edf7f0; border-color: #2c7448; }
+.access-rejected { color: #922b32; background: #fff2f2; border-color: #ae343c; }
+.access-movement { font-size: 1.25rem; font-weight: 700; }
+@media (max-width: 600px) {
+  .access-validation-form button { width: 100%; }
+  .visitor-page .editor-form { padding: 16px; }
+}

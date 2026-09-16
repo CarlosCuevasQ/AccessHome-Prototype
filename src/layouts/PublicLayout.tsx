@@ -2,9 +2,9 @@ import { Outlet } from 'react-router-dom'
 import { Brand } from '../components/Brand'
 import { RouteFocus } from '../components/RouteFocus'
 
-export function PublicLayout() {
+export function PublicLayout({ visitor = false }: { visitor?: boolean }) {
   return (
-    <div className="public-layout">
+    <div className={`public-layout${visitor ? ' visitor-layout' : ''}`}>
       <a className="skip-link" href="#main-content">Saltar al contenido</a>
       <RouteFocus />
       <header className="public-header">
@@ -14,7 +14,7 @@ export function PublicLayout() {
       <main id="main-content" tabIndex={-1} className="public-main"><Outlet /></main>
       <footer className="public-footer">
         <span>AccessHome · Prototipo universitario</span>
-        <span>Etapa 5 / Invitaciones</span>
+        {!visitor && <span>Etapa 6 / Control de acceso</span>}
       </footer>
     </div>
   )

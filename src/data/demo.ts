@@ -1,12 +1,14 @@
 import type { DemoDatabase } from '../types/demo.js'
 import { inhabitantFromAccount } from '../utils/people.js'
 import { createDemoContacts } from './contacts.js'
+import { cloneJsonData } from '../utils/clone.js'
 
 export const DEMO_PASSWORD = 'Access123'
 
 const initialData: DemoDatabase = {
-  version: 5,
+  version: 6,
   invitations: [],
+  accessRecords: [],
   contacts: createDemoContacts(),
   users: [
     { id: 'user-admin', name: 'Administrador Demo', email: 'admin@accesshome.demo', password: DEMO_PASSWORD, role: 'admin', condominiumId: 'condo-encinos', residenceId: null },
@@ -45,7 +47,7 @@ initialData.inhabitants.push(
 initialData.vehicles = initialData.vehicles.map((vehicle) => ({ ...vehicle, ownerId: vehicle.ownerId ? `inhabitant-${vehicle.ownerId}` : null }))
 
 export function createDemoData(): DemoDatabase {
-  return structuredClone(initialData)
+  return cloneJsonData(initialData)
 }
 
 export function getDemoCredentials() {

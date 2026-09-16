@@ -4,11 +4,12 @@ Prototipo funcional para una presentación universitaria sobre seguridad residen
 
 ## Estado actual
 
-Etapa 5: invitaciones desde contactos frecuentes o para visitantes ocasionales, conservando las responsabilidades de la comunidad:
+Etapa 6: QR, vista pública del visitante y simulación de entrada/salida, conservando las responsabilidades de la comunidad:
 
-- **Administrador:** crea residencias, edita número/calle y estado, asigna o cambia al principal y consulta habitantes y vehículos.
+- **Administrador:** gestiona la estructura y principales del condominio; consulta habitantes/vehículos y opera Control de acceso con historial de movimientos autorizados.
 - **Residente principal:** administra habitantes, vehículos y su agenda privada; genera y cancela invitaciones para su propia casa.
 - **Habitante adicional:** puede existir sin cuenta. Las cuentas adicionales conservadas de etapas anteriores solo consultan su casa hasta que el administrador las designe como principal.
+- **Visitante:** abre su invitación por token sin iniciar sesión; ve su QR y puede añadir un vehículo si la invitación se creó sin él, antes de la entrada.
 
 Los permisos se verifican en las pantallas y en cada operación del servicio. Se mantienen autenticación, roles, navegación, sesión persistente, restauración y diseño responsive azul con acentos amarillos.
 
@@ -33,6 +34,16 @@ npm run preview
 
 Build comprueba TypeScript y genera `dist/`. Preview sirve el build en [http://127.0.0.1:4173](http://127.0.0.1:4173). Estos comandos no publican el sitio.
 
+### Compatibilidad de identificadores
+
+Todas las altas y tokens utilizan `generateId()` de `src/utils/id.ts`: primero `crypto.randomUUID()`, después UUID v4 mediante `crypto.getRandomValues()` y, si falta Crypto, timestamp + contador local + dos valores aleatorios. El último recurso es un identificador de demostración, no un token criptográfico. Los IDs y tokens anteriores se conservan; no cambia el esquema ni las reglas de invitaciones.
+
+`randomUUID()` puede faltar al abrir la aplicación por HTTP desde una IP local, porque requiere un contexto seguro; `getRandomValues()` también funciona en contextos no seguros. Véanse [randomUUID](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID) y [getRandomValues](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues). La disponibilidad se comprueba antes de invocar cada API.
+
+La revisión también encontró llamadas a `structuredClone()` en la semilla y migraciones. Ahora usan `cloneJsonData()` con alternativa JSON para los datos serializables del prototipo. No se añadieron dependencias ni se reiniciaron datos. La corrección cubre estas APIs ausentes; no establece compatibilidad general con navegadores obsoletos.
+
+Para repetir la prueba: recarga la aplicación en el navegador donde apareció el error, entra como Daniel y abre **Invitaciones → Nuevo visitante**. Usa **Prueba compatibilidad**, sin vehículo, **24 horas**, y genera. Debe abrir el detalle con QR, estado Activa y 0 de 2 usos; al recargar debe conservarse. Repite desde un contacto frecuente. No hace falta restaurar la demo.
+
 ## Rutas
 
 | Ruta | Función |
@@ -41,13 +52,15 @@ Build comprueba TypeScript y genera `dist/`. Preview sirve el build en [http://1
 | `/admin` | Resumen y datos básicos del condominio |
 | `/admin/residencias` | Listado, búsqueda y alta de casas |
 | `/admin/residencias/:residenceId` | Estructura, estado, asignación del principal y consulta de habitantes/vehículos |
+| `/admin/control-acceso` | Simulador de validación por token, selector de activas e historial autorizado |
 | `/residente` | Mi residencia; gestión si el usuario es su principal y la casa está activa |
 | `/residente/contactos` | Agenda privada: listado, buscador y alta de contactos |
 | `/residente/contactos/:contactId` | Detalle y edición del contacto y sus vehículos |
 | `/residente/contactos/:contactId/invitar` | Invitación con datos del contacto y selección de vehículo |
 | `/residente/invitaciones` | Listado, búsqueda y filtro por estado de las invitaciones de la casa |
 | `/residente/invitaciones/nueva` | Nuevo visitante, con guardado opcional como contacto |
-| `/residente/invitaciones/:invitationId` | Confirmación/detalle histórico y cancelación; espacio para el futuro QR |
+| `/residente/invitaciones/:invitationId` | Detalle, cancelación, QR y enlace del visitante |
+| `/invitacion/:token` | Vista pública sin login, con QR y datos exclusivos de esa visita |
 | `/admin/perfil`, `/residente/perfil` | Perfil del usuario autenticado |
 | Ruta desconocida | Página 404, dentro del layout cuando corresponde |
 
@@ -113,9 +126,24 @@ Abre [Invitaciones](http://127.0.0.1:5173/residente/invitaciones) con Daniel (`r
 
 **Permisos:** solo el principal de una casa activa crea/cancela. Las cuentas adicionales activas pueden consultar invitaciones de su propia casa. Administrador y otras casas no acceden a esta sección. La agenda original sigue siendo privada: las invitaciones contienen exclusivamente los datos seleccionados para la visita. Cambiar al principal no cambia quién generó las invitaciones históricas.
 
-La semilla comienza sin invitaciones. Se reconocen como Completadas al alcanzar sus usos máximos; todavía no hay controles para consumir usos. El QR, el enlace público y la validación de acceso quedan pendientes. Generar una invitación en este prototipo solo crea un registro local.
+La semilla comienza sin invitaciones ni registros de acceso. El simulador consume los dos usos y marca Completada al registrar la salida. Todo el recorrido permanece local.
 
 Si Carlos fue eliminado de tu agenda, la migración respeta esa eliminación. Puedes probar con otro contacto o crear un contacto ficticio equivalente; no necesitas restaurar tus datos.
+
+## QR, visitante y control de acceso
+
+1. Entra como Daniel y crea **Visita QR de prueba**, sin vehículo y con vigencia **24 horas**. En el detalle verás el QR, token y **Abrir vista del visitante**.
+2. Copia el enlace `/invitacion/{token}`, cierra sesión y ábrelo en el mismo navegador. No pide login. Muestra visitante, casa, anfitrión, vigencia, vehículo/placas, estado y QR; no entrega teléfonos, correos, agenda ni otros habitantes.
+3. En **¿Llegarás en vehículo? → Sí**, registra solo `QR-9002` y guarda. Marca/modelo/color son opcionales. El vehículo queda en esa invitación y se conserva al recargar. Solo puede añadirse una vez, en una invitación activa sin vehículo, con residencia activa y antes del primer uso; no modifica la agenda ni los vehículos permanentes.
+4. Entra como `admin@accesshome.demo` / `Access123` y abre [Control de acceso](http://127.0.0.1:5173/admin/control-acceso). Selecciona la invitación o pega su token; pulsa **Validar acceso**.
+5. Primera validación: **Acceso autorizado · ENTRADA**, 1 de 2 usos. Segunda: **SALIDA**, 2 de 2 y Completada. Tercera: **Acceso rechazado · Invitación completada**.
+6. Revisa **Movimientos autorizados**: dos registros con visitante, casa, anfitrión, vehículo, tipo, método QR y fecha/hora. Recargar conserva usos e historial. Las invitaciones canceladas, expiradas, futuras y tokens inexistentes se rechazan sin registrar movimientos ni consumir usos.
+
+El administrador solo puede operar su condominio; residentes y visitantes no pueden autorizar accesos. El servicio consulta la invitación almacenada por token en cada intento, comprueba vigencia, estado, residencia activa y usos, y guarda el movimiento junto con el uso consumido. Un fallo de almacenamiento no anuncia autorización ni deja un registro parcial. Los resultados positivos usan verde y los rechazos, rojo, ambos con texto explícito.
+
+El QR se genera localmente como SVG con [qrcode.react](https://github.com/zpao/qrcode.react), única dependencia añadida, sin dependencias transitivas nuevas. Codifica una URL absoluta del origen actual con la ruta `/invitacion/{token}`; utiliza el token de la invitación, sin cambiar invitaciones anteriores. El simulador sustituye la lectura física por selección/token manual y registra método QR; no usa cámara ni hardware.
+
+**Alcance del enlace público:** no requiere sesión, pero los datos siguen en localStorage. Debe abrirse en el mismo navegador/perfil/origen que creó la invitación. Otro dispositivo o navegador no comparte sus datos; `127.0.0.1` en un teléfono apunta al propio teléfono. Para presentar el flujo utiliza varias pestañas del mismo origen y el modo móvil del navegador. La futura API permitirá compartirlo entre dispositivos.
 
 ## Eliminar contactos y vehículos
 
@@ -143,7 +171,7 @@ Si un número, correo o placas ya existen, utiliza otros. Durante la verificaci�
 
 ## Persistencia y restauración
 
-Solo `services/demoStorage.ts` accede a localStorage, bajo `accesshome.demo.v1`. El esquema interno es **versión 5**. Migrar desde v4 añade una colección vacía de invitaciones y conserva comunidad, agenda, eliminaciones y sesión. Desde v3 se añade primero la agenda demo; v1/2 pasan además por la migración de comunidad. No se reinsertan contactos eliminados de agendas existentes. Restaurar datos demo recupera casas, habitantes, vehículos, contactos y sus vehículos, vacía invitaciones y cierra sesión.
+Solo `services/demoStorage.ts` accede a localStorage, bajo `accesshome.demo.v1`. El esquema interno es **versión 6**. Migrar desde v5 conserva todos sus datos, tokens, usos, snapshots y sesión; añade `accessRecords: []`. Las versiones anteriores pasan por las migraciones existentes, sin reinsertar contactos eliminados de agendas ya creadas. Restaurar datos demo recupera la semilla, vacía invitaciones y movimientos, y cierra sesión.
 
 La migración desde versión 1 también conserva Casa 25 y completa los datos demo de la etapa anterior. Por eso una instalación migrada puede tener más casas y cantidades distintas de la semilla.
 
@@ -157,10 +185,10 @@ La sesión no caduca automáticamente. Los cambios y el logout se comparten entr
 src/
   components/   Navegación, rutas protegidas, formularios, tablas y detalles
   layouts/      Público, administrador y residente
-  pages/        Login, comunidad, contactos, invitaciones, perfil y 404
+  pages/        Login, comunidad, contactos, invitaciones, visitante, accesos y perfil
   services/     Contratos asíncronos, permisos, autenticación y persistencia
   data/         Semilla y navegación
-  types/        Cuentas, comunidad, contactos, vehículos e invitaciones
+  types/        Cuentas, comunidad, contactos, vehículos, invitaciones y accesos
   hooks/        Sesión, consultas y título de página
   utils/        Destino por rol y nombres de habitantes
   styles/       Estilos globales y responsive
@@ -169,16 +197,18 @@ src/
 
 `communityService` ofrece las consultas y operaciones estructurales; delega la gestión de habitantes/vehículos a `householdService` y la asignación a `principalService`. `communityRules` resuelve al usuario desde la sesión persistida, verifica principal/casa/estado y valida campos, números, correos y placas. Las pantallas no eligen el usuario que autoriza una operación. Las consultas no devuelven contraseñas.
 
-`contactsService` concentra consultas y modificaciones de agenda, con validación del principal y propietario en cada llamada. Los componentes consumen contratos asíncronos y notificaciones de los servicios; una futura API podrá sustituir su implementación sin trasladar persistencia a las pantallas. No se añaden dependencias de componentes ni recursos externos.
+`contactsService` concentra consultas y modificaciones de agenda, con validación del principal y propietario en cada llamada. Los componentes consumen contratos asíncronos y notificaciones de los servicios; una futura API podrá sustituir su implementación sin trasladar persistencia a las pantallas. No se utilizan bibliotecas generales de componentes ni servicios externos.
 
 `invitationsService` fija destino, invitador y usos; `invitationRules` aplica permisos, vigencia y estado; `invitationSnapshot` copia los datos del visitante y vehículo. Las placas viven en `Invitation.vehicle.plates`, sin duplicarlas. El detalle nunca busca datos históricos en el contacto. Crear invitación y guardar contacto opcional utilizan una sola escritura para evitar resultados parciales.
 
+`publicInvitationService` entrega una proyección mínima por token y permite la incorporación limitada de vehículo. `accessService` exige administrador, valida el token y guarda uso/movimiento juntos; `accessRules` centraliza permisos y motivos, y `accessValidation` comprueba la integridad del historial. Cada movimiento conserva su propia copia de los datos de la visita.
+
 ## Verificación y documentación
 
-`npm test` ejecuta **69 pruebas** con TypeScript y el ejecutor nativo de Node: invitaciones, snapshots, estados, vigencias, permisos, guardado atómico y regresión de autenticación, comunidad, agenda, eliminación, migraciones y restauración. La guía acumulativa distingue pruebas de servicios y recorridos del navegador.
+`npm test` ejecuta **99 pruebas** con TypeScript y el ejecutor nativo de Node: compatibilidad sin APIs modernas, acceso público y proyección de datos, incorporación de vehículo, entrada/salida/rechazos, registros, permisos, guardado conjunto, snapshots, migraciones y regresión de las etapas anteriores. La guía acumulativa distingue pruebas de servicios y recorridos del navegador.
 
 - [Estado y checklist de fases](docs/PROTOTYPE_STATUS.md)
 - [Guía acumulativa de pruebas](docs/PROTOTYPE_TESTING.md)
 - [Contratos y reglas de servicios](src/services/README.md)
 
-Siguen pendientes QR/enlace público, registro de accesos y reportes. No se realizaron commits ni push.
+Siguen pendientes reportes, consulta detallada del historial desde el residente y preparación del recorrido final. No se realizaron commits ni push.

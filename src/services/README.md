@@ -7,7 +7,7 @@ Las pantallas consumen contratos asíncronos. Solo `demoStorage.ts` lee/escribe 
 | `authService` | Login, logout, sesión pública sin contraseña y suscripción a cambios. Rechaza cuentas de habitantes inactivos. |
 | `demoService` | Ayuda de credenciales, contexto propio y restauración de la semilla completa. |
 | `demoStorage` | Clave `accesshome.demo.v1`, lectura validada, escritura y notificaciones locales/entre pestañas. |
-| `demoValidation` / `demoMigration` | Valida esquema 5 y relaciones; migra versiones 1/2/3/4 conservando datos y sesión. |
+| `demoValidation` / `demoMigration` | Valida esquema 6 y relaciones; migra versiones 1/2/3/4/5 conservando datos y sesión. |
 | `communityService` | Resumen/listado administrativo, detalle autorizado y operaciones de estructura. Expone las operaciones de los dos servicios siguientes. |
 | `principalService` | Asignación administrativa de principal existente de esa casa o creación de principal con cuenta demo. |
 | `householdService` | Alta/edición de habitantes y vehículos por el principal de su propia casa activa. Las bajas son cambios de estado reversibles. |
@@ -37,7 +37,7 @@ Número de casa único por condominio; correo de acceso único entre cuentas; pl
 
 La escritura completa se hace con un único `setItem`; el servicio solo notifica después de guardar. Si falla, devuelve error y conserva los datos almacenados. No hay escrituras parciales de principal, cuenta y habitante.
 
-La migración convierte usuarios residentes anteriores en habitantes, conserva propietarios y asigna un principal a cada casa con residentes. Los vehículos sin propietario permanecen sin asignar. El esquema 5 conserva la clave histórica y las migraciones anteriores; desde v4 solo añade `invitations: []`. Cuentas, comunidad, agenda, bajas y sesión se conservan.
+La migración convierte usuarios residentes anteriores en habitantes, conserva propietarios y asigna un principal a cada casa con residentes. Los vehículos sin propietario permanecen sin asignar. El esquema 6 conserva la clave histórica y las migraciones anteriores; desde v4 se añaden invitaciones y desde v5, movimientos vacíos. Cuentas, comunidad, agenda, bajas, invitaciones y sesión se conservan. No se inventan accesos históricos para usos que ya existieran en v5.
 
 `resetDemoData()` reemplaza todos los datos propios, incluidas asignaciones, habitantes y estados, por una copia de la semilla. Cierra sesión y conserva claves de otras aplicaciones; nunca llama `localStorage.clear()`.
 
@@ -54,22 +54,36 @@ No se recibe el propietario desde el formulario. Crear o editar un contacto no c
 
 El administrador y las cuentas adicionales no acceden a estas consultas. Un principal de casa inactiva solo puede consultar su agenda. Cambiar de principal revoca el acceso del anterior y no transfiere sus contactos al nuevo principal. La UI refleja estas reglas, pero los servicios las revalidan siempre.
 
-El paso de esquema 3 a 4 añade contactos demo sin modificar la comunidad previa; después se migra a v5. La restauración incluye toda la agenda. La ruta `contactos/:contactId/invitar` utiliza ahora el formulario funcional de invitaciones.
+El paso de esquema 3 a 4 añade contactos demo sin modificar la comunidad previa; después se migra hasta v6. La restauración incluye toda la agenda. La ruta `contactos/:contactId/invitar` utiliza el formulario funcional de invitaciones.
 
 ## Invitaciones · Etapa 5
 
-`invitationsService` expone `getContext`, `listInvitations(search, status)`, `getInvitation(id)`, `createInvitation(input)` y `cancelInvitation(id)`. No hay actualización ni eliminación de invitaciones.
+`invitationsService` expone `getContext`, `listInvitations(search, status)`, `getInvitation(id)`, `createInvitation(input)` y `cancelInvitation(id)`. No hay edición general ni eliminación de invitaciones. La incorporación pública de vehículo y el consumo de usos tienen contratos específicos descritos en la etapa 6.
 
 - Cada operación resuelve la sesión y limita la consulta a `user.residenceId`. Crear/cancelar exige principal vigente y residencia activa; una cuenta adicional activa puede consultar su casa.
-- `InvitationInput` no recibe residencia, invitador, token, estado ni usos. El servicio fija esos campos; rechaza explícitamente una residencia ajena añadida a una llamada manipulada. El token se genera con `crypto.randomUUID()` y se verifica que no se repita.
+- `InvitationInput` no recibe residencia, invitador, token, estado ni usos. El servicio fija esos campos; rechaza explícitamente una residencia ajena añadida a una llamada manipulada. El token se genera con `generateId()` y se verifica que no se repita. La utilidad prioriza UUID nativo, UUID v4 con `getRandomValues` y finalmente timestamp/contador/aleatorio para el prototipo. Las entidades también usan esta utilidad; ninguna invoca directamente `randomUUID`.
 - Desde contacto, se valida propietario/estado y vehículo activo perteneciente a ese contacto. `invitationSnapshot` copia nombre, teléfono y todos los campos del vehículo elegido a un objeto nuevo. `contactId` queda como origen opcional, sin usarlo para reconstruir la historia ni exigir que siga existiendo. No se copian notas/correo privados del contacto.
 - También se copian nombre del invitador y nombre de la casa. Los permisos usan IDs actuales; los nombres históricos no cambian al editar la comunidad.
 - Para ocasionales se validan nombre y vehículo opcional. Placas obligatorias si hay vehículo, marca/modelo/color opcionales. Guardar contacto opcional e invitación se hace en una sola escritura; no crea cuenta, habitante ni vehículo permanente.
 - `startsAt`, `expiresAt`, `createdAt` son ISO; `vehicle` es nulo o contiene `plates`, `brand`, `model`, `color`. `maxUses = 2`, `usedUses = 0` al crear.
 - `invitationRules` calcula vigencia local Hoy / duración de 24 horas / rango personalizado. Estado efectivo: respeta canceladas/completadas/expiradas; para una activa, primero completa si agotó usos y después expira si alcanzó el fin. La consulta no reescribe datos. Las pantallas vuelven a consultar cada segundo; cancelación revalida el tiempo actual aunque la pantalla estuviera desactualizada.
-- Una invitación futura permanece Activa, con inicio programado. La futura validación de acceso deberá comprobar también `startsAt`. En esta etapa no se consumen usos ni se genera QR.
+- Una invitación futura permanece Activa, con inicio programado. `accessService` también comprueba `startsAt`; el QR visual no autoriza por sí solo.
 
 `invitationValidation` valida la colección persistida, IDs/tokens únicos, referencias, fechas, usos y campos. El reset vacía las invitaciones junto con la restauración completa de los datos demo.
+
+## Vista pública y accesos · Etapa 6
+
+`publicInvitationService.getInvitation(token)` no exige sesión. Devuelve explícitamente token, nombre del visitante, nombres de casa/anfitrión, vigencia, vehículo, estado, usos y `canAddVehicle`. No expone teléfono, correo, IDs de cuentas/casas/contactos, habitantes ni notas. Conocer un token es la capacidad conceptual para consultar esa invitación, por lo que no hay un listado público.
+
+`addVehicle(token, vehicle)` es la única modificación pública: requiere invitación activa, casa activa, `vehicle === null` y `usedUses === 0`. Valida placas y copia solo los cuatro campos del vehículo. Permite prepararlo antes del inicio programado. No permite sustituir un vehículo existente ni cambiarlo tras entrada, cancelación, expiración o finalización. El vehículo se incorpora a la copia de la invitación, nunca a la agenda/comunidad.
+
+`accessService` ofrece `listActiveInvitations`, `listAccessRecords` y `validateToken`. Las tres operaciones exigen administrador y filtran por su condominio. Un token de otro condominio se trata como inexistente, sin exponer sus datos. El selector incluye activas futuras; seleccionar no autoriza ni consume usos.
+
+Validar vuelve a leer datos y tiempo actual. Rechaza tokens inexistentes, canceladas, completadas/usos agotados, expiradas, inicio futuro y residencia inactiva. El intervalo es `startsAt <= ahora < expiresAt`. No registra rechazos. En un éxito genera un `AccessRecord` independiente, marca entrada con uso previo 0 o salida con 1, incrementa usos y completa tras el segundo. Record y contador se guardan con el mismo `setItem`; solo después se notifica y devuelve autorización. No hay esperas entre lectura y escritura de una validación local.
+
+El registro contiene ID propio, ID de invitación, visitante, ID/nombre de casa, ID/nombre de anfitrión, vehículo/placas opcional, tipo, método `QR`, fecha ISO y `authorized: true`. `accessValidation` valida forma/referencias, fechas, IDs, método/autorización y movimientos duplicados. El historial no reconstruye datos desde contactos. La migración v5→v6 no modifica tokens ni invitaciones y el reset también vacía los movimientos.
+
+La generación del QR es presentación: `InvitationQr` usa la URL construida por `utils/invitationLinks.ts` y `qrcode.react`, sin llamadas externas. Los datos del QR no son una fuente de autorizaciones ni incluyen datos personales: solo la URL con token. La vista pública escucha cambios locales/entre pestañas; no sincroniza dispositivos. La persistencia y los permisos siguen siendo simulados; una API deberá aplicar validación y transacciones de servidor para múltiples puestos simultáneos.
 
 ## Eliminación definitiva
 

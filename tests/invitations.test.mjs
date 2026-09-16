@@ -256,7 +256,7 @@ test('migra v4 conservando todos sus datos; no recupera contactos eliminados ni 
   old.version = 4
   write(old)
   assert.deepEqual(await invitations.listInvitations(), [])
-  assert.deepEqual(read(), { ...old, version: 5, invitations: [] })
+  assert.deepEqual(read(), { ...old, version: 6, invitations: [], accessRecords: [] })
   const id = await invitations.createInvitation(occasional)
   assert.equal((await invitations.listInvitations())[0].id, id)
   assert.equal((await contacts.listContacts()).length, 2)

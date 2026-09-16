@@ -6,6 +6,8 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { formatDate } from '../utils/dates'
 import { InvitationStatusLabel } from '../components/invitations/InvitationStatusLabel'
 import { CancelInvitation } from '../components/invitations/CancelInvitation'
+import { InvitationQr } from '../components/invitations/InvitationQr'
+import { invitationPath } from '../utils/invitationLinks'
 
 export function InvitationPage() {
   const { invitationId = '' } = useParams()
@@ -33,8 +35,13 @@ export function InvitationPage() {
       <section className="community-section"><h2>Vehículo para esta visita</h2>
         {invitation.vehicle ? <dl className="detail-fields"><div><dt>Placas</dt><dd>{invitation.vehicle.plates}</dd></div><div><dt>Marca y modelo</dt><dd>{[invitation.vehicle.brand, invitation.vehicle.model].filter(Boolean).join(' ') || 'No registrados'}</dd></div><div><dt>Color</dt><dd>{invitation.vehicle.color || 'No registrado'}</dd></div></dl> : <p className="muted">Sin vehículo</p>}
       </section>
-      <p className="form-help">Estos datos se conservan tal como se generó la invitación. Para corregirlos, cancela la invitación activa y crea una nueva.</p>
-      <section className="qr-placeholder" aria-label="Futura sección QR"><h2>Código de acceso QR</h2><p>Estará disponible en la siguiente etapa. Esta invitación queda registrada; todavía no puede validarse en el acceso del condominio.</p></section>
+      <p className="form-help">Los datos del contacto se conservan en esta invitación. Si se creó sin vehículo, el visitante puede añadirlo una sola vez antes de su entrada. Para otras correcciones, cancela la invitación activa y crea una nueva.</p>
+      <section className="invitation-qr-section" aria-label="Código y enlace del visitante">
+        <h2>Código de acceso QR</h2>
+        <InvitationQr token={invitation.token} visitorName={invitation.visitorName} status={invitation.status} />
+        <Link className="secondary-button" to={invitationPath(invitation.token)}>Abrir vista del visitante</Link>
+        <p className="visitor-help">El enlace no requiere sesión. En este prototipo consulta los datos del mismo navegador y origen; todavía no se sincronizan entre dispositivos.</p>
+      </section>
       {data.context.canManage && invitation.status === 'activa' && <CancelInvitation key={invitation.id} id={invitation.id} visitorName={invitation.visitorName} />}
       {invitation.status === 'cancelada' && <p role="status" className="agenda-notice">Invitación cancelada. Sus datos permanecen en el historial.</p>}
       {data.context.canManage && <Link className="secondary-button" to="/residente/invitaciones/nueva">Invitar a otro visitante</Link>}

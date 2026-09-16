@@ -15,8 +15,14 @@ import { PrincipalRoute } from './components/PrincipalRoute'
 import { InvitationsPage } from './pages/InvitationsPage'
 import { InvitationPage } from './pages/InvitationPage'
 import { NewInvitationPage } from './pages/NewInvitationPage'
+import { PublicInvitationPage } from './pages/PublicInvitationPage'
+import { AccessControlPage } from './pages/AccessControlPage'
 
 export const router = createBrowserRouter([
+  {
+    element: <PublicLayout visitor />,
+    children: [{ path: '/invitacion/:token', element: <PublicInvitationPage /> }],
+  },
   {
     element: <PublicLayout />,
     children: [
@@ -34,6 +40,7 @@ export const router = createBrowserRouter([
           { index: true, element: <CondominiumPage /> },
           { path: 'residencias', element: <ResidencesPage /> },
           { path: 'residencias/:residenceId', element: <ResidencePage administrative /> },
+          { path: 'control-acceso', element: <AccessControlPage /> },
           { path: 'perfil', element: <WorkspacePage role="admin" /> },
           { path: '*', element: <NotFoundPage homePath="/admin" /> },
         ],

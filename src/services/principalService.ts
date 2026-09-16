@@ -3,6 +3,7 @@ import type { PrincipalInput } from '../types/community.js'
 import { inhabitantName } from '../utils/people.js'
 import { inhabitantFields, requireResidence, requireUser, validEmail } from './communityRules.js'
 import { readDemoData, saveDemoData } from './demoStorage.js'
+import { generateId } from '../utils/id.js'
 
 export async function assignPrincipal(residenceId: string, input: PrincipalInput): Promise<void> {
   const data = readDemoData()
@@ -15,14 +16,14 @@ export async function assignPrincipal(residenceId: string, input: PrincipalInput
   } else {
     person = {
       ...inhabitantFields({ ...input, phone: '', relationship: '', active: true }),
-      id: crypto.randomUUID(), residenceId, userId: null,
+      id: generateId(), residenceId, userId: null,
     }
     data.inhabitants.push(person)
   }
   if (!person.userId) {
     const email = validEmail('inhabitantId' in input ? input.loginEmail ?? '' : input.email)
     if (data.users.some((user) => user.email.toLowerCase() === email)) throw new Error('Ese correo ya tiene una cuenta. Selecciona al habitante existente de esta casa; no se pueden trasladar cuentas entre residencias.')
-    const id = crypto.randomUUID()
+    const id = generateId()
     data.users.push({ id, name: inhabitantName(person), email, password: DEMO_PASSWORD, role: 'resident', condominiumId: residence.condominiumId, residenceId })
     person.userId = id
   }

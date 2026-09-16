@@ -37,3 +37,17 @@ export interface InvitationContext {
   residenceName: string
   canManage: boolean
 }
+
+export interface PublicInvitation {
+  token: string
+  visitorName: string
+  residenceName: string
+  inviterName: string
+  startsAt: string
+  expiresAt: string
+  vehicle: VisitVehicle | null
+  status: InvitationStatus
+  usedUses: number
+  maxUses: number
+  canAddVehicle: boolean
+}

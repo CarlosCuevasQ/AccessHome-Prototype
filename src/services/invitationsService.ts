@@ -2,6 +2,7 @@ import type { Invitation, InvitationContext, InvitationInput, InvitationStatus }
 import { readDemoData, saveDemoData, subscribeToDemoChanges } from './demoStorage.js'
 import { invitationStatus, requireInvitationUser, requireOwnInvitation, validityWindow } from './invitationRules.js'
 import { createVisitorSnapshot } from './invitationSnapshot.js'
+import { generateId } from '../utils/id.js'
 
 const searchKey = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim()
 
@@ -36,15 +37,15 @@ export const invitationsService = {
     const validity = validityWindow(input.validity, createdAt)
     const snapshot = createVisitorSnapshot(data, input)
     if (input.source === 'occasional' && input.saveAsContact) {
-      snapshot.contactId = crypto.randomUUID()
+      snapshot.contactId = generateId()
       data.contacts.push({
         id: snapshot.contactId, ownerUserId: user.id, name: snapshot.visitorName, phone: snapshot.phone, email: '', notes: '', active: true,
-        vehicles: snapshot.vehicle ? [{ ...snapshot.vehicle, id: crypto.randomUUID(), active: true }] : [],
+        vehicles: snapshot.vehicle ? [{ ...snapshot.vehicle, id: generateId(), active: true }] : [],
       })
     }
     let token: string
-    do { token = crypto.randomUUID() } while (data.invitations.some((item) => item.token === token))
-    const id = crypto.randomUUID()
+    do { token = generateId() } while (data.invitations.some((item) => item.token === token))
+    const id = generateId()
     data.invitations.push({
       ...snapshot, ...validity, id, token, inviterUserId: user.id, inviterName: user.name,
       residenceId: residence.id, residenceName: residence.name, maxUses: 2, usedUses: 0, status: 'activa', createdAt: createdAt.toISOString(),

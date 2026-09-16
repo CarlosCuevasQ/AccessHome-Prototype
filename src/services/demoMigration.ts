@@ -1,7 +1,8 @@
 import { createDemoData } from '../data/demo.js'
-import type { DemoDatabase, DemoDatabaseV2, DemoDatabaseV3, DemoDatabaseV4, LegacyDemoDatabase } from '../types/demo.js'
+import type { DemoDatabase, DemoDatabaseV2, DemoDatabaseV3, DemoDatabaseV4, DemoDatabaseV5, LegacyDemoDatabase } from '../types/demo.js'
 import { createDemoContacts } from '../data/contacts.js'
 import { inhabitantFromAccount } from '../utils/people.js'
+import { cloneJsonData } from '../utils/clone.js'
 
 function migrateVersionOne(legacy: LegacyDemoDatabase): DemoDatabaseV2 {
   const seed = createDemoData()
@@ -13,7 +14,7 @@ function migrateVersionOne(legacy: LegacyDemoDatabase): DemoDatabaseV2 {
     residences.push({ ...house, number: String(number) })
   }
   const data: DemoDatabaseV2 = {
-    ...structuredClone(legacy), version: 2, residences,
+    ...cloneJsonData(legacy), version: 2, residences,
     vehicles: legacy.vehicles.map((vehicle) => ({ ...vehicle, active: true, ownerId: null })),
   }
   const demoCondo = data.condominiums.find((item) => item.id === 'condo-encinos')
@@ -44,7 +45,7 @@ function migrateVersionOne(legacy: LegacyDemoDatabase): DemoDatabaseV2 {
 }
 
 function migrateVersionTwo(legacy: LegacyDemoDatabase | DemoDatabaseV2): DemoDatabaseV3 {
-  const previous = legacy.version === 1 ? migrateVersionOne(legacy) : structuredClone(legacy)
+  const previous = legacy.version === 1 ? migrateVersionOne(legacy) : cloneJsonData(legacy)
   const inhabitants = previous.users.filter((user) => user.role === 'resident').map(inhabitantFromAccount)
   const daniel = previous.users.find((user) => user.id === 'user-daniel' && user.role === 'resident')
   if (daniel) {
@@ -67,14 +68,19 @@ function migrateVersionTwo(legacy: LegacyDemoDatabase | DemoDatabaseV2): DemoDat
 }
 
 function migrateVersionThree(legacy: LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3): DemoDatabaseV4 {
-  const previous = legacy.version === 3 ? structuredClone(legacy) : migrateVersionTwo(legacy)
+  const previous = legacy.version === 3 ? cloneJsonData(legacy) : migrateVersionTwo(legacy)
   return {
     ...previous, version: 4,
     contacts: createDemoContacts().filter((contact) => previous.users.some((user) => user.id === contact.ownerUserId && user.role === 'resident')),
   }
 }
 
-export function migrateDemoData(legacy: LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3 | DemoDatabaseV4): DemoDatabase {
-  const previous = legacy.version === 4 ? structuredClone(legacy) : migrateVersionThree(legacy)
+function migrateVersionFour(legacy: LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3 | DemoDatabaseV4): DemoDatabaseV5 {
+  const previous = legacy.version === 4 ? cloneJsonData(legacy) : migrateVersionThree(legacy)
   return { ...previous, version: 5, invitations: [] }
+}
+
+export function migrateDemoData(legacy: LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3 | DemoDatabaseV4 | DemoDatabaseV5): DemoDatabase {
+  const previous = legacy.version === 5 ? cloneJsonData(legacy) : migrateVersionFour(legacy)
+  return { ...previous, version: 6, accessRecords: [] }
 }
