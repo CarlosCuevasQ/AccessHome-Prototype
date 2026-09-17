@@ -3,7 +3,7 @@ import { inhabitantFromAccount } from '../utils/people.js'
 import { createDemoContacts } from './contacts.js'
 import { cloneJsonData } from '../utils/clone.js'
 
-export const DEMO_PASSWORD = 'Access123'
+
 
 const initialData: DemoDatabase = {
   version: 7,
@@ -12,13 +12,13 @@ const initialData: DemoDatabase = {
   accessRecords: [],
   contacts: createDemoContacts(),
   users: [
-    { id: 'user-admin', name: 'Administrador Demo', email: 'admin@accesshome.demo', password: DEMO_PASSWORD, role: 'admin', condominiumId: 'condo-encinos', residenceId: null },
-    { id: 'user-daniel', name: 'Daniel Cuevas', email: 'residente@accesshome.demo', password: DEMO_PASSWORD, role: 'resident', condominiumId: 'condo-encinos', residenceId: 'house-24' },
-    { id: 'user-mariana', name: 'Mariana Torres', email: 'mariana@accesshome.demo', password: DEMO_PASSWORD, role: 'resident', condominiumId: 'condo-encinos', residenceId: 'house-24' },
-    { id: 'user-ana', name: 'Ana López', email: 'ana@accesshome.demo', password: DEMO_PASSWORD, role: 'resident', condominiumId: 'condo-encinos', residenceId: 'house-12' },
-    { id: 'user-jorge', name: 'Jorge Mendoza', email: 'jorge@accesshome.demo', password: DEMO_PASSWORD, role: 'resident', condominiumId: 'condo-encinos', residenceId: 'house-12' },
-    { id: 'user-luis', name: 'Luis Herrera', email: 'luis@accesshome.demo', password: DEMO_PASSWORD, role: 'resident', condominiumId: 'condo-encinos', residenceId: 'house-37' },
-    { id: 'user-elena', name: 'Elena Ríos', email: 'elena@accesshome.demo', password: DEMO_PASSWORD, role: 'resident', condominiumId: 'condo-encinos', residenceId: 'house-51' },
+    { id: 'user-admin', name: 'Administrador Demo', email: 'admin@accesshome.demo', role: 'admin', condominiumId: 'condo-encinos', residenceId: null },
+    { id: 'user-daniel', name: 'Daniel Cuevas', email: 'residente@accesshome.demo', role: 'resident', condominiumId: 'condo-encinos', residenceId: 'house-24' },
+    { id: 'user-mariana', name: 'Mariana Torres', email: 'mariana@accesshome.demo', role: 'resident', condominiumId: 'condo-encinos', residenceId: 'house-24' },
+    { id: 'user-ana', name: 'Ana López', email: 'ana@accesshome.demo', role: 'resident', condominiumId: 'condo-encinos', residenceId: 'house-12' },
+    { id: 'user-jorge', name: 'Jorge Mendoza', email: 'jorge@accesshome.demo', role: 'resident', condominiumId: 'condo-encinos', residenceId: 'house-12' },
+    { id: 'user-luis', name: 'Luis Herrera', email: 'luis@accesshome.demo', role: 'resident', condominiumId: 'condo-encinos', residenceId: 'house-37' },
+    { id: 'user-elena', name: 'Elena Ríos', email: 'elena@accesshome.demo', role: 'resident', condominiumId: 'condo-encinos', residenceId: 'house-51' },
   ],
   condominiums: [
     { id: 'condo-encinos', name: 'Residencial Los Robles', address: 'Av. de los Robles 120, Ciudad de México' },
@@ -53,5 +53,6 @@ export function createDemoData(): DemoDatabase {
 
 export function getDemoCredentials() {
   return initialData.users.filter(({ id }) => id === 'user-admin' || id === 'user-daniel')
-    .map(({ name, email, password, role }) => ({ name, email, password, role }))
+    .map(({ name, email, role }) => ({ name, email, role }))
 }
+

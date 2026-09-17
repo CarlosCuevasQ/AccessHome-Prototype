@@ -1,3 +1,4 @@
+import { sharedMode } from '../services/shared/provider'
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Brand } from '../components/Brand'
@@ -48,10 +49,11 @@ export function WorkspaceLayout({ role, showContacts = false }: { role: Workspac
           <p className="session-name">{user?.name}</p>
           <button type="button" className="text-button" disabled={loggingOut} onClick={() => { void logout() }}>{loggingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</button>
           {error && <div className="form-error" role="alert">{error}</div>}
-          <p>Entorno de demostración</p>
+          <p>{sharedMode ? 'Modo compartido' : 'Modo local · Este navegador'}</p>
         </div>
       </aside>
       <main id="main-content" tabIndex={-1} className="workspace-main"><Outlet /></main>
     </div>
   )
 }
+

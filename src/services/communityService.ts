@@ -1,3 +1,5 @@
+import { sharedMode } from './shared/provider.js'
+import { sharedCommunity } from './shared/adapters.js'
 import type { CondominiumInput, CondominiumSummary, ResidenceDetails, ResidenceInput, ResidenceSummary } from '../types/community.js'
 import { sessionUser } from './authService.js'
 import { readDemoData, saveDemoData, subscribeToDemoChanges } from './demoStorage.js'
@@ -6,7 +8,7 @@ import { householdService } from './householdService.js'
 import { assignPrincipal } from './principalService.js'
 import { generateId } from '../utils/id.js'
 
-export const communityService = {
+const localService = {
   ...householdService,
   assignPrincipal,
   subscribe: subscribeToDemoChanges,
@@ -81,3 +83,5 @@ export const communityService = {
     saveDemoData(data)
   },
 }
+
+export const communityService = sharedMode ? sharedCommunity : localService

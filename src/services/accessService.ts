@@ -1,10 +1,12 @@
+import { sharedMode } from './shared/provider.js'
+import { sharedAccess } from './shared/adapters.js'
 import type { AccessInvitationOption, AccessRecord, AccessResult } from '../types/access.js'
 import { readDemoData, saveDemoData } from './demoStorage.js'
 import { invitationStatus } from './invitationRules.js'
 import { rejectedAccess, requireAccessAdmin } from './accessRules.js'
 import { generateId } from '../utils/id.js'
 
-export const accessService = {
+const localService = {
   async listActiveInvitations(): Promise<AccessInvitationOption[]> {
     const data = readDemoData()
     const admin = requireAccessAdmin(data)
@@ -51,3 +53,5 @@ export const accessService = {
     return { authorized: true, record, usedUses: invitation.usedUses, maxUses: invitation.maxUses, status: invitation.status }
   },
 }
+
+export const accessService = sharedMode ? sharedAccess : localService

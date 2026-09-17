@@ -1,8 +1,10 @@
+import { sharedMode } from './shared/provider.js'
+import { sharedDemo } from './shared/adapters.js'
 import { createDemoData, getDemoCredentials } from '../data/demo.js'
 import { notifyDemoChange, readDemoData, writeDemoData } from './demoStorage.js'
 import { requireUser } from './communityRules.js'
 
-export const demoService = {
+const localService = {
   getCredentials: getDemoCredentials,
 
   async getProfileContext(userId: string) {
@@ -20,3 +22,5 @@ export const demoService = {
     notifyDemoChange()
   },
 }
+
+export const demoService = sharedMode ? sharedDemo : localService

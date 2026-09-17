@@ -5,11 +5,11 @@ import { invitationsService as invitations } from '../.test-build/services/invit
 import { accessService as access } from '../.test-build/services/accessService.js'
 import { communityService } from '../.test-build/services/communityService.js'
 import { demoService } from '../.test-build/services/demoService.js'
-import { createDemoData, DEMO_PASSWORD } from '../.test-build/data/demo.js'
+import { createDemoData } from '../.test-build/data/demo.js'
 import { DEMO_STORAGE_KEY } from '../.test-build/services/demoStorage.js'
 
 let storage
-const login = (email) => authService.login({ email, password: DEMO_PASSWORD })
+const login = (email) => authService.login({ email, password: '' })
 const read = () => JSON.parse(storage.get(DEMO_STORAGE_KEY))
 const write = (data) => storage.set(DEMO_STORAGE_KEY, JSON.stringify(data))
 const input = { source: 'occasional', visitorName: 'Visita QR', phone: '', vehicle: { plates: 'QR-9001', brand: '', model: '', color: '' }, saveAsContact: false, validity: { kind: '24hours' } }
@@ -207,3 +207,4 @@ test('registros corruptos o duplicados se rechazan sin sobrescribir datos', asyn
     assert.deepEqual(read(), data)
   }
 })
+

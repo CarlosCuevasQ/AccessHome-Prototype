@@ -1,3 +1,5 @@
+import { sharedMode } from './shared/provider.js'
+import { sharedReports } from './shared/adapters.js'
 import { reportCategories } from '../types/reports.js'
 import type { ReportInput, ReportStatus } from '../types/reports.js'
 import { generateId } from '../utils/id.js'
@@ -5,7 +7,7 @@ import { readDemoData, saveDemoData } from './demoStorage.js'
 import { requireHouseholdManager, requiredText } from './communityRules.js'
 import { reportContext, requireReport, visibleReports } from './reportRules.js'
 
-export const reportsService = {
+const localService = {
   async getContext() {
     const { user, residence, canCreate } = reportContext(readDemoData())
     return { administrative: user.role === 'admin', residenceName: residence?.name, canCreate }
@@ -43,3 +45,5 @@ export const reportsService = {
     saveDemoData(data)
   },
 }
+
+export const reportsService = sharedMode ? sharedReports : localService

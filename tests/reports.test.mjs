@@ -6,11 +6,11 @@ import { communityService } from '../.test-build/services/communityService.js'
 import { invitationsService } from '../.test-build/services/invitationsService.js'
 import { accessService } from '../.test-build/services/accessService.js'
 import { demoService } from '../.test-build/services/demoService.js'
-import { createDemoData, DEMO_PASSWORD } from '../.test-build/data/demo.js'
+import { createDemoData } from '../.test-build/data/demo.js'
 import { DEMO_STORAGE_KEY } from '../.test-build/services/demoStorage.js'
 
 let storage
-const login = (email) => authService.login({ email, password: DEMO_PASSWORD })
+const login = (email) => authService.login({ email, password: '' })
 const read = () => JSON.parse(storage.get(DEMO_STORAGE_KEY))
 const write = (data) => storage.set(DEMO_STORAGE_KEY, JSON.stringify(data))
 const input = { title: 'Lámpara apagada', category: 'Instalaciones', description: 'La lámpara junto a Casa 24 no enciende por la noche.' }
@@ -149,3 +149,4 @@ test('reportes corruptos se rechazan sin sobrescribir datos', async () => {
     assert.equal(storage.get(DEMO_STORAGE_KEY), before)
   }
 })
+

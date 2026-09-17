@@ -7,6 +7,7 @@ import { formatDate } from '../utils/dates'
 import { InvitationQr } from '../components/invitations/InvitationQr'
 import { InvitationStatusLabel } from '../components/invitations/InvitationStatusLabel'
 import { VisitorVehicleForm } from '../components/invitations/VisitorVehicleForm'
+import { sharedMode } from '../services/shared/provider'
 
 export function PublicInvitationPage() {
   const { token = '' } = useParams()
@@ -18,7 +19,7 @@ export function PublicInvitationPage() {
   return <section className="community-page invitations-page visitor-page">
     <p className="eyebrow">Invitación de visita</p>
     {loading && <p role="status">Cargando invitación…</p>}
-    {error && <><h1>Invitación no disponible</h1><p className="form-error" role="alert">{error}</p><p className="visitor-help">Solicita el enlace correcto a tu anfitrión. Este prototipo solo consulta datos guardados en este navegador y origen.</p></>}
+    {error && <><h1>Invitación no disponible</h1><p className="form-error" role="alert">{error}</p><p className="visitor-help">Comprueba tu conexión y solicita el enlace correcto a tu anfitrión.</p></>}
     {data && <>
       <h1>{data.visitorName}</h1>
       <p className="visitor-destination">{data.residenceName} <span>Anfitrión: {data.inviterName}</span></p>
@@ -41,7 +42,7 @@ export function PublicInvitationPage() {
       </section>
       {savedToken === token && <p className="form-success" role="status">Vehículo guardado para esta invitación.</p>}
       {data.canAddVehicle && <VisitorVehicleForm key={token} token={token} onSaved={() => setSavedToken(token)} />}
-      <p className="visitor-help">Demostración local: este enlace utiliza los datos de este navegador. La sincronización entre dispositivos estará disponible cuando se integre la API.</p>
+      <p className="visitor-help">{sharedMode ? 'Invitación compartida. El estado se actualiza al consultar y periódicamente mientras esta pantalla está visible.' : 'Modo local: este enlace utiliza únicamente los datos de este navegador.'}</p>
     </>}
   </section>
 }

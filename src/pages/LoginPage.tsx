@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth'
 import { authService } from '../services/authService'
 import { getRoleHome } from '../utils/auth'
 import { DemoTools } from '../components/DemoTools'
+import { sharedMode } from '../services/shared/provider'
 
 export function LoginPage() {
   usePageTitle('Iniciar sesión')
@@ -44,20 +45,20 @@ export function LoginPage() {
       <div className="login-access">
         <p className="eyebrow">Acceso a tu comunidad</p>
         <h2>Iniciar sesión</h2>
-        <p>Ingresa con tu correo y contraseña de demostración.</p>
+        <p>{sharedMode ? 'Ingresa con tu correo y contraseña individual.' : 'Escribe el correo de una cuenta local para explorar la demostración.'}</p>
         <form className="login-form" onSubmit={(event) => { void submit(event) }} aria-busy={submitting || loading}>
           <div className="form-field">
             <label htmlFor="email">Correo electrónico</label>
             <input id="email" name="email" type="email" autoComplete="username" autoCapitalize="none" spellCheck={false} required value={email} onChange={(event) => { setEmail(event.target.value); setError('') }} />
           </div>
-          <div className="form-field">
+          {sharedMode && <div className="form-field">
             <label htmlFor="password">Contraseña</label>
             <input id="password" name="password" type="password" autoComplete="current-password" required value={password} onChange={(event) => { setPassword(event.target.value); setError('') }} />
-          </div>
+          </div>}
           {(error || sessionError) && <p className="form-error" role="alert">{error || sessionError}</p>}
           <button className="button-link" type="submit" disabled={submitting || loading}>{loading ? 'Recuperando sesión…' : submitting ? 'Entrando…' : 'Iniciar sesión'}</button>
         </form>
-        <p className="access-note">Autenticación simulada para la presentación. Utiliza únicamente los datos de demostración.</p>
+        <p className="access-note">{sharedMode ? 'Modo compartido · Autenticación con Supabase.' : 'Modo local · Sin autenticación real. Los datos solo existen en este navegador.'}</p>
         <DemoTools />
       </div>
     </section>

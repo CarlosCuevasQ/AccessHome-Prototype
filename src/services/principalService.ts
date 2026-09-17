@@ -1,4 +1,6 @@
-import { DEMO_PASSWORD } from '../data/demo.js'
+import { sharedMode } from './shared/provider.js'
+import { sharedAssignPrincipal } from './shared/adapters.js'
+
 import type { PrincipalInput } from '../types/community.js'
 import { inhabitantName } from '../utils/people.js'
 import { inhabitantFields, requireResidence, requireUser, validEmail } from './communityRules.js'
@@ -6,6 +8,7 @@ import { readDemoData, saveDemoData } from './demoStorage.js'
 import { generateId } from '../utils/id.js'
 
 export async function assignPrincipal(residenceId: string, input: PrincipalInput): Promise<void> {
+  if (sharedMode) return sharedAssignPrincipal(residenceId, input)
   const data = readDemoData()
   const admin = requireUser(data, true)
   const residence = requireResidence(data, admin, residenceId)
@@ -24,9 +27,11 @@ export async function assignPrincipal(residenceId: string, input: PrincipalInput
     const email = validEmail('inhabitantId' in input ? input.loginEmail ?? '' : input.email)
     if (data.users.some((user) => user.email.toLowerCase() === email)) throw new Error('Ese correo ya tiene una cuenta. Selecciona al habitante existente de esta casa; no se pueden trasladar cuentas entre residencias.')
     const id = generateId()
-    data.users.push({ id, name: inhabitantName(person), email, password: DEMO_PASSWORD, role: 'resident', condominiumId: residence.condominiumId, residenceId })
+    data.users.push({ id, name: inhabitantName(person), email, role: 'resident', condominiumId: residence.condominiumId, residenceId })
     person.userId = id
   }
   residence.principalUserId = person.userId
   saveDemoData(data)
 }
+
+

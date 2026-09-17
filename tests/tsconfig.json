@@ -7,5 +7,5 @@
     "rootDir": "../src",
     "outDir": "../.test-build"
   },
-  "include": ["../src/services/**/*.ts", "../src/data/demo.ts", "../src/types/auth.ts", "../src/types/demo.ts"]
+  "include": ["../src/services/**/*.ts", "../src/data/demo.ts", "../src/types/auth.ts", "../src/types/demo.ts", "../src/vite-env.d.ts"]
 }

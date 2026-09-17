@@ -3,12 +3,12 @@ import { beforeEach, test } from 'node:test'
 import { authService } from '../.test-build/services/authService.js'
 import { communityService as service } from '../.test-build/services/communityService.js'
 import { demoService } from '../.test-build/services/demoService.js'
-import { createDemoData, DEMO_PASSWORD } from '../.test-build/data/demo.js'
+import { createDemoData } from '../.test-build/data/demo.js'
 import { DEMO_STORAGE_KEY } from '../.test-build/services/demoStorage.js'
 
 let storage
-const admin = { email: 'admin@accesshome.demo', password: DEMO_PASSWORD }
-const resident = { email: 'residente@accesshome.demo', password: DEMO_PASSWORD }
+const admin = { email: 'admin@accesshome.demo', password: '' }
+const resident = { email: 'residente@accesshome.demo', password: '' }
 const vehicle = { plates: 'PRUEBA-88', brand: 'Honda', model: 'Civic', color: 'Negro', active: true, ownerId: null }
 const inhabitant = { firstName: 'Lucía', lastName: 'Cuevas', phone: '', email: '', relationship: 'Familiar', active: true }
 const houseInput = { number: '88', street: 'Circuito Cedros', active: true }
@@ -39,7 +39,7 @@ test('admin crea y asigna casa; principal entra y registra habitantes y vehícul
   assert.equal((await service.getResidence(id)).primaryResident, null)
   await service.assignPrincipal(id, { firstName: 'Laura', lastName: 'Pérez', email: 'laura88@accesshome.demo' })
   await authService.logout()
-  await authService.login({ email: 'laura88@accesshome.demo', password: DEMO_PASSWORD })
+  await authService.login({ email: 'laura88@accesshome.demo', password: '' })
   assert.equal((await service.getResidence()).residence.id, id)
   const accountCount = current().users.length
   await service.createInhabitant(id, inhabitant)
@@ -100,9 +100,9 @@ test('desactiva y reactiva habitantes, preservando propietarios; protege al prin
   await service.updateInhabitant('house-24', person.id, { ...person, active: false })
   assert.equal((await service.getResidence()).vehicles[1].ownerId, person.id)
   await assert.rejects(service.updateInhabitant('house-24', 'inhabitant-user-daniel', { ...inhabitant, active: false }), /asignar otro residente principal/)
-  await assert.rejects(authService.login({ email: 'mariana@accesshome.demo', password: DEMO_PASSWORD }), /inactivo/)
+  await assert.rejects(authService.login({ email: 'mariana@accesshome.demo', password: '' }), /inactivo/)
   await service.updateInhabitant('house-24', person.id, { ...person, active: true })
-  await authService.login({ email: 'mariana@accesshome.demo', password: DEMO_PASSWORD })
+  await authService.login({ email: 'mariana@accesshome.demo', password: '' })
   assert.equal((await service.getResidence()).permissions.manageHousehold, false)
   await assert.rejects(service.createInhabitant('house-24', inhabitant), /Solo el residente principal/)
 })
@@ -165,7 +165,7 @@ test('cambio de principal reutiliza cuenta y revoca permisos anteriores inmediat
   await authService.login(resident)
   assert.equal((await service.getResidence()).permissions.manageHousehold, false)
   await assert.rejects(service.createVehicle('house-24', vehicle), /Solo el residente principal/)
-  await authService.login({ email: 'mariana@accesshome.demo', password: DEMO_PASSWORD })
+  await authService.login({ email: 'mariana@accesshome.demo', password: '' })
   await service.createVehicle('house-24', vehicle)
   assert.equal((await service.getResidence()).vehicles.length, 3)
 })
@@ -174,7 +174,7 @@ test('asignar habitante sin cuenta crea solo su cuenta, sin duplicar ni moverlo'
   const peopleBefore = current().inhabitants.length
   await service.assignPrincipal('house-24', { inhabitantId: 'inhabitant-andrea', loginEmail: 'andrea@accesshome.demo' })
   assert.equal(current().inhabitants.length, peopleBefore)
-  await authService.login({ email: 'andrea@accesshome.demo', password: DEMO_PASSWORD })
+  await authService.login({ email: 'andrea@accesshome.demo', password: '' })
   assert.equal((await service.getResidence()).permissions.manageHousehold, true)
   assert.equal((await authService.getSession()).residenceId, 'house-24')
 })
@@ -240,3 +240,4 @@ test('fallo de escritura no anuncia éxito y restaurar recupera toda la semilla'
   assert.deepEqual(current(), createDemoData())
   assert.equal(await authService.getSession(), null)
 })
+

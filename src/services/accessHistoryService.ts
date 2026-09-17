@@ -1,9 +1,11 @@
+import { sharedMode } from './shared/provider.js'
+import { sharedHistory } from './shared/adapters.js'
 import type { AccessHistoryFilters } from '../types/access.js'
 import { readDemoData } from './demoStorage.js'
 import { requireUser } from './communityRules.js'
 import { filterAccessRecords, historyResidences, visibleAccessRecords } from './accessHistoryRules.js'
 
-export const accessHistoryService = {
+const localService = {
   async getContext() {
     const data = readDemoData()
     const user = requireUser(data)
@@ -17,3 +19,5 @@ export const accessHistoryService = {
     return filterAccessRecords(visibleAccessRecords(data, user), filters)
   },
 }
+
+export const accessHistoryService = sharedMode ? sharedHistory : localService

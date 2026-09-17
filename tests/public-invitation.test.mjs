@@ -5,12 +5,12 @@ import { invitationsService as invitations } from '../.test-build/services/invit
 import { publicInvitationService as visitor } from '../.test-build/services/publicInvitationService.js'
 import { accessService } from '../.test-build/services/accessService.js'
 import { communityService } from '../.test-build/services/communityService.js'
-import { DEMO_PASSWORD } from '../.test-build/data/demo.js'
+import { createDemoData } from '../.test-build/data/demo.js'
 import { DEMO_STORAGE_KEY } from '../.test-build/services/demoStorage.js'
 
 let storage
 let invitation
-const login = (email) => authService.login({ email, password: DEMO_PASSWORD })
+const login = (email) => authService.login({ email, password: '' })
 const read = () => JSON.parse(storage.get(DEMO_STORAGE_KEY))
 const vehicle = { plates: 'VIS-7788', brand: '', model: '', color: '' }
 const input = { source: 'occasional', visitorName: 'Visitante público', phone: '3312345678', vehicle: null, saveAsContact: false, validity: { kind: '24hours' } }
@@ -138,3 +138,4 @@ test('fallo de guardado público conserva la invitación sin vehículo y permite
   await visitor.addVehicle(invitation.token, vehicle)
   assert.deepEqual((await visitor.getInvitation(invitation.token)).vehicle, vehicle)
 })
+

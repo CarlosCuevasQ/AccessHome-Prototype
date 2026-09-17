@@ -3,7 +3,7 @@ begin;
 -- Esquemas nuevos: si ya existen, detenerse y reconciliar su historial.
 create schema accesshome;
 create schema accesshome_private;
-revoke all on schema accesshome, accesshome_private from public, anon, authenticated;
+revoke all on schema accesshome, accesshome_private from public,anon,authenticated,service_role;
 
 create type accesshome.app_role as enum ('admin', 'resident', 'guard');
 
@@ -98,6 +98,6 @@ alter table accesshome.residences enable row level security;
 alter table accesshome.inhabitants enable row level security;
 alter table accesshome.residence_vehicles enable row level security;
 
-revoke all on all tables in schema accesshome from public, anon, authenticated;
+revoke all on all tables in schema accesshome from public,anon,authenticated,service_role;
 -- Ninguna tabla es accesible hasta aplicar las políticas de lectura de 003.
 commit;

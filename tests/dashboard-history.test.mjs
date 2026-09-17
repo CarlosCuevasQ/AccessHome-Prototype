@@ -6,12 +6,12 @@ import { accessService as access } from '../.test-build/services/accessService.j
 import { accessHistoryService as history } from '../.test-build/services/accessHistoryService.js'
 import { dashboardService as dashboard } from '../.test-build/services/dashboardService.js'
 import { reportsService as reports } from '../.test-build/services/reportsService.js'
-import { DEMO_PASSWORD } from '../.test-build/data/demo.js'
+import { createDemoData } from '../.test-build/data/demo.js'
 import { DEMO_STORAGE_KEY } from '../.test-build/services/demoStorage.js'
 import { localDateInput } from '../.test-build/utils/dates.js'
 
 let storage
-const login = (email) => authService.login({ email, password: DEMO_PASSWORD })
+const login = (email) => authService.login({ email, password: '' })
 const read = () => JSON.parse(storage.get(DEMO_STORAGE_KEY))
 const write = (data) => storage.set(DEMO_STORAGE_KEY, JSON.stringify(data))
 async function visit(email, name) {
@@ -149,3 +149,4 @@ test('otro condominio no filtra ni incorpora datos ajenos en su dashboard', asyn
   for (const key of ['residenceCount', 'activeInhabitantCount', 'vehicleCount', 'todayAccessCount', 'activeInvitationCount', 'pendingReportCount']) assert.equal(summary[key], 0)
   assert.deepEqual(summary.recentAccess, [])
 })
+

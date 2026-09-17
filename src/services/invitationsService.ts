@@ -1,3 +1,5 @@
+import { sharedMode } from './shared/provider.js'
+import { sharedInvitations } from './shared/adapters.js'
 import type { Invitation, InvitationContext, InvitationInput, InvitationStatus } from '../types/invitations.js'
 import { readDemoData, saveDemoData, subscribeToDemoChanges } from './demoStorage.js'
 import { invitationStatus, requireInvitationUser, requireOwnInvitation, validityWindow } from './invitationRules.js'
@@ -6,7 +8,7 @@ import { generateId } from '../utils/id.js'
 
 const searchKey = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim()
 
-export const invitationsService = {
+const localService = {
   subscribe: subscribeToDemoChanges,
 
   async getContext(): Promise<InvitationContext> {
@@ -62,3 +64,5 @@ export const invitationsService = {
     saveDemoData(data)
   },
 }
+
+export const invitationsService = sharedMode ? sharedInvitations : localService

@@ -1,3 +1,4 @@
+import { sharedMode } from '../services/shared/provider'
 import { useCallback } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { invitationsService } from '../services/invitationsService'
@@ -40,7 +41,7 @@ export function InvitationPage() {
         <h2>Código de acceso QR</h2>
         <InvitationQr token={invitation.token} visitorName={invitation.visitorName} status={invitation.status} />
         <Link className="secondary-button" to={invitationPath(invitation.token)}>Abrir vista del visitante</Link>
-        <p className="visitor-help">El enlace no requiere sesión. En este prototipo consulta los datos del mismo navegador y origen; todavía no se sincronizan entre dispositivos.</p>
+        <p className="visitor-help">{sharedMode ? 'El enlace no requiere sesión y consulta el estado compartido de la invitación.' : 'Modo local: el enlace solo consulta datos de este navegador y origen.'}</p>
       </section>
       {data.context.canManage && invitation.status === 'activa' && <CancelInvitation key={invitation.id} id={invitation.id} visitorName={invitation.visitorName} />}
       {invitation.status === 'cancelada' && <p role="status" className="agenda-notice">Invitación cancelada. Sus datos permanecen en el historial.</p>}
@@ -48,3 +49,4 @@ export function InvitationPage() {
     </>}
   </section>
 }
+

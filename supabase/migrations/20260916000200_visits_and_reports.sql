@@ -137,6 +137,6 @@ alter table accesshome.invitations enable row level security;
 alter table accesshome.access_records enable row level security;
 alter table accesshome.reports enable row level security;
 alter table accesshome_private.invitation_tokens enable row level security;
-revoke all on all tables in schema accesshome, accesshome_private from public, anon, authenticated;
+revoke all on all tables in schema accesshome, accesshome_private from public,anon,authenticated,service_role;
 
 commit;

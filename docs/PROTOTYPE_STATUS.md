@@ -1,6 +1,61 @@
+## Revisión SQL previa a aplicar · 17 de septiembre de 2026
+
+Estado vigente: las ocho migraciones pendientes están revisadas y listas para aplicar al proyecto de ensayo; la validación remota sigue pendiente. El usuario ya configuró el proyecto y `.env.local`, sin ejecutar `db push`. Se conserva el orden de las ocho versiones y el contrato de los services.
+
+- Prevención PostgreSQL de periodos superpuestos para el mismo contacto y residencia. Intervalos consecutivos permitidos; canceladas, completadas o realmente vencidas no bloquean. No se compara por nombre.
+- Bloqueo transaccional de residencia y versión MVCC para impedir duplicados también con snapshots antiguos. Índice parcial de búsqueda; rechazo claro de superposición.
+- Doce funciones SECURITY DEFINER trasladadas a `accesshome_private`, interfaces SECURITY INVOKER, search_path vacío y EXECUTE específico. Revocación explícita de grants implícitos, incluidos service_role. Esquema privado fuera de Data API.
+- Auditoría SQL ampliada: cero definers expuestos, grants mínimos, helpers/provisión restringidos y pruebas de llamadas directas privadas.
+- `npm test`: **139/139**. `npm run test:concurrency`: **9/9**, PostgreSQL **17.10** temporal, tres conexiones TCP independientes y bloqueo observado con pg_blocking_pids. `npm run build`: correcto, con advertencia de tamaño del bundle ya existente.
+- Carreras verificadas: altas idénticas y parcialmente superpuestas, adyacentes, rollback, REPEATABLE READ/SERIALIZABLE, cancelación y expiración durante la espera. No se atribuye concurrencia real a PGlite.
+- Pendientes remotos: migraciones/auditoría en Supabase, esquemas expuestos, Auth/JWT/PostgREST y pruebas SB-01–SB-08. No se modificó `.env.local` ni se mostraron credenciales. Sin migraciones remotas, commit, push ni módulo de guardia.
+
+Archivos de esta revisión: las ocho migraciones, `supabase/tests/security_baseline.sql`, `tests/shared-backend.test.mjs`, `tests/helpers/shared-sql-fixture.mjs`, `tests/concurrency/invitations.test.mjs`, `package.json`, `package-lock.json`, README y las guías SQL/setup/plan/status/testing. Inventario por migración, razonamiento y límites en [SQL_MIGRATION_REVIEW.md](SQL_MIGRATION_REVIEW.md).
+
+Commit sugerido, sin realizar: `fix: impedir invitaciones superpuestas y aislar funciones privilegiadas`.
+
+## Etapa 9 · Integración compartida implementada, activación remota pendiente (entrega anterior)
+
+Entrega del 16 de septiembre de 2026. Se conservan rutas, formularios y diseño. No se ejecutaron migraciones remotas, no se crearon cuentas externas, no se modificó .env.local y no se hizo commit/push. El usuario preparará un proyecto exclusivo de pruebas y autorizará después la fase remota.
+
+- SDK Supabase y autenticación email/contraseña individual, con perfil/rol obtenido desde SQL.
+- Los once services y la asignación de principal seleccionan un único proveedor para todo el proceso.
+- Ambas variables vacías: demo local por correo sin contraseñas. Una o ambas presentes: compartido obligatorio, sin fallback.
+- dev:local permite seguir usando la demostración aislada en 5174 aunque haya configuración compartida.
+- Community, household, contactos, invitaciones, visitante, accesos administrativos, historial, reportes y dashboards tienen adaptador compartido.
+- Cinco migraciones nuevas sobre las tres existentes: RPCs autorizados, snapshots, tokens CSPRNG de 32 bytes, transacciones, provisión controlada y chequeo de salud.
+- RLS en todas las tablas, cero escrituras genéricas de clientes y cero SELECT anónimo. Los RPCs públicos se limitan a salud y proyección por token.
+- Guardia reservado y bloqueado en los RPCs operativos; no se desarrolló su módulo.
+- Semilla de un condominio, cuatro casas, Casa 24/Daniel, ocho habitantes, cinco vehículos permanentes y contactos privados. Requiere UUID Auth existentes, no contiene contraseñas y rechaza bases con datos.
+- Asignación de principal auditada y provisión de nuevas cuentas mediante procedimiento solo del propietario de migraciones.
+- Refetch al consultar, enfocar o recuperar conexión; polling de 10 s solo en vistas que ya lo necesitaban. Dashboards agregados en servidor; sin Realtime.
+- Eliminadas contraseñas demo de fuente/documentación. Una base local válida retira los campos antiguos sin borrar sus entidades. Sin importación automática hacia Supabase.
+
+### Verificación
+
+- 134 pruebas correctas: 114 de regresión local adaptada, 16 de SQL/RLS/operaciones compartidas y 4 del SDK/adaptadores con HTTP simulado.
+- Las ocho migraciones y la auditoría de catálogo se ejecutaron en PGlite/PostgreSQL local con pgcrypto real.
+- UI local: login de Daniel sin contraseña, contactos, generación de Carlos López y enlace/QR de visitante a 390 px. Sin errores de consola ni desbordamiento horizontal en el detalle medido.
+- Vite/TypeScript compilados correctamente. La incorporación del SDK aumenta el bundle y Vite advierte del chunk superior a 500 kB; no impide el build.
+- La pantalla de login compartida carga con la configuración del usuario, pero no se envió un login ni una consulta remota de verificación.
+
+**No comprobado todavía:** Supabase Auth y PostgREST reales, las dos sesiones independientes en dispositivos, expiración/renovación real de JWT y carreras de transacciones en múltiples conexiones. PGlite usa una sola conexión y simula el contexto auth; no se presenta esa prueba como verificación remota.
+
+### Cómo continuar
+
+Seguir [SHARED_BACKEND_SETUP.md](SHARED_BACKEND_SETUP.md) para configurar Auth, aplicar SQL cuando se autorice y provisionar UUID/roles. Después ejecutar backend:check y el recorrido [SB-01–SB-08](PROTOTYPE_TESTING.md). Por ahora el trabajo se detiene antes de operaciones remotas y antes del módulo del guardia.
+
+Archivos principales: src/services/shared/, fachadas services existentes, hooks de sesión/refetch, login/avisos de modo, supabase/migrations/20260917000*, supabase/tests/security_baseline.sql, tests/shared-*.test.mjs, scripts/check-backend.mjs, scripts/dev-local.mjs, vite.config.ts y documentación.
+
+Commit sugerido, sin realizarlo: `feat: integrar Supabase con permisos por residencia y demo local aislada`.
+
+## Historial de etapas anteriores
+
+Las secciones siguientes describen entregas históricas locales. Sus referencias a autenticación simulada con contraseña o fallback aleatorio ya no describen la entrega actual.
+
 # Estado del prototipo AccessHome
 
-## Etapa 8 · Preparación del backend compartido (vigente)
+## Etapa 8 · Preparación del backend compartido (histórico)
 
 - [x] Inspección de estructura, Auth demo, modelos, services, invitaciones/accesos, localStorage, documentación y Git (`main`, `aee05be`, limpio al comenzar).
 - [x] `docs/SHARED_BACKEND_PLAN.md`: inventario, tablas/relaciones, permisos, Auth, adaptación de servicios, datos demo/importación, pruebas y limitaciones.
@@ -193,7 +248,7 @@ Esta sección sustituye el modelo de permisos de la implementación inicial. Las
 
 ### Datos conservados de la verificación
 
-- Casa 90, Circuito Cedros, principal Sofía Ramos; `sofia90@accesshome.demo` / `Access123`.
+- Casa 90, Circuito Cedros, principal Sofía Ramos; `sofia90@accesshome.demo` / `[contraseña histórica retirada]`.
 - Casa 24 mantiene a Daniel como principal. Se agregó Lucía Cuevas Pérez, teléfono ficticio `55 5550 2490`, sin cuenta; se verificó desactivación/reactivación y quedó activa.
 - Vehículo de prueba `DEMO-224`, Mazda 3 azul oscuro, propietaria Lucía, inactivo.
 - Se conservaron Casa 25, Casa 88 y los registros anteriores del navegador. La semilla restaurada sigue teniendo cuatro casas, ocho habitantes y cinco vehículos.
@@ -362,3 +417,5 @@ Archivos principales:
 - `README.md`, `docs/PROTOTYPE_STATUS.md`, `docs/PROTOTYPE_TESTING.md`: documentación actualizada.
 
 Mensaje de commit sugerido (sin ejecutarlo): `feat: agregar autenticación simulada y sesión persistente`.
+
+

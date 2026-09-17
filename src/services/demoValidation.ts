@@ -21,7 +21,7 @@ function isDatabase(value: unknown, version: 1 | 2 | 3 | 4 | 5 | 6 | 7): boolean
   if (!residences.every((item) => hasStrings(item, ['id', 'condominiumId', 'name', 'street']) && condominiums.some((condo) => condo.id === item.condominiumId))) return false
   if (!vehicles.every((item) => hasStrings(item, ['id', 'residenceId', 'plates', 'brand', 'model', 'color']) && residences.some((house) => house.id === item.residenceId))) return false
   if (!users.every((user: unknown) => {
-    if (!hasStrings(user, ['id', 'name', 'email', 'password', 'role', 'condominiumId'])) return false
+    if (!hasStrings(user, ['id', 'name', 'email', 'role', 'condominiumId'])) return false
     if (!condominiums.some((condo) => condo.id === user.condominiumId)) return false
     if (user.role === 'admin') return user.residenceId === null
     return user.role === 'resident' && residences.some((house) => house.id === user.residenceId && house.condominiumId === user.condominiumId)
@@ -63,3 +63,4 @@ export function isDemoDatabase(value: unknown): value is DemoDatabase {
 export function isLegacyDemoDatabase(value: unknown): value is LegacyDemoDatabase | DemoDatabaseV2 | DemoDatabaseV3 | DemoDatabaseV4 | DemoDatabaseV5 | DemoDatabaseV6 {
   return isDatabase(value, 1) || isDatabase(value, 2) || isDatabase(value, 3) || isDatabase(value, 4) || isDatabase(value, 5) || isDatabase(value, 6)
 }
+

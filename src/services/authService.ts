@@ -1,3 +1,5 @@
+import { sharedMode } from './shared/provider.js'
+import { sharedAuth } from './shared/auth.js'
 import type { LoginCredentials, SessionUser } from '../types/auth.js'
 import type { DemoAccount } from '../types/demo.js'
 import { notifyDemoChange, readDemoData, subscribeToDemoChanges, writeDemoData } from './demoStorage.js'
@@ -14,17 +16,17 @@ export function sessionUser(account: DemoAccount): SessionUser {
   }
 }
 
-export const authService = {
+const localService = {
   async getSession(): Promise<SessionUser | null> {
     const data = readDemoData()
     const user = data.users.find((account) => account.id === data.session?.userId)
     return user && accountIsActive(data, user) ? sessionUser(user) : null
   },
 
-  async login({ email, password }: LoginCredentials): Promise<SessionUser> {
+  async login({ email }: LoginCredentials): Promise<SessionUser> {
     const data = readDemoData()
-    const user = data.users.find((account) => account.email.toLowerCase() === email.trim().toLowerCase() && account.password === password)
-    if (!user) throw new Error('Correo o contraseña incorrectos.')
+    const user = data.users.find((account) => account.email.toLowerCase() === email.trim().toLowerCase())
+    if (!user) throw new Error('Cuenta local no encontrada.')
     if (!accountIsActive(data, user)) throw new Error('Este habitante está inactivo. Solicita su reactivación al residente principal.')
     data.session = { userId: user.id }
     writeDemoData(data)
@@ -41,3 +43,6 @@ export const authService = {
 
   subscribe: subscribeToDemoChanges,
 }
+
+export const authService = sharedMode ? sharedAuth : localService
+

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { demoService } from '../services/demoService'
+import { sharedMode } from '../services/shared/provider'
 
 export function DemoTools() {
   const [confirmReset, setConfirmReset] = useState(false)
@@ -7,6 +8,8 @@ export function DemoTools() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const credentials = demoService.getCredentials()
+
+  if (sharedMode) return <p className="form-help">Solicita al responsable tu cuenta y contraseña individual. Daniel corresponde al principal de Casa 24. Los datos se comparten entre dispositivos.</p>
 
   async function reset() {
     setResetting(true)
@@ -26,13 +29,13 @@ export function DemoTools() {
   return (
     <div className="demo-tools">
       <details>
-        <summary>Credenciales de demostración</summary>
+        <summary>Cuentas locales de demostración</summary>
         <dl className="demo-credentials">
           {credentials.map((account) => (
             <div key={account.email}>
               <dt>{account.role === 'admin' ? 'Administrador' : 'Residente'}</dt>
               <dd>{account.email}</dd>
-              <dd>Contraseña: <code>{account.password}</code></dd>
+              <dd>Acceso local sin contraseña</dd>
             </div>
           ))}
         </dl>

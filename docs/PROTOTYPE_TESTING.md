@@ -1,3 +1,89 @@
+## Revisión SQL previa a aplicar · 17 de septiembre de 2026
+
+Pruebas locales aprobadas: `npm test` **139/139**, `npm run test:concurrency` **9/9**, `npm run build` correcto con la advertencia previa de tamaño del bundle. La suite de concurrencia inicia PostgreSQL **17.10** temporal en 127.0.0.1, simula Auth y usa tres conexiones independientes. No lee `.env.local`, no acepta conexiones remotas y elimina su cluster al terminar. Requiere poder ejecutar los binarios de desarrollo; no instala un servicio ni usuarios del sistema. No sustituye las pruebas con Auth/PostgREST reales.
+
+La suite exige observar un bloqueo mediante `pg_blocking_pids` antes de liberar la primera transacción. Comprueba cinco carreras de periodos idénticos, intersección parcial, límites adyacentes, rollback, snapshots antiguos en REPEATABLE READ/SERIALIZABLE, cancelación concurrente y expiración durante la espera. Al rechazar, no queda una segunda invitación ni un token huérfano.
+
+La suite SQL/PGlite comprueba además intervalos contenidos, ventanas futuras, canceladas/completadas/vencidas, contactos distintos con igual nombre, separación por residencia y visitantes sin contacto. La auditoría verifica cero SECURITY DEFINER expuestos, firmas preservadas, EXECUTE limitado y autorización de las implementaciones privadas.
+
+### Comprobación remota pendiente después de aplicar
+
+Usar Daniel/Casa 24 y el mismo contacto frecuente en dos navegadores; elegir un día futuro y la misma zona horaria en ambos dispositivos.
+
+| Caso | Acción | Resultado esperado |
+| --- | --- | --- |
+| SQL-01 | Crear para Carlos 10:00–12:00 y repetir desde el otro navegador | Solo una invitación; mensaje de superposición en la segunda |
+| SQL-02 | Intentar 11:00–13:00, 10:30–11:30 y 09:00–13:00 | Todas rechazadas mientras la primera esté activa |
+| SQL-03 | Crear 12:00–13:00 para el mismo contacto | Permitida; los límites consecutivos no se superponen |
+| SQL-04 | Cancelar la de 10:00–12:00 y recrearla desde el otro navegador | Permitida; ambos consultan el estado compartido |
+| SQL-05 | Repetir cuando una invitación finalizó por dos usos o su vencimiento real | No bloquea una nueva vigencia válida |
+| SQL-06 | Enviar simultáneamente el mismo periodo/contacto desde dos navegadores | Una sola alta confirmada; segunda rechazada, sin escrituras locales |
+| SQL-07 | Auditar catálogo y Data API | `security_baseline.sql` sin excepciones; solo accesshome expuesto, privado fuera de Exposed schemas y Extra search path |
+| SQL-08 | Repetir SB-01–SB-08 con JWT reales | Roles, aislamiento, creación, consulta y cancelación conservados |
+
+No ejecutar SQL de fixtures de las pruebas nativas en un proyecto Supabase: crean roles y simulan Auth únicamente en su cluster desechable. Procedimiento e inventario: [SQL_MIGRATION_REVIEW.md](SQL_MIGRATION_REVIEW.md).
+
+## Etapa 9 · Pruebas de backend compartido (entrega anterior)
+
+### Ejecutado localmente
+
+`npm test`: 134 pruebas correctas. Incluye regresión de los flujos locales, ocho migraciones en PostgreSQL/PGlite con pgcrypto, auditoría de privilegios, RLS por residencia/condominio, snapshots, escritura autorizada, rollback, idempotencia, límite del endpoint público y contrato de Supabase Auth mediante HTTP simulado.
+
+`npm run build`: correcto (advertencia de tamaño del bundle). No se conectó al proyecto remoto desde las pruebas. Los fixtures generan UUID y contraseñas efímeros solo en memoria; no son valores para configurar .env.local.
+
+Navegador: demo de 5174, login de Daniel por correo, contactos, crear invitación de Carlos López por 24 horas, abrir visitante/QR en viewport de 390 × 844; sin errores de consola y sin desbordamiento horizontal en el detalle. Se conservó la invitación local de prueba; no afecta la base compartida ni los datos del origen 5173.
+
+### Preparación de la prueba real (pendiente)
+
+Completar [SHARED_BACKEND_SETUP.md](SHARED_BACKEND_SETUP.md). Esperar autorización antes de aplicar las migraciones remotas. Después de aplicarlas y exponer accesshome, `npm run backend:check` debe informar AccessHome, esquema 9.
+
+Datos: usuarios Auth reales asignados a admin, Daniel (Casa 24), Ana (Casa 12) y, preferentemente, Mariana (Casa 24, consulta). Usar los correos y contraseñas individuales suministrados de forma privada por el responsable. No usar la identidad local sin contraseña contra Supabase.
+
+Ambos navegadores/dispositivos deben cargar una aplicación marcada **Modo compartido** conectada al mismo proyecto. Puede haber distintos almacenamientos de sesión. El enlace público requiere una dirección de frontend accesible desde el otro dispositivo; 127.0.0.1 no representa la computadora del anfitrión desde un teléfono.
+
+### Recorrido obligatorio de dos navegadores
+
+| Caso | Pasos | Resultado esperado |
+| --- | --- | --- |
+| SB-01 · Sesiones | Iniciar sesión como Daniel en navegador A y también como Daniel en B (perfiles separados o dispositivos distintos). | Ambos muestran Casa 24 y Modo compartido. Una contraseña errónea falla; no abre una cuenta local. |
+| SB-02 · Modificación autorizada | En A abrir Mi residencia y agregar habitante **Lucía Prueba Compartida**, apellido **Verificación**, sin cuenta. | Alta correcta. No puede editar el número de casa ni asignarse admin. |
+| SB-03 · Datos compartidos | En B entrar a Mi residencia, o recuperar foco/recargar si estaba abierta. | Aparece Lucía. El dato persiste después de cerrar y volver a iniciar sesión; no depende de accesshome.demo.v1. |
+| SB-04 · Crear invitación | En A abrir contactos, Carlos López → Invitar, vehículo guardado, 24 horas. Guardar y copiar enlace. | Invitación compartida con UUID interno, token de 64 caracteres hex, snapshot, Casa 24, 0/2 usos y QR. |
+| SB-05 · Otra consulta | En B abrir invitaciones y su detalle. Abrir también el enlace en ventana sin sesión. | Misma invitación/estado; visitante ve solo proyección y QR. No requiere cuenta. |
+| SB-06 · Cancelar | En A cancelar esa invitación y confirmar. | Se conserva la historia y cambia a cancelada. |
+| SB-07 · Sincronización | En B volver al detalle o recuperar foco; si sigue visible esperar hasta 10 s. Repetir en visitante sin sesión. | Ambos muestran Cancelada desde Supabase; no se borra/recrea ninguna base local. |
+| SB-08 · Separación | En B cerrar sesión y entrar como Ana. Pegar las rutas de Casa 24, detalle de invitación y contacto de Daniel; intentar los RPCs con IDs conocidos. | Lecturas protegidas/mutaciones denegadas, sin datos ajenos. Un token público voluntariamente compartido sí concede solo la proyección de esa visita. |
+
+### Permisos y consistencia adicionales
+
+- Mariana consulta Casa 24 pero no gestiona habitantes, vehículos, agenda ni crea/cancela invitaciones.
+- Admin ve solo su condominio, no la agenda privada de Daniel. Gestiona estructura y estados de reportes; no modifica habitantes/vehículos cotidianos como residente.
+- Asignar a Mariana principal desde admin: Daniel pierde gestión y acceso a su agenda inmediatamente en SQL. Volver a asignar a Daniel para restablecer la demo. Las invitaciones históricas conservan su anfitrión.
+- Desactivar Casa 12: Ana conserva consulta y pierde gestión. Reactivar desde admin al terminar.
+- Cambiar user_metadata.role o mandar residenceId/ownerUserId/usos/token añadidos al payload nunca concede permisos.
+- Sin perfil, perfil inactivo o habitante inactivo: denegar operaciones. Guardia no puede usar los RPCs operativos.
+- Editar/eliminar un contacto después de invitar: conservar nombre/vehículo históricos. El borrado desvincula contactId y elimina vehículos del contacto en una transacción.
+- Crear ocasional con guardar contacto y datos inválidos: no queda ni invitación ni contacto parcial.
+- Crear reporte como Daniel; Ana y Mariana no lo ven. Admin solo avanza pendiente → en proceso → completado.
+- Desconectar la red en compartido: mostrar error, no permitir guardar en localStorage. Recuperar red y consultar de nuevo.
+- Logout y cambio de cuenta: las rutas protegidas deben desmontarse y no conservar datos de la cuenta anterior.
+- Como anon, un SELECT directo de tablas falla. El endpoint público no devuelve teléfono, correo, IDs internos, contactos ni listados.
+- En una sesión adicional PostgreSQL real, revisar carreras de creación/cancelación/vehículo/entrada y dos validaciones simultáneas. PGlite no prueba carreras multi-conexión.
+- Repetir validate_access con el mismo request_id: mismo resultado, un movimiento. La siguiente operación intencional usa otro request_id. Un tercer uso queda rechazado.
+
+### Separación de proveedores
+
+1. Con ambas variables vacías, o con `npm run dev:local`, comprobar etiqueta Modo local y acceso por correo sin contraseña.
+2. Con ambas configuradas, comprobar Modo compartido y formulario con contraseña.
+3. Con solo una variable configurada, la aplicación sigue en compartido y presenta error de configuración; no debe abrir la demo local.
+4. Con una clave no publishable, Vite debe rechazar la configuración antes de construir el frontend. No incluir credenciales reales para probar este rechazo.
+5. No copiar ni importar accesshome.demo.v1 a Supabase. Cambiar de modo no cambia sus datos de dominio; entrar a la demo local elimina únicamente antiguos campos de contraseña.
+6. Restaurar demo solo existe en modo local, con confirmación, y afecta exclusivamente ese origen.
+
+## Historial de pruebas de las etapas locales
+
+Las tablas históricas siguientes documentan entregas previas. En la versión actual, el login local no lleva contraseña y se exige Web Crypto para nuevas altas/tokens. Las pruebas de autenticación por contraseña y fallback inseguro de esas entregas quedan sustituidas por la etapa 9.
+
 # Guía acumulativa de pruebas
 
 Esta guía se amplía en cada etapa. Al incorporar funciones nuevas, repetir también las pruebas anteriores que puedan verse afectadas.
@@ -11,7 +97,7 @@ Esta guía se amplía en cada etapa. Al incorporar funciones nuevas, repetir tam
 
 ## Etapa 8 · Preparación de backend compartido
 
-**Esta entrega no conecta Supabase.** Los datos/cuentas de etapas 1–7 siguen siendo locales. No usar `Access123` para proteger un backend publicado. El [plan](SHARED_BACKEND_PLAN.md) contiene la matriz de pruebas para la futura integración.
+**Esta entrega no conecta Supabase.** Los datos/cuentas de etapas 1–7 siguen siendo locales. No usar `[contraseña histórica retirada]` para proteger un backend publicado. El [plan](SHARED_BACKEND_PLAN.md) contiene la matriz de pruebas para la futura integración.
 
 | Caso | Pasos | Resultado esperado |
 | --- | --- | --- |
@@ -33,7 +119,7 @@ Resultado de esta entrega: `npm run build` correcto (118 módulos) y `npm test` 
 
 ### Datos y preparación
 
-Utiliza el mismo navegador y origen; no hace falta restaurar los datos. Daniel: `residente@accesshome.demo`; administrador: `admin@accesshome.demo`; Ana, principal de Casa 12: `ana@accesshome.demo`. Contraseña para los tres: `Access123`. Mariana (`mariana@accesshome.demo`) conserva consulta de Casa 24. Si se cambiaron principales en pruebas anteriores, revisa la asignación administrativa antes de comenzar.
+Utiliza el mismo navegador y origen; no hace falta restaurar los datos. Daniel: `residente@accesshome.demo`; administrador: `admin@accesshome.demo`; Ana, principal de Casa 12: `ana@accesshome.demo`. Contraseña para los tres: `[contraseña histórica retirada]`. Mariana (`mariana@accesshome.demo`) conserva consulta de Casa 24. Si se cambiaron principales en pruebas anteriores, revisa la asignación administrativa antes de comenzar.
 
 Datos nuevos sugeridos: visitante **Visita historial de prueba**, sin vehículo, vigencia **24 horas**; reporte **Lámpara de acceso apagada**, categoría **Instalaciones**, descripción **La lámpara junto al acceso de Casa 24 no enciende por la noche. Solicito su revisión.** Anota los indicadores iniciales y el ID del reporte para comparar. La semilla empieza sin movimientos ni reportes; una base migrada conserva lo existente.
 
@@ -82,7 +168,7 @@ Para probar reportes ajenos, copia el ID real creado por Daniel, entra como Ana 
 
 ## Corrección · Compatibilidad de identificadores
 
-Cuenta: `residente@accesshome.demo` / `Access123`. Datos nuevos sugeridos: **Prueba compatibilidad**, placas **COMP-242**. Repetir en el navegador y la misma dirección donde apareció el error; no restaurar los datos ni cambiar de origen para comprobar su conservación.
+Cuenta: `residente@accesshome.demo` / `[contraseña histórica retirada]`. Datos nuevos sugeridos: **Prueba compatibilidad**, placas **COMP-242**. Repetir en el navegador y la misma dirección donde apareció el error; no restaurar los datos ni cambiar de origen para comprobar su conservación.
 
 | ID | Pasos | Resultado esperado |
 | --- | --- | --- |
@@ -103,8 +189,8 @@ La alternativa final devuelve un identificador de timestamp/contador/aleatorio, 
 
 ### Preparación y datos
 
-- Residente Daniel, Casa 24: `residente@accesshome.demo` / `Access123`.
-- Administrador: `admin@accesshome.demo` / `Access123`.
+- Residente Daniel, Casa 24: `residente@accesshome.demo` / `[contraseña histórica retirada]`.
+- Administrador: `admin@accesshome.demo` / `[contraseña histórica retirada]`.
 - Crear un visitante ocasional **Visita QR de prueba**, sin vehículo, vigencia **24 horas**, sin guardarlo como contacto. Usar placas **QR-9002** para la incorporación posterior.
 - En su detalle, copiar el token y el enlace **Abrir invitación pública**. Cada invitación nueva tiene un token diferente generado por `generateId()`; no copiar tokens de ejemplos históricos para probar acceso activo.
 - Ruta administrativa: `/admin/control-acceso`. Ruta pública: `/invitacion/{token}`.
@@ -172,9 +258,9 @@ Los casos siguen sirviendo como regresión. Las referencias históricas de esta 
 
 ### Preparación y datos
 
-- Daniel / Casa 24: `residente@accesshome.demo` / `Access123`.
-- Ana / Casa 12: `ana@accesshome.demo` / `Access123`, para comprobar aislamiento.
-- Mariana / Casa 24: `mariana@accesshome.demo` / `Access123`, consulta sin gestión.
+- Daniel / Casa 24: `residente@accesshome.demo` / `[contraseña histórica retirada]`.
+- Ana / Casa 12: `ana@accesshome.demo` / `[contraseña histórica retirada]`, para comprobar aislamiento.
+- Mariana / Casa 24: `mariana@accesshome.demo` / `[contraseña histórica retirada]`, consulta sin gestión.
 - Semilla: Carlos López, teléfono 3312345678, Mazda 3 / JKL-1234; María González sin vehículo; Pedro Ramírez, Nissan Versa / HJK-7821.
 - Visitante ocasional de prueba: Lucía Pérez; vehículo solo placas `VIS-9001`. Otro vehículo: Toyota Tacoma / `VIS-9002`.
 - Las invitaciones empiezan vacías. La migración respeta contactos y vehículos previamente eliminados. Si falta Carlos, puedes crear un contacto ficticio equivalente o usar otro. No es necesario reiniciar el navegador.
@@ -242,7 +328,7 @@ Debe rechazar con **No puedes generar invitaciones para otra residencia** y no a
 
 ## Eliminación de contactos y vehículos · Pruebas conservadas
 
-Cuenta: Daniel, `residente@accesshome.demo` / `Access123`. Para probar el borrado usa registros creados específicamente para la prueba: contacto **Prueba eliminación**, vehículos de contacto **BOR-1001** y **BOR-1002**, vehículo de residencia **BOR-2001** (Honda, Civic, Gris). Los registros se eliminan definitivamente al confirmar.
+Cuenta: Daniel, `residente@accesshome.demo` / `[contraseña histórica retirada]`. Para probar el borrado usa registros creados específicamente para la prueba: contacto **Prueba eliminación**, vehículos de contacto **BOR-1001** y **BOR-1002**, vehículo de residencia **BOR-2001** (Honda, Civic, Gris). Los registros se eliminan definitivamente al confirmar.
 
 | ID | Pasos | Resultado esperado |
 | --- | --- | --- |
@@ -265,10 +351,10 @@ El recorrido de Invitar de esta sección es histórico: la pantalla preparada fu
 
 ### Preparación y datos
 
-- Daniel, principal de Casa 24: `residente@accesshome.demo` / `Access123`.
-- Ana, principal de Casa 12 y agenda independiente: `ana@accesshome.demo` / `Access123`.
-- Mariana, habitante adicional sin acceso a agenda: `mariana@accesshome.demo` / `Access123`.
-- Administrador: `admin@accesshome.demo` / `Access123`; no consulta agendas privadas.
+- Daniel, principal de Casa 24: `residente@accesshome.demo` / `[contraseña histórica retirada]`.
+- Ana, principal de Casa 12 y agenda independiente: `ana@accesshome.demo` / `[contraseña histórica retirada]`.
+- Mariana, habitante adicional sin acceso a agenda: `mariana@accesshome.demo` / `[contraseña histórica retirada]`.
+- Administrador: `admin@accesshome.demo` / `[contraseña histórica retirada]`; no consulta agendas privadas.
 - Ruta del módulo: `/residente/contactos`. En móvil abrir el menú para acceder.
 - Contactos demo de Daniel: Carlos López (3312345678, Mazda 3 / JKL-1234), María González (sin vehículo), Pedro Ramírez (Nissan Versa / HJK-7821).
 - Para nuevas pruebas usa **Julia Herrera**, teléfono 3312345088 y placas **JHR-8001** / **JHR-8002**. Si ya existen dentro del contacto, utiliza otras.
@@ -336,9 +422,9 @@ Esta corrección sustituye los casos E3 antiguos que daban al administrador alta
 
 ### Datos
 
-- Administrador: `admin@accesshome.demo` / `Access123`.
-- Daniel, principal de Casa 24: `residente@accesshome.demo` / `Access123`.
-- Mariana, cuenta adicional de consulta: `mariana@accesshome.demo` / `Access123`.
+- Administrador: `admin@accesshome.demo` / `[contraseña histórica retirada]`.
+- Daniel, principal de Casa 24: `residente@accesshome.demo` / `[contraseña histórica retirada]`.
+- Mariana, cuenta adicional de consulta: `mariana@accesshome.demo` / `[contraseña histórica retirada]`.
 - Casa 24 contiene Daniel, Mariana, Andrea y Carlos en la semilla. Andrea/Carlos no tienen cuenta. Mantiene sus dos vehículos demo.
 - Para este recorrido: Casa **91**, Circuito Cedros; principal **Sofía Ramos**, `sofia91@accesshome.demo`; habitante **Elena Cuevas**; vehículo `DEMO-324`, Mazda 3 azul. Usa otros valores si ya existen.
 - Los datos anteriores se migran sin reinicio. Solo usa Restaurar datos demo si deseas descartar las altas/ediciones y volver a la semilla exacta: cuatro casas, ocho habitantes y cinco vehículos.
@@ -349,7 +435,7 @@ Esta corrección sustituye los casos E3 antiguos que daban al administrador alta
 | --- | --- | --- |
 | P3-01 | Como administrador, abrir Residencias → Agregar residencia. Guardar Casa 91, Circuito Cedros, Activa. | Nueva casa sin principal ni habitantes; aparece en la búsqueda y el resumen. |
 | P3-02 | Abrir Casa 91 → Asignar residente principal. Registrar Sofía Ramos / `sofia91@accesshome.demo`. | Sofía figura como principal. Solo hay acciones de estructura/asignación y consulta; no Agregar habitante ni Registrar vehículo. |
-| P3-03 | Cerrar sesión. Entrar con `sofia91@accesshome.demo` / `Access123`. Después entrar como Daniel para los pasos siguientes. | Sofía gestiona Casa 91; Daniel gestiona Casa 24. Ninguno puede editar el número de casa, crear casas o asignarse otra. |
+| P3-03 | Cerrar sesión. Entrar con `sofia91@accesshome.demo` / `[contraseña histórica retirada]`. Después entrar como Daniel para los pasos siguientes. | Sofía gestiona Casa 91; Daniel gestiona Casa 24. Ninguno puede editar el número de casa, crear casas o asignarse otra. |
 | P3-04 | Como Daniel, pulsar Agregar habitante. Nombre Elena, apellido Cuevas, relación Familiar; dejar teléfono/correo vacíos y guardar. | Habitante activo de Casa 24, sin crear cuenta de acceso. |
 | P3-05 | Ver detalle de Elena → Editar habitante. Cambiar apellido a Cuevas Pérez y teléfono a `55 5550 2432`; guardar y volver a abrir el detalle. | Datos actualizados. El formulario permite desactivar y reactivar; no cambia casa ni asignación. |
 | P3-06 | Registrar vehículo: `DEMO-324`, Mazda, 3, Azul, Activo, propietaria Elena Cuevas Pérez. | Vehículo de Casa 24, con propietaria de esa casa. El selector no incluye habitantes de otras casas. |
@@ -383,7 +469,7 @@ Resultado: **Solo puedes acceder a tu propia residencia.** El administrador debe
 | P3-10 | Como Daniel, desactivar a Elena desde Editar habitante. Consultar su vehículo y reactivar a Elena. | Habitante inactivo identificado; vehículo y propietaria se conservan. La reactivación recupera el estado activo. |
 | P3-11 | Abrir la edición de Daniel. | Estado deshabilitado: el principal no puede desactivarse hasta que el administrador lo reemplace. La misma acción directa se rechaza en el servicio. |
 | P3-12 | Como administrador, editar Casa 91 y cambiarla a Inactiva. Entrar con Sofía. Luego reactivarla como administrador. | Sofía consulta pero no gestiona mientras esté inactiva; tras reactivación recupera la gestión. No se borran habitantes/vehículos. |
-| P3-13 | Como Sofía, agregar a Tomás Ramos sin cuenta. Como administrador, cambiar principal de Casa 91 a Tomás, correo de acceso `tomas91@accesshome.demo`. | No duplica al habitante. Tomás puede entrar con Access123 y gestionar; Sofía queda en consulta. La casa de Daniel no cambia. |
+| P3-13 | Como Sofía, agregar a Tomás Ramos sin cuenta. Como administrador, cambiar principal de Casa 91 a Tomás, correo de acceso `tomas91@accesshome.demo`. | No duplica al habitante. Tomás puede entrar con [contraseña histórica retirada] y gestionar; Sofía queda en consulta. La casa de Daniel no cambia. |
 | P3-14 | Como administrador, volver a elegir Sofía como principal existente. | Usa su cuenta previa; no exige crear otra ni cambia su contraseña. Tomás queda como habitante de consulta. |
 | P3-15 | En Casa 91, intentar crear un nuevo principal usando `residente@accesshome.demo`. | Error de correo existente; no mueve a Daniel ni duplica habitantes/cuentas. |
 | P3-16 | Entrar como Mariana y consultar Casa 24. | Tiene consulta y detalle, sin altas/ediciones ni permisos de gestión en servicios. |
@@ -411,8 +497,8 @@ La autenticación sigue funcionando. `/admin` ahora abre el resumen del condomin
 
 ### Preparación y datos
 
-- Administrador: `admin@accesshome.demo` / `Access123`.
-- Daniel Cuevas: `residente@accesshome.demo` / `Access123`, asociado a Casa 24.
+- Administrador: `admin@accesshome.demo` / `[contraseña histórica retirada]`.
+- Daniel Cuevas: `residente@accesshome.demo` / `[contraseña histórica retirada]`, asociado a Casa 24.
 - Semilla nueva: Residencial Los Robles; Casa 12 (Ana López y Jorge Mendoza), Casa 24 (Daniel Cuevas y Mariana Torres), Casa 37 (Luis Herrera) y Casa 51 (Elena Ríos).
 - Cinco vehículos permanentes, cuatro activos y uno inactivo en una semilla recién restaurada. Casa 24 tiene `DEMO-024` (Daniel, activo) y `DEMO-124` (Mariana, inactivo).
 - Para las altas utiliza Casa `90`, `Circuito Cedros`, residente `Laura Pérez`, correo `laura90@accesshome.demo`, vehículo `DEMO-090`, `Honda`, `Civic`, `Negro`. Si existen, usa otro número, correo y placas.
@@ -426,10 +512,10 @@ La migración conserva los registros de la etapa 2, incluida Casa 25; añade lo 
 | E3-01 | Ingresar como administrador y abrir Condominio. | Nombre, dirección y cantidades de residencias/residentes/vehículos calculadas desde datos reales. |
 | E3-02 | Abrir Residencias y buscar `24`; luego `Casa 24` y un número inexistente. | Se filtra Casa 24 en los primeros casos y se muestra estado vacío para el inexistente. |
 | E3-03 | Pulsar Agregar residencia, escribir número `90` y calle `Circuito Cedros`, guardar. | Aparece Casa 90; el filtro se limpia para que la nueva casa sea visible. |
-| E3-04 | Abrir Casa 90 y pulsar Agregar residente demo. Guardar Laura Pérez / `laura90@accesshome.demo`. | Residente asociado a Casa 90 y contador actualizado. La cuenta usa `Access123`. |
+| E3-04 | Abrir Casa 90 y pulsar Agregar residente demo. Guardar Laura Pérez / `laura90@accesshome.demo`. | Residente asociado a Casa 90 y contador actualizado. La cuenta usa `[contraseña histórica retirada]`. |
 | E3-05 | Pulsar Agregar vehículo. Completar `DEMO-090`, Honda, Civic, Negro, Activo; elegir Laura Pérez como propietaria. | Vehículo asociado a la casa, con sus datos, estado y propietaria visibles. |
 | E3-06 | Recargar y volver al listado/resumen. | Casa, residente y vehículo se conservan; cantidades actualizadas. |
-| E3-07 | Cerrar sesión y entrar como `laura90@accesshome.demo` / `Access123`. | Solo consulta Casa 90 y sus datos. No aparecen acciones de edición. |
+| E3-07 | Cerrar sesión y entrar como `laura90@accesshome.demo` / `[contraseña histórica retirada]`. | Solo consulta Casa 90 y sus datos. No aparecen acciones de edición. |
 
 ### Edición, integridad y permisos
 
@@ -455,7 +541,7 @@ La migración conserva los registros de la etapa 2, incluida Casa 25; añade lo 
 - Navegador: migración conservó sesión y Casa 25, y mostró Los Robles con las nuevas casas y residentes.
 - Se creó **Casa 88**, **Laura Méndez** (`laura@accesshome.demo`) y **DEMO-088**, Honda Civic. Se comprobó persistencia al recargar, se editó la calle a **Circuito Cedros Norte**, el nombre a **Laura Méndez Ruiz** y el vehículo a **Azul oscuro / Inactivo**. Estos registros de prueba se conservaron; no se restauraron los datos del navegador.
 - E3-02 a E3-06 y edición de casa/residente/vehículo comprobados en la interfaz. El resto de validaciones de integridad y restricciones de servicio también está cubierto por tests automatizados.
-- E3-07: la cuenta creada `laura@accesshome.demo` entró con `Access123` y mostró exclusivamente Casa 88 con su vehículo inactivo. Se comprobó el formulario de edición del condominio guardando sus valores vigentes y el rechazo visual de Casa 24 duplicada.
+- E3-07: la cuenta creada `laura@accesshome.demo` entró con `[contraseña histórica retirada]` y mostró exclusivamente Casa 88 con su vehículo inactivo. Se comprobó el formulario de edición del condominio guardando sus valores vigentes y el rechazo visual de Casa 24 duplicada.
 - Vista de Daniel verificada sin acciones de edición; bloqueo de detalle administrativo de otra casa y persistencia al recargar comprobados.
 - Revisión visual a 1366 × 1000, formulario de vehículo y consulta de residente a 375 × 812, y consulta a 768 × 1024. Ancho de contenido igual al área disponible en las vistas móviles/tablet inspeccionadas.
 - Sin errores ni advertencias de consola observados.
@@ -468,8 +554,8 @@ Las pruebas de esta sección sustituyen el acceso libre y el cambio directo de p
 
 | Perfil | Nombre | Correo | Contraseña |
 | --- | --- | --- | --- |
-| Administrador | Administrador Demo | `admin@accesshome.demo` | `Access123` |
-| Residente | Daniel Cuevas | `residente@accesshome.demo` | `Access123` |
+| Administrador | Administrador Demo | `admin@accesshome.demo` | `[contraseña histórica retirada]` |
+| Residente | Daniel Cuevas | `residente@accesshome.demo` | `[contraseña histórica retirada]` |
 
 En la etapa 2 el condominio se llamaba Los Encinos y la semilla tenía Casa 24 y Casa 25. La etapa 3 actualiza el nombre, amplía los datos e incorpora su gestión; las credenciales principales se conservan.
 
@@ -478,9 +564,9 @@ En la etapa 2 el condominio se llamaba Los Encinos y la semilla tenía Casa 24 y
 | ID | Pasos | Resultado esperado |
 | --- | --- | --- |
 | E2-01 | En `/login`, escribir `admin@accesshome.demo` y contraseña `incorrecta`. Pulsar Iniciar sesión. | Aviso **Correo o contraseña incorrectos**. Permanece en login sin crear sesión. |
-| E2-02 | Cambiar contraseña a `Access123` y enviar. | Abre `/admin`; muestra Administrador Demo, rol Administrador y el condominio. |
+| E2-02 | Cambiar contraseña a `[contraseña histórica retirada]` y enviar. | Abre `/admin`; muestra Administrador Demo, rol Administrador y el condominio. |
 | E2-03 | Pulsar Cerrar sesión en el menú. En móvil, abrir primero el menú. | Abre `/login`. Abrir `/admin` o usar Atrás no recupera acceso. |
-| E2-04 | Ingresar `residente@accesshome.demo` y `Access123`. | Abre `/residente`; muestra Daniel Cuevas y Casa 24. |
+| E2-04 | Ingresar `residente@accesshome.demo` y `[contraseña histórica retirada]`. | Abre `/residente`; muestra Daniel Cuevas y Casa 24. |
 | E2-05 | Con la sesión de residente, escribir `/admin` o `/admin/no-existe` en la dirección. | Regresa a `/residente` con aviso de acceso restringido. No muestra contenido del administrador. |
 | E2-06 | Recargar `/residente`. Repetir luego con la sesión del administrador en `/admin`. | Conserva usuario, rol y ruta; recupera el contexto del perfil. |
 
@@ -597,3 +683,5 @@ Esta revisión cubre navegación y accesibilidad básica; no sustituye una audit
 - E1-17: login y administrador revisados a 768 × 1024; residente a 375 × 812 y 430 × 932. Sin desbordamiento horizontal en el administrador y el residente; menú móvil abierto y cerrado al pulsar Inicio.
 - Se reutilizó el servidor de desarrollo existente en el puerto 5173, comprobado desde el navegador. Si `npm run dev` indica que el puerto está ocupado, abrir la instancia existente antes de iniciar otra.
 - Los datos de prueba siguen siendo los perfiles temporales Administrador y Residente, sin credenciales.
+
+

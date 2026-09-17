@@ -1,10 +1,12 @@
+import { sharedMode } from './shared/provider.js'
+import { sharedHousehold } from './shared/adapters.js'
 import type { InhabitantInput, VehicleInput } from '../types/community.js'
 import { inhabitantName } from '../utils/people.js'
 import { inhabitantFields, requireHouseholdManager, vehicleFields } from './communityRules.js'
 import { readDemoData, saveDemoData } from './demoStorage.js'
 import { generateId } from '../utils/id.js'
 
-export const householdService = {
+const localService = {
   async createInhabitant(residenceId: string, input: InhabitantInput): Promise<void> {
     const data = readDemoData()
     requireHouseholdManager(data, residenceId)
@@ -49,3 +51,5 @@ export const householdService = {
     saveDemoData(data)
   },
 }
+
+export const householdService = sharedMode ? sharedHousehold : localService

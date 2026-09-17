@@ -1,5 +1,3 @@
-let fallbackSequence = 0
-
 export function generateId(): string {
   const cryptoApi = globalThis.crypto
   if (typeof cryptoApi?.randomUUID === 'function') return cryptoApi.randomUUID()
@@ -12,7 +10,5 @@ export function generateId(): string {
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
   }
 
-  // Respaldo del prototipo: el contador evita colisiones dentro del mismo milisegundo.
-  fallbackSequence++
-  return `${Date.now().toString(36)}-${fallbackSequence.toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`
+  throw new Error('Este navegador no ofrece aleatoriedad segura. Abre AccessHome mediante HTTPS o localhost.')
 }

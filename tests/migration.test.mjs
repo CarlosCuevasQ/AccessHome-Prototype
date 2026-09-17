@@ -38,7 +38,7 @@ function versionOne() {
 test('migra v2 conservando casas y personas creadas, credenciales, propietarios y sesión', async () => {
   const old = versionTwo()
   old.residences.push({ id: 'house-custom', condominiumId: 'condo-encinos', number: '88', name: 'Casa 88', street: 'Circuito Cedros Norte' })
-  old.users.push({ ...old.users[1], id: 'user-custom', name: 'Laura Méndez Ruiz', email: 'laura@accesshome.demo', password: 'Conservar123', residenceId: 'house-custom' })
+  old.users.push({ ...old.users[1], id: 'user-custom', name: 'Laura Méndez Ruiz', email: 'laura@accesshome.demo', residenceId: 'house-custom' })
   old.vehicles.push({ ...old.vehicles[0], id: 'vehicle-custom', plates: 'DEMO-088', residenceId: 'house-custom', ownerId: 'user-custom', active: false })
   old.condominiums[0].name = 'Nombre personalizado'
   old.users[1].name = 'Daniel editado'
@@ -99,3 +99,4 @@ test('rechaza referencias inválidas de principal, propietario y cuentas de habi
     await assert.rejects(authService.getSession(), /datos locales no son válidos/)
   }
 })
+

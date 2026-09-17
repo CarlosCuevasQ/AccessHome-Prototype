@@ -1,3 +1,5 @@
+import { sharedMode } from './shared/provider.js'
+import { sharedContacts } from './shared/adapters.js'
 import type { ContactAccess, ContactInput, ContactVehicleInput, FrequentContact } from '../types/contacts.js'
 import { contactFields, contactVehicleFields, requireContactUser, requireOwnContact } from './contactRules.js'
 import { readDemoData, saveDemoData, subscribeToDemoChanges } from './demoStorage.js'
@@ -5,7 +7,7 @@ import { generateId } from '../utils/id.js'
 
 const searchKey = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim()
 
-export const contactsService = {
+const localService = {
   subscribe: subscribeToDemoChanges,
 
   async getAccess(): Promise<ContactAccess> {
@@ -73,3 +75,5 @@ export const contactsService = {
     saveDemoData(data)
   },
 }
+
+export const contactsService = sharedMode ? sharedContacts : localService

@@ -1,0 +1,17 @@
+import { loadEnvFile } from 'node:process'
+try { loadEnvFile('.env.local') } catch { /* Public variables may already be in the process environment. */ }
+const url=process.env.VITE_SUPABASE_URL?.trim()
+const key=process.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim()
+if(!url || !key?.startsWith('sb_publishable_')) {
+ console.error('Completa las dos variables públicas de .env.example en .env.local. Usa una clave sb_publishable_.')
+ process.exitCode=1
+} else {
+ try {
+  const endpoint=new URL('/rest/v1/rpc/backend_health',url)
+  const response=await fetch(endpoint,{method:'POST',headers:{apikey:key,'Content-Type':'application/json','Content-Profile':'accesshome'},body:'{}',signal:AbortSignal.timeout(10000)})
+  if(!response.ok) throw new Error('HTTP '+response.status+': verifica URL, clave publishable, esquema accesshome expuesto y las ocho migraciones aplicadas.')
+  const data=await response.json()
+  if(data.application!=='AccessHome'||data.schemaVersion!==9) throw new Error('Versión de backend inesperada.')
+  console.log('Conexión correcta: AccessHome, esquema 9. Este chequeo no modifica datos ni prueba el login; continúa con las cuentas demo y las pruebas entre residencias.')
+ } catch(error) { console.error(error.message); process.exitCode=1 }
+}

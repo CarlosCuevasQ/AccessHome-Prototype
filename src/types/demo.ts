@@ -5,7 +5,7 @@ import type { AccessRecord } from './access.js'
 import type { Report } from './reports.js'
 
 export interface DemoAccount extends SessionUser {
-  password: string
+
 }
 
 export interface Condominium {
@@ -87,3 +87,4 @@ export interface LegacyDemoDatabase extends Omit<DemoDatabaseV2, 'version' | 're
   residences: Omit<Residence, 'number' | 'active' | 'principalUserId'>[]
   vehicles: Omit<Vehicle, 'active' | 'ownerId'>[]
 }
+

@@ -3,7 +3,7 @@ import { webcrypto } from 'node:crypto'
 import { test } from 'node:test'
 import { generateId } from '../.test-build/utils/id.js'
 import { cloneJsonData } from '../.test-build/utils/clone.js'
-import { createDemoData, DEMO_PASSWORD } from '../.test-build/data/demo.js'
+import { createDemoData } from '../.test-build/data/demo.js'
 import { migrateDemoData } from '../.test-build/services/demoMigration.js'
 import { authService } from '../.test-build/services/authService.js'
 import { communityService } from '../.test-build/services/communityService.js'
@@ -57,20 +57,14 @@ test('getRandomValues genera IDs distintos sin randomUUID', (t) => {
   assert.equal(new Set(ids).size, ids.length)
 })
 
-test('sin crypto evita colisiones incluso con reloj y aleatorio fijos', (t) => {
+test('sin crypto rechaza operaciones que necesitan identificadores seguros', (t) => {
   replaceGlobal(t, 'crypto', undefined)
-  t.mock.method(Date, 'now', () => 1700000000000)
-  t.mock.method(Math, 'random', () => 0.5)
-  const ids = Array.from({ length: 1000 }, generateId)
-  assert.equal(new Set(ids).size, ids.length)
-  for (const id of ids) assert.match(id, /^loyw3v28-[0-9a-z]+-i-i$/)
+  assert.throws(generateId, /aleatoriedad segura/)
 })
 
-test('propiedades crypto no invocables usan el último recurso', (t) => {
+test('crypto no invocable falla sin recurrir a Math.random', (t) => {
   replaceGlobal(t, 'crypto', { randomUUID: null, getRandomValues: 'no disponible' })
-  const first = generateId()
-  assert.equal(typeof first, 'string')
-  assert.notEqual(generateId(), first)
+  assert.throws(generateId, /aleatoriedad segura/)
 })
 
 test('sin structuredClone la copia JSON y la semilla conservan su independencia', (t) => {
@@ -99,7 +93,7 @@ test('migrar sin structuredClone conserva valores y no modifica la base anterior
   assert.equal(JSON.stringify(legacy), before)
 })
 
-for (const [label, cryptoApi] of [['sin randomUUID', cryptoWithoutUUID], ['sin crypto', undefined]]) {
+for (const [label, cryptoApi] of [['sin randomUUID', cryptoWithoutUUID]]) {
   test(`altas e invitación con entrada/salida ${label} ni structuredClone`, async (t) => {
     replaceGlobal(t, 'crypto', cryptoApi)
     replaceGlobal(t, 'structuredClone', undefined)
@@ -107,7 +101,7 @@ for (const [label, cryptoApi] of [['sin randomUUID', cryptoWithoutUUID], ['sin c
     const windowMock = new EventTarget()
     windowMock.localStorage = { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) }
     replaceGlobal(t, 'window', windowMock)
-    const login = (email) => authService.login({ email, password: DEMO_PASSWORD })
+    const login = (email) => authService.login({ email, password: '' })
 
     await login('admin@accesshome.demo')
     const houseId = await communityService.createResidence({ number: '99', street: 'Robles', active: true })
@@ -155,3 +149,5 @@ for (const [label, cryptoApi] of [['sin randomUUID', cryptoWithoutUUID], ['sin c
     assert.equal((await publicInvitationService.getInvitation(invitation.token)).usedUses, 2)
   })
 }
+
+

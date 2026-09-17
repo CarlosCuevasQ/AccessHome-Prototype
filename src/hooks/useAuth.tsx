@@ -29,8 +29,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
     const unsubscribe = authService.subscribe(() => { void refresh() })
+    const onFocus = () => { void refresh() }
+    window.addEventListener('focus', onFocus)
+    window.addEventListener('online', onFocus)
     void refresh()
-    return () => { active = false; unsubscribe() }
+    return () => { active = false; unsubscribe(); window.removeEventListener('focus', onFocus); window.removeEventListener('online', onFocus) }
   }, [])
 
   return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>

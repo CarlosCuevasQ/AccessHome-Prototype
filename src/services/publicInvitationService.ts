@@ -1,3 +1,5 @@
+import { sharedMode } from './shared/provider.js'
+import { sharedPublicInvitation } from './shared/adapters.js'
 import type { DemoDatabase } from '../types/demo.js'
 import type { Invitation, PublicInvitation, VisitVehicle } from '../types/invitations.js'
 import { readDemoData, saveDemoData } from './demoStorage.js'
@@ -14,7 +16,7 @@ function canAddVehicle(data: DemoDatabase, invitation: Invitation): boolean {
     && data.residences.some((house) => house.id === invitation.residenceId && house.active)
 }
 
-export const publicInvitationService = {
+const localService = {
   async getInvitation(token: string): Promise<PublicInvitation> {
     const data = readDemoData()
     const invitation = requireToken(data, token)
@@ -36,3 +38,5 @@ export const publicInvitationService = {
     saveDemoData(data)
   },
 }
+
+export const publicInvitationService = sharedMode ? sharedPublicInvitation : localService

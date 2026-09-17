@@ -1,8 +1,12 @@
 # AccessHome · Plan de backend compartido
 
-## Alcance y resultado de esta etapa
+## Estado posterior a la implementación
 
-Inspección del 16 de septiembre de 2026. Base encontrada: rama `main`, último commit `aee05be` (`agregar historial de accesos, reportes y dashboards`), árbol de trabajo limpio antes de estos cambios. Etapas 1–7 operativas. No se encontró `.env` de Supabase, SDK, directorio de migraciones, proyecto vinculado ni herramientas `supabase`/`psql` en PATH.
+Este documento fue el plan de diseño. La integración descrita en Prompt 9 ya está implementada en el código y en cinco migraciones adicionales. El usuario ya configuró un proyecto de ensayo y `.env.local`, pero no ha aplicado migraciones. Las ocho versiones pendientes incluyen la [revisión de superposición y funciones privilegiadas](SQL_MIGRATION_REVIEW.md). Consulta [SHARED_BACKEND_SETUP.md](SHARED_BACKEND_SETUP.md) para aplicarlas y crear las cuentas demo de forma controlada. Las afirmaciones históricas de “aún no implementado” en las secciones siguientes conservan el contexto de planificación.
+
+## Contexto histórico del plan
+
+La inspección inicial del 16 de septiembre de 2026 encontró la rama `main`, último commit `aee05be` (`agregar historial de accesos, reportes y dashboards`), árbol de trabajo limpio antes de estos cambios, etapas 1–7 operativas y ningún proyecto remoto vinculado. El estado vigente de la implementación está documentado al principio de este archivo y en [PROTOTYPE_STATUS.md](PROTOTYPE_STATUS.md).
 
 Esta entrega prepara la integración: modelo relacional, migraciones versionadas, políticas de lectura, configuración pública vacía y plan de sustitución de servicios. **La aplicación sigue operando con localStorage; aún no comparte datos entre dispositivos.** No se ejecuta SQL remoto, no se importa ni modifica información existente y no se cambia la autenticación de la aplicación en esta etapa.
 
@@ -20,7 +24,7 @@ Las migraciones dejan toda escritura de clientes bloqueada hasta implementar los
 | Persistencia | Solo `demoStorage.ts` accede a `accesshome.demo.v1`, objeto completo de esquema interno 7; migraciones 1–6 y reset | Cada colección pasa a tablas/consultas. Conservar la copia local; no subir el objeto completo desde el navegador. |
 | Comunidad | Admin crea/edita/activa casas y asigna principal; principal administra habitantes/vehículos propios | Dos conjuntos de operaciones con autorización distinta. Cuenta adicional activa mantiene consulta. |
 | Contactos | Agenda privada por `ownerUserId`; vehículos anidados separados de los permanentes | Dos tablas relacionadas, acceso exclusivo del propietario que siga siendo principal. |
-| Invitaciones | Snapshot de visitante, teléfono, vehículo, casa y anfitrión; 0/2 usos; token mediante `generateId()` | Copias y destino calculados en servidor. No usar el fallback aleatorio del navegador como secreto público. |
+| Invitaciones | Snapshot de visitante, teléfono, vehículo, casa y anfitrión; 0/2 usos; token mediante CSPRNG del servidor | Copias y destino calculados en servidor. Los UUID locales no son secretos públicos compartidos. |
 | Público | `publicInvitationService` proyecta datos mínimos por token y añade vehículo una sola vez, antes de entrada | Sustituir por endpoints limitados; nunca descargar la base local/equivalente para filtrar en React. |
 | Accesos | `accessService.validateToken` comprueba estado/fecha/casa/usos, guarda uso+registro en un único `setItem` | Debe ser una transacción con bloqueo por invitación, tiempo servidor e idempotencia. localStorage no coordina puestos. |
 | Reportes / dashboards | Servicios calculan totales reales; reportes privados por autor; admin avanza estados | Consultas/agregados del servidor con el mismo alcance. El polling actual cada segundo no debe descargar tablas completas. |
@@ -171,7 +175,7 @@ Para Django: reemplazar adaptadores por HTTP y obtener sesión/permisos del serv
 
 ## 6. Autenticación y provisionamiento
 
-- Email/contraseña de **Supabase Auth**. No importar `DemoAccount.password`, no reutilizar `Access123` como contraseña publicada ni confiar en `session.userId` local.
+- Email/contraseña de **Supabase Auth**. No importar `DemoAccount.password`, no reutilizar `[contraseña histórica retirada]` como contraseña publicada ni confiar en `session.userId` local.
 - `profiles.user_id` referencia el ID de `auth.users`; roles permitidos `admin`, `resident`, `guard`, mostrados como administrador/residente/guardia. Rol/casa/condominio no se derivan de `user_metadata` editable ni de campos enviados por el formulario. La base resuelve autorización actual en cada consulta.
 - Cerrar registro público y anonymous sign-in para este prototipo. Aprovisionar el primer admin mediante Dashboard/operación de servidor controlada. Crear cuentas sin perfil no les da acceso a tablas. No hay trigger que convierta cualquier signup en residente/admin.
 - Primer lote: crear condominio y residencias sin principal; crear usuarios Auth; insertar perfiles con IDs reales; crear habitantes vinculados; asignar principales. La asignación de una cuenta Auth nueva y SQL no es una única transacción: si falla la relación, la cuenta queda sin permisos y debe poder completarse de forma idempotente por administración.
@@ -234,3 +238,4 @@ Los tokens locales pueden provenir de un fallback no criptográfico: no publicar
 **Para comenzar el Prompt 9 basta con el proyecto de ensayo identificado, `.env.local` con sus dos valores públicos, método de acceso/correos de prueba definidos y confirmación de si ya se aplicó alguna migración.** Los secretos de servidor permanecerán en el entorno confiable cuando se necesiten para provisionar cuentas. No se requieren para el frontend ni para ejecutar `npm run build`.
 
 Las migraciones se versionan como SQL en `supabase/migrations`; el historial debe mantenerse alineado con el proyecto elegido. [Migraciones Supabase](https://supabase.com/docs/guides/deployment/database-migrations)
+

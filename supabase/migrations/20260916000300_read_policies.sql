@@ -40,10 +40,10 @@ as $$
       and r.principal_user_id = a.user_id and r.condominium_id = a.condominium_id);
 $$;
 
-revoke all on function accesshome_private.current_actor() from public, anon, authenticated;
-revoke all on function accesshome_private.is_admin(uuid) from public, anon, authenticated;
-revoke all on function accesshome_private.is_resident_of(uuid) from public, anon, authenticated;
-revoke all on function accesshome_private.owns_agenda(uuid) from public, anon, authenticated;
+revoke all on function accesshome_private.current_actor() from public,anon,authenticated,service_role;
+revoke all on function accesshome_private.is_admin(uuid) from public,anon,authenticated,service_role;
+revoke all on function accesshome_private.is_resident_of(uuid) from public,anon,authenticated,service_role;
+revoke all on function accesshome_private.owns_agenda(uuid) from public,anon,authenticated,service_role;
 grant usage on schema accesshome, accesshome_private to authenticated;
 grant execute on function accesshome_private.current_actor() to authenticated;
 grant execute on function accesshome_private.is_admin(uuid) to authenticated;

@@ -5,11 +5,11 @@ import { invitationsService as invitations } from '../.test-build/services/invit
 import { contactsService as contacts } from '../.test-build/services/contactsService.js'
 import { communityService } from '../.test-build/services/communityService.js'
 import { demoService } from '../.test-build/services/demoService.js'
-import { createDemoData, DEMO_PASSWORD } from '../.test-build/data/demo.js'
+import { createDemoData } from '../.test-build/data/demo.js'
 import { DEMO_STORAGE_KEY } from '../.test-build/services/demoStorage.js'
 
 let storage
-const login = (email) => authService.login({ email, password: DEMO_PASSWORD })
+const login = (email) => authService.login({ email, password: '' })
 const read = () => JSON.parse(storage.get(DEMO_STORAGE_KEY))
 const write = (data) => storage.set(DEMO_STORAGE_KEY, JSON.stringify(data))
 const vehicle = { plates: 'TMP-9081', brand: '', model: '', color: '' }
@@ -281,3 +281,4 @@ test('datos de invitaciones corruptos se rechazan sin sobrescribir el almacenami
     assert.deepEqual(read(), data)
   }
 })
+

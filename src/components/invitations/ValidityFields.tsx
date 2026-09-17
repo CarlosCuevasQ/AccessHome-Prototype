@@ -1,4 +1,5 @@
 import type { InvitationValidity } from '../../types/invitations'
+import { sharedMode } from '../../services/shared/provider'
 
 interface ValidityFieldsProps {
   kind: InvitationValidity['kind']
@@ -21,6 +22,6 @@ export function ValidityFields({ kind, onKindChange, startsAt, expiresAt, onStar
       <label className="form-field">Fecha y hora de inicio<input type="datetime-local" required value={startsAt} onInput={(event) => onStartChange(event.currentTarget.value)} /></label>
       <label className="form-field">Fecha y hora final<input type="datetime-local" required min={startsAt} value={expiresAt} onInput={(event) => onEndChange(event.currentTarget.value)} /></label>
       <p className="form-help">Las fechas se muestran en la hora local de tu dispositivo.</p>
-    </div> : <p className="form-help">{kind === 'today' ? 'Desde ahora hasta terminar el día de hoy, en tu hora local.' : 'Durante 24 horas a partir de la generación.'}</p>}
+    </div> : <p className="form-help">{kind === 'today' ? (sharedMode ? 'Desde ahora hasta terminar el día de hoy, en la zona horaria del condominio.' : 'Desde ahora hasta terminar el día de hoy, en tu hora local.') : 'Durante 24 horas a partir de la generación.'}</p>}
   </fieldset>
 }

@@ -4,11 +4,11 @@ import { authService } from '../.test-build/services/authService.js'
 import { contactsService as contacts } from '../.test-build/services/contactsService.js'
 import { communityService } from '../.test-build/services/communityService.js'
 import { demoService } from '../.test-build/services/demoService.js'
-import { createDemoData, DEMO_PASSWORD } from '../.test-build/data/demo.js'
+import { createDemoData } from '../.test-build/data/demo.js'
 import { DEMO_STORAGE_KEY } from '../.test-build/services/demoStorage.js'
 
 let storage
-const login = (email) => authService.login({ email, password: DEMO_PASSWORD })
+const login = (email) => authService.login({ email, password: '' })
 const daniel = () => login('residente@accesshome.demo')
 const admin = () => login('admin@accesshome.demo')
 const input = { name: 'Laura Pérez', phone: '', email: '', notes: '', active: true }
@@ -207,3 +207,4 @@ test('datos corruptos de agenda se rechazan sin sobrescribirlos', async () => {
     assert.deepEqual(read(), data)
   }
 })
+

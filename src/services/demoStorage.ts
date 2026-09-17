@@ -2,11 +2,13 @@ import { createDemoData } from '../data/demo.js'
 import type { DemoDatabase } from '../types/demo.js'
 import { isDemoDatabase, isLegacyDemoDatabase } from './demoValidation.js'
 import { migrateDemoData } from './demoMigration.js'
+import { sharedMode } from './shared/provider.js'
 
 export const DEMO_STORAGE_KEY = 'accesshome.demo.v1'
 const changeEvent = 'accesshome:demo-changed'
 
 export function readDemoData(): DemoDatabase {
+  if (sharedMode) throw new Error('El modo compartido no puede leer la base local.')
   let raw: string | null
   try {
     raw = window.localStorage.getItem(DEMO_STORAGE_KEY)
@@ -20,7 +22,13 @@ export function readDemoData(): DemoDatabase {
   }
   let parsed: unknown
   try { parsed = JSON.parse(raw) } catch { parsed = null }
-  if (isDemoDatabase(parsed)) return parsed
+  if (isDemoDatabase(parsed)) {
+    if (parsed.users.some((user) => 'password' in user)) {
+      for (const user of parsed.users) delete (user as unknown as Record<string, unknown>).password
+      writeDemoData(parsed)
+    }
+    return parsed
+  }
   if (isLegacyDemoDatabase(parsed)) {
     const migrated = migrateDemoData(parsed)
     if (isDemoDatabase(migrated)) {
@@ -32,6 +40,8 @@ export function readDemoData(): DemoDatabase {
 }
 
 export function writeDemoData(data: DemoDatabase): void {
+  if (sharedMode) throw new Error('El modo compartido no puede escribir la base local.')
+  for (const user of data.users) delete (user as unknown as Record<string, unknown>).password
   try {
     window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(data))
   } catch {

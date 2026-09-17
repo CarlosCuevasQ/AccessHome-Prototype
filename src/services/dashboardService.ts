@@ -1,3 +1,5 @@
+import { sharedMode } from './shared/provider.js'
+import { sharedDashboard } from './shared/adapters.js'
 import { readDemoData } from './demoStorage.js'
 import { requireUser } from './communityRules.js'
 import { requireInvitationUser, invitationStatus } from './invitationRules.js'
@@ -5,7 +7,7 @@ import { filterAccessRecords, visibleAccessRecords } from './accessHistoryRules.
 import { visibleReports } from './reportRules.js'
 import { localDateInput } from '../utils/dates.js'
 
-export const dashboardService = {
+const localService = {
   async getAdminDashboard() {
     const data = readDemoData()
     const user = requireUser(data, true)
@@ -42,3 +44,5 @@ export const dashboardService = {
     }
   },
 }
+
+export const dashboardService = sharedMode ? sharedDashboard : localService

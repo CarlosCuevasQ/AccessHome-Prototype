@@ -28,9 +28,8 @@ test('inicializa los datos solo una vez y empieza sin sesión', async () => {
   assert.equal(JSON.parse(storage.get(DEMO_STORAGE_KEY)).condominiums[0].name, 'Cambio de prueba')
 })
 
-test('rechaza credenciales incorrectas sin crear una sesión', async () => {
-  await assert.rejects(authService.login({ email: credentials[0].email, password: 'incorrecta' }), /Correo o contraseña incorrectos/)
-  await assert.rejects(authService.login({ email: 'desconocido@example.test', password: credentials[0].password }), /Correo o contraseña incorrectos/)
+test('modo local rechaza cuentas inexistentes sin crear una sesión', async () => {
+  await assert.rejects(authService.login({ email: 'desconocido@example.test', password: '' }), /Cuenta local no encontrada/)
   assert.equal(await authService.getSession(), null)
 })
 
@@ -46,13 +45,13 @@ test('login de ambos roles persiste la referencia y no expone contraseñas en se
   }
 })
 
-test('normaliza correo, pero respeta mayúsculas y espacios de la contraseña', async () => {
+test('modo local normaliza correo y no conserva contraseñas', async () => {
   const account = credentials[1]
-  const user = await authService.login({ email: `  ${account.email.toUpperCase()}  `, password: account.password })
+  const user = await authService.login({ email: `  ${account.email.toUpperCase()}  `, password: '' })
   assert.equal(user.role, 'resident')
   await authService.logout()
-  await assert.rejects(authService.login({ ...account, password: `${account.password} ` }), /incorrectos/)
-  await assert.rejects(authService.login({ ...account, password: account.password.toLowerCase() }), /incorrectos/)
+  assert.ok(createDemoData().users.every(user => !('password' in user)))
+  assert.ok(JSON.parse(storage.get(DEMO_STORAGE_KEY)).users.every(user => !('password' in user)))
 })
 
 test('logout elimina la sesión, conserva datos y notifica a los suscriptores', async () => {
@@ -141,3 +140,4 @@ test('fallos de almacenamiento no reportan login, logout ni restauración exitos
   window.localStorage.getItem = () => { throw new Error('denied') }
   await assert.rejects(authService.getSession(), /No se puede leer/)
 })
+
