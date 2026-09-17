@@ -30,6 +30,9 @@ globalThis.fetch=async (url,options={})=>{
  }
  if(path==='/auth/v1/logout') return new Response('{}',{status:200})
  if(path.endsWith('/session_profile')) return new Response(JSON.stringify(profile),{status:200})
+ if(profile?.role==='guard' && path.endsWith('/manage_community')) return new Response(JSON.stringify({code:'42501',message:'Denied'}),{status:403})
+ if(path.endsWith('/guard_dashboard')) return new Response(JSON.stringify({guardName:profile.name,condominiumName:'Condominio fixture',todayAccessCount:2}),{status:200})
+ if(path.endsWith('/guard_history')) return new Response(JSON.stringify({records:[],hasMore:false}),{status:200})
  return new Response(JSON.stringify(path.endsWith('/create_invitation')?'new-invitation':[]),{status:200})
 }
 globalThis.window=new EventTarget()
@@ -42,6 +45,8 @@ const {publicInvitationService}=await import('../.test-build/services/publicInvi
 const {reportsService}=await import('../.test-build/services/reportsService.js')
 const {accessHistoryService}=await import('../.test-build/services/accessHistoryService.js')
 const {dashboardService}=await import('../.test-build/services/dashboardService.js')
+const {guardService}=await import('../.test-build/services/guardService.js')
+const {getRoleHome}=await import('../.test-build/utils/auth.js')
 const {demoService}=await import('../.test-build/services/demoService.js')
 const {readDemoData,writeDemoData}=await import('../.test-build/services/demoStorage.js')
 const {getClient}=await import('../.test-build/services/shared/client.js')
@@ -79,6 +84,22 @@ test('network/authorization failures never silently select local data',async()=>
  await assert.rejects(invitationsService.createInvitation({}),/permiso/)
  responseError=false
 })
+test('guard uses real Auth adapter, its home and scoped RPCs; administrative service rejects backend denial',async()=>{
+ await authService.logout()
+ profile={id:randomUUID(),name:'Guardia',role:'guard',condominiumId:randomUUID(),residenceId:null}
+ const user=await authService.login({email:'guard@example.test',password:randomUUID()})
+ assert.equal(user.role,'guard'); assert.equal(getRoleHome(user.role),'/guardia')
+ assert.equal(getRoleHome('admin'),'/admin'); assert.equal(getRoleHome('resident'),'/residente')
+ assert.equal((await guardService.getDashboard()).guardName,'Guardia')
+ assert.deepEqual((await guardService.getHistory('entrada',1)).records,[])
+ assert.deepEqual(requests.findLast(r=>r.path.endsWith('/guard_history')).body,{movement:'entrada',page:1})
+ await assert.rejects(communityService.createResidence({number:'91',street:'No autorizado',active:true}),/permiso/)
+ responseError=true
+ await assert.rejects(guardService.getDashboard(),/permiso/)
+ await assert.rejects(guardService.getHistory(),/permiso/)
+ responseError=false
+})
+
 test('logout removes session; invalid credentials and missing profile never authorize a demo account',async()=>{
  await authService.logout()
  assert.equal(await authService.getSession(),null)

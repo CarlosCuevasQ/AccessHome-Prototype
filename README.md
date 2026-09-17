@@ -2,7 +2,7 @@
 
 Prototipo universitario en React, Vite y TypeScript. Conserva las pantallas de administración, residencia, contactos, invitaciones/QR, historial y reportes.
 
-La integración con Supabase está implementada y probada localmente. **No se han aplicado migraciones ni probado cuentas contra tu proyecto remoto.** Las ocho migraciones pendientes ya incluyen la [revisión de seguridad y concurrencia](docs/SQL_MIGRATION_REVIEW.md). La activación requiere la configuración y verificación descritas en [SHARED_BACKEND_SETUP.md](docs/SHARED_BACKEND_SETUP.md).
+La integración base con Supabase, las ocho migraciones iniciales y las cuentas reales ya funcionan en el proyecto de ensayo, según la confirmación del responsable. **La nueva etapa de Guardia está implementada y probada localmente; su migración incremental todavía no se aplicó al proyecto remoto.** Consulta [GUARD_SETUP.md](docs/GUARD_SETUP.md) para activarla y vincular una cuenta Auth sin repetir la semilla ni modificar datos existentes.
 
 ## Ejecutar
 
@@ -39,7 +39,7 @@ En modo compartido, cada persona usa su cuenta de Supabase Auth y una contraseñ
 | Administrador | Estructura y principales del propio condominio, consulta de habitantes/vehículos, control de acceso existente, historial y estados de reportes |
 | Residente principal | Habitantes/vehículos de su casa activa, agenda privada, creación/cancelación de invitaciones, reportes propios |
 | Residente adicional | Consulta de su casa, invitaciones e historial; reportes propios históricos |
-| Guardia | Reservado: sin sesión operativa ni RPCs de gestión en esta etapa |
+| Guardia | Panel `/guardia` e historial mínimo del propio condominio; sin gestión administrativa, escrituras ni validación de accesos en esta etapa |
 | Visitante | Solo proyección de su invitación mediante token; sin acceso general a tablas |
 
 Las políticas RLS limitan lecturas; ningún cliente tiene INSERT/UPDATE/DELETE general. Los RPCs de escritura autorizan identidad y pertenencia, con transacciones. Un perfil inactivo o residente sin habitante activo queda bloqueado. La provisión inicial y vinculación de cuentas se ejecutan de forma controlada, fuera del frontend.
@@ -48,12 +48,11 @@ Los RPCs expuestos son SECURITY INVOKER. La lógica privilegiada está en access
 
 ## Configuración compartida
 
-1. Preparar el proyecto de ensayo y completar .env.local con URL y clave **sb_publishable_** reales.
-2. Aplicar las ocho migraciones, en orden, **solo cuando se autorice esa fase remota**.
-3. Exponer el esquema `accesshome`; nunca `accesshome_private` ni `auth`.
-4. Crear usuarios Auth con contraseñas individuales y sembrar/vincular sus UUID mediante el procedimiento controlado.
-5. Reiniciar Vite. Después de las migraciones, `npm run backend:check` verifica conectividad y versión del esquema sin modificar datos.
-6. Ejecutar el recorrido de dos navegadores de [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md).
+La configuración existente de `.env.local`, las ocho migraciones y los datos se conservan. Para esta etapa el responsable debe aplicar únicamente `20260917000600_guard_workspace.sql`, crear o reutilizar una cuenta Auth individual y vincularla mediante `accesshome_private.provision_guard`. La activación/desactivación usa `set_guard_active`; ambos procedimientos son exclusivos del propietario de migraciones, no del administrador de la aplicación.
+
+Seguir [GUARD_SETUP.md](docs/GUARD_SETUP.md) y el recorrido G-01–G-11 de [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. `npm run backend:check` conserva el chequeo base e indica si detecta `guardWorkspaceVersion: 1`; no prueba el login.
+
+Para instalaciones completamente nuevas, [SHARED_BACKEND_SETUP.md](docs/SHARED_BACKEND_SETUP.md) documenta la base inicial. Mantener expuesto `accesshome` y privado `accesshome_private`.
 
 No poner secretos administrativos, claves service_role ni contraseñas en Vite. La configuración rechaza claves distintas de publishable antes de construir el bundle. No se incluye registro abierto, recuperación de contraseña ni provisión Auth desde las pantallas.
 
@@ -67,7 +66,7 @@ El enlace del visitante consulta la misma base desde cualquier dispositivo con a
 
 Las consultas refrescan al abrir la pantalla, recuperar foco o conexión y después de escrituras locales. Las pantallas que ya actualizaban automáticamente consultan cada 10 segundos en compartido, solo si están visibles. No se usa Realtime ni infraestructura adicional. Los dashboards agregan en SQL y devuelven solo cinco movimientos recientes.
 
-El control administrativo existente registra entrada/salida transaccionalmente, con bloqueo e idempotencia de reintentos. No se implementó el módulo del guardia.
+El control administrativo existente registra entrada/salida transaccionalmente, con bloqueo e idempotencia de reintentos. El guardia consulta esos movimientos, con actualización cada 30 segundos mientras el panel/historial esté visible. Muestra nombre, condominio, hora del servidor, accesos de hoy, entradas, salidas y pendientes. El historial abarca siete días y 50 registros por página. **Escanear acceso**, **Registrar servicio** y **Reportes de turno** llevan a estados explícitos de próxima etapa; todavía no registran datos ni solicitan cámara.
 
 En la demo local, los identificadores se generan con Web Crypto comprobando disponibilidad; se eliminó el fallback de Math.random/timestamp. Los tokens locales históricos no se publican ni migran automáticamente.
 
@@ -82,7 +81,8 @@ npm run preview
 
 Las pruebas incluyen regresión local, PostgreSQL/PGlite con pgcrypto, RLS, RPCs, snapshots, límites públicos y cliente Supabase con HTTP simulado. test:concurrency ejecuta además PostgreSQL nativo temporal con conexiones independientes, sin leer .env.local ni aceptar destinos remotos. No sustituyen las pruebas de Auth y PostgREST contra el proyecto remoto.
 
-- [Configuración y usuarios seguros](docs/SHARED_BACKEND_SETUP.md)
+- [Guardia: migración incremental y provisión segura](docs/GUARD_SETUP.md)
+- [Configuración base para instalaciones nuevas](docs/SHARED_BACKEND_SETUP.md)
 - [Estado y límites de la entrega](docs/PROTOTYPE_STATUS.md)
 - [Pruebas manuales y datos](docs/PROTOTYPE_TESTING.md)
 - [Plan original y decisiones de integración](docs/SHARED_BACKEND_PLAN.md)

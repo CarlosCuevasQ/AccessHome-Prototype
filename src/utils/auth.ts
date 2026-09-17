@@ -1,5 +1,6 @@
-import type { UserRole } from '../types/auth'
+import type { UserRole } from '../types/auth.js'
 
 export function getRoleHome(role: UserRole): string {
-  return role === 'admin' ? '/admin' : '/residente'
+  const homes: Record<UserRole, string> = { admin: '/admin', resident: '/residente', guard: '/guardia' }
+  return homes[role]
 }

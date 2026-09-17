@@ -1,6 +1,28 @@
-## Revisión SQL previa a aplicar · 17 de septiembre de 2026
+## Etapa 10 · Guardia y caseta
 
-Estado vigente: las ocho migraciones pendientes están revisadas y listas para aplicar al proyecto de ensayo; la validación remota sigue pendiente. El usuario ya configuró el proyecto y `.env.local`, sin ejecutar `db push`. Se conserva el orden de las ocho versiones y el contrato de los services.
+Estado actual: las ocho migraciones iniciales, semilla y cuentas base ya están activas remotamente según el responsable. Esta entrega añade **una sola migración incremental pendiente**, `20260917000600_guard_workspace.sql`. No se editaron las ocho aplicadas, no se ejecutaron migraciones remotas ni semilla, no se modificó `.env.local` y no se hizo commit/push.
+
+- Rol SQL existente `guard`, reconocido en `session_profile`, Auth y rutas. No es administrador; `/admin` devuelve a `/guardia` con aviso.
+- Panel independiente con layout y componentes existentes: guardia/condominio, reloj en zona del condominio, accesos de hoy, cinco entradas y salidas recientes, total de pendientes y diez pendientes más antiguos.
+- Historial de consulta: siete días de calendario, filtro de movimiento y paginación de 50 filas. Services consultan Supabase; no hay datos locales de guardia ni fallback.
+- Escanear es la acción principal. Escaneo, servicios y reportes de turno tienen rutas explícitas de próxima etapa, sin botones ficticios ni escritura habilitada.
+- Provisión y activación/desactivación exclusivamente mediante funciones privadas del propietario; cuenta Auth creada por el responsable. No convierte roles, traslada cuentas ni reactiva silenciosamente. Sin contraseñas en el repositorio.
+- RPCs expuestos invoker; autorización y proyección mínima en esquema privado. RLS existente conservado. Guardia sin gestión de residencias, principales, habitantes, vehículos, usuarios, roles, invitaciones o accesos históricos; tampoco ve reportes privados.
+- Refetch al abrir, enfocar o recuperar conexión; cada 30 s visible y botón Actualizar en panel. Datos retirados ante error. Desactivación comprobada en backend con JWT vigente.
+
+Validación local: `npm test` **149/149**; `npm run test:concurrency` **10/10** en PostgreSQL **17.10** con conexiones independientes; `npm run build` correcto, con advertencia previa de bundle superior a 500 kB. La migración se aplicó también sobre las ocho versiones pobladas en PGlite y se compararon todas las filas antes/después: sin cambios. Concurrencia adicional: provisión idempotente y desactivación que rechaza una consulta en espera.
+
+Navegador con HTTP/Auth simulado, aislado en puerto 5175: login, nombre/condominio, redirección desde `/admin`, filtro de historial, estados pendientes, menú móvil, logout y retorno a login al abrir `/guardia` sin sesión. Móvil de 375 y 390 px y tablet de 768 px, sin desbordamiento horizontal medido ni errores de consola. Esto no prueba Auth/PostgREST reales.
+
+Pendiente: aplicar la incremental, vincular la cuenta y ejecutar G-01–G-11 con Auth real. **No se declara funcionamiento remoto del rol guardia.** Guía exacta en [GUARD_SETUP.md](GUARD_SETUP.md). El escaneo operativo, registro de servicios y reportes de turno pertenecen a etapas posteriores.
+
+Archivos principales: migración incremental; `src/services/guardService.ts`, `src/types/guard.ts`, páginas `GuardDashboardPage`, `GuardHistoryPage`, `GuardUpcomingPage`, CSS de caseta; Auth/rutas/navegación/layout y componentes de accesos reutilizados; chequeo de salud, auditoría y pruebas SQL/cliente/concurrencia; README y guías de setup/status/testing.
+
+Commit sugerido, sin ejecutar: `feat: agregar rol guard y panel de caseta con permisos limitados`.
+
+## Revisión SQL previa a aplicar · 17 de septiembre de 2026 (histórico)
+
+Estado de aquella entrega: las ocho migraciones estaban revisadas y listas para aplicar al proyecto de ensayo; la validación remota seguía pendiente. Posteriormente el responsable confirmó su aplicación. Se conserva esta sección como registro histórico.
 
 - Prevención PostgreSQL de periodos superpuestos para el mismo contacto y residencia. Intervalos consecutivos permitidos; canceladas, completadas o realmente vencidas no bloquean. No se compara por nombre.
 - Bloqueo transaccional de residencia y versión MVCC para impedir duplicados también con snapshots antiguos. Índice parcial de búsqueda; rechazo claro de superposición.

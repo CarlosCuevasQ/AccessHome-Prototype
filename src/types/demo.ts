@@ -5,7 +5,8 @@ import type { AccessRecord } from './access.js'
 import type { Report } from './reports.js'
 
 export interface DemoAccount extends SessionUser {
-
+  // Guard accounts require Supabase Auth; the isolated local demo keeps its two roles.
+  role: 'admin' | 'resident'
 }
 
 export interface Condominium {

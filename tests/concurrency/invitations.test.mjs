@@ -106,7 +106,7 @@ async function race({second=input(10,20),rollback=false,isolation='READ COMMITTE
  }
 }
 
-test('PostgreSQL nativo: ocho migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
+test('PostgreSQL nativo: nueve migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
  t.diagnostic('PostgreSQL '+version+'; tres conexiones TCP locales, Auth simulado.')
  assert.notEqual(a.processID,b.processID)
 })
@@ -189,6 +189,36 @@ test('una invitación que expira durante la espera no bloquea el alta al obtener
   await b.query('commit')
   const n=(await owner.query('select count(*)::int as n from accesshome.invitations')).rows[0].n
   assert.equal(n,2)
+ } finally {
+  await a.query('rollback')
+  if(pending) await pending
+  await b.query('rollback')
+ }
+})
+
+test('provisión concurrente de guardia es idempotente y la desactivación vence a una consulta en espera',async()=>{
+ const guard=randomUUID()
+ const condo=(await owner.query('select condominium_id from accesshome.residences where id=$1',[house])).rows[0].condominium_id
+ await owner.query('insert into auth.users values($1)',[guard])
+ let pending
+ try {
+  await a.query('begin'); await b.query('begin')
+  await a.query('select accesshome_private.provision_guard($1,$2,$3)',[guard,condo,'Guardia concurrente'])
+  pending=settled(b.query('select accesshome_private.provision_guard($1,$2,$3)',[guard,condo,'Guardia concurrente']))
+  await waitBlocked(b,a)
+  await a.query('commit')
+  assert.equal((await pending).error,undefined)
+  await b.query('commit')
+  assert.equal((await owner.query('select count(*)::int as n from accesshome.profiles where user_id=$1',[guard])).rows[0].n,1)
+  pending=null
+  await a.query('begin')
+  await a.query('select accesshome_private.set_guard_active($1,$2,false)',[guard,condo])
+  await begin(b)
+  await b.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:guard,is_anonymous:false})])
+  pending=settled(b.query('select accesshome.guard_dashboard()'))
+  await waitBlocked(b,a)
+  await a.query('commit')
+  assert.equal((await pending).error?.code,'42501')
  } finally {
   await a.query('rollback')
   if(pending) await pending

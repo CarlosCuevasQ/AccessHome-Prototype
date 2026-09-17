@@ -13,5 +13,8 @@ if(!url || !key?.startsWith('sb_publishable_')) {
   const data=await response.json()
   if(data.application!=='AccessHome'||data.schemaVersion!==9) throw new Error('Versión de backend inesperada.')
   console.log('Conexión correcta: AccessHome, esquema 9. Este chequeo no modifica datos ni prueba el login; continúa con las cuentas demo y las pruebas entre residencias.')
+  console.log(data.guardWorkspaceVersion===1
+    ? 'Incremental de caseta detectada (guardWorkspaceVersion: 1). Falta comprobar la cuenta de guardia y sus permisos con una sesión real.'
+    : 'Incremental de caseta pendiente o no detectada. La conexión base funciona, pero no confirma el panel de guardia.')
  } catch(error) { console.error(error.message); process.exitCode=1 }
 }

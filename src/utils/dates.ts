@@ -1,7 +1,8 @@
 const dateFormatter = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' })
 
-export function formatDate(value: string) {
-  return dateFormatter.format(new Date(value))
+export function formatDate(value: string, timeZone?: string) {
+  const formatter = timeZone ? new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short', timeZone }) : dateFormatter
+  return formatter.format(new Date(value))
 }
 
 export function localDateInput(date: Date) {

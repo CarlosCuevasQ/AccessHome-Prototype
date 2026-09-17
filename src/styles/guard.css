@@ -1,0 +1,26 @@
+.guard-page { max-width: 1120px; overflow-wrap: anywhere; }
+.guard-introduction { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.guard-clock { font-variant-numeric: tabular-nums; }
+.guard-clock time { display: block; color: var(--primary); font-weight: 600; }
+.guard-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.guard-actions a { display: flex; flex-direction: column; gap: 4px; text-align: center; }
+.guard-actions .guard-scan { grid-column: 1 / -1; min-height: 68px; border-left: 5px solid var(--accent); }
+.guard-actions small { font-size: .75rem; font-weight: 400; }
+.guard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.guard-recent { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+.guard-updates { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.guard-updates p { margin: 0; }
+.guard-pagination { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 24px 0; }
+.guard-filter { max-width: 320px; margin: 24px 0; }
+.guard-page button, .guard-page select { min-height: 48px; }
+.guard-page button:disabled { cursor: default; opacity: .55; }
+@media (max-width: 1100px) {
+  .guard-recent { grid-template-columns: 1fr; gap: 0; }
+  .guard-workspace .workspace-main { padding: 28px 24px; }
+}
+@media (max-width: 480px) {
+  .guard-introduction { gap: 8px; }
+  .guard-metrics { grid-template-columns: 1fr; }
+  .guard-page .activity-list li { flex-wrap: wrap; }
+  .guard-page .activity-list li > div:last-child { text-align: left; }
+}

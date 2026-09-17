@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'resident'
+export type UserRole = 'admin' | 'resident' | 'guard'
 
 export interface SessionUser {
   id: string

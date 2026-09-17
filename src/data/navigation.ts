@@ -1,6 +1,18 @@
 import type { WorkspaceConfig, WorkspaceRole } from '../types/navigation'
 
 export const workspaces: Record<WorkspaceRole, WorkspaceConfig> = {
+  guard: {
+    label: 'Guardia',
+    title: 'Panel de caseta',
+    description: 'Consulta la actividad de acceso de tu condominio.',
+    navigation: [
+      { label: 'Caseta', path: '/guardia' },
+      { label: 'Escanear acceso', path: '/guardia/escanear' },
+      { label: 'Registrar servicio', path: '/guardia/servicios' },
+      { label: 'Historial', path: '/guardia/historial' },
+      { label: 'Reportes de turno', path: '/guardia/reportes' },
+    ],
+  },
   admin: {
     label: 'Administrador',
     title: 'Espacio de administración',

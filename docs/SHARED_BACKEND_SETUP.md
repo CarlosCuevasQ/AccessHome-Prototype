@@ -1,8 +1,8 @@
 # Configurar el backend compartido de AccessHome
 
-Esta guía prepara la activación posterior. Por instrucción del usuario, **no se ejecutó ninguna migración remota**. No es necesario compartir contraseñas ni claves administrativas con el agente.
+Esta guía describe la instalación base en un proyecto nuevo. El responsable ya confirmó que la base existente está activada, con ocho migraciones y semilla aplicadas. **No repetir estos pasos en ese proyecto.** Para la etapa actual seguir [GUARD_SETUP.md](GUARD_SETUP.md): únicamente la incremental de caseta, pendiente de aplicación remota. No es necesario compartir contraseñas ni claves administrativas con el agente.
 
-El proyecto de ensayo y `.env.local` ya fueron configurados por el usuario. Antes de aplicar, usar los ocho archivos revisados el 17 de septiembre: [revisión SQL, permisos y concurrencia](SQL_MIGRATION_REVIEW.md). Conservan nombres y orden, incluyen el control de superposición y no dejan SECURITY DEFINER en el esquema expuesto.
+Los ocho archivos base incluyen la [revisión SQL, permisos y concurrencia](SQL_MIGRATION_REVIEW.md). Conservan nombres y orden, incluyen el control de superposición y no dejan SECURITY DEFINER en el esquema expuesto. Para una instalación nueva de la versión actual, añadir después `20260917000600_guard_workspace.sql` antes de ejecutar la auditoría `security_baseline.sql`.
 
 ## 1. Preparar el proyecto y las dos variables
 
@@ -55,7 +55,7 @@ Crear al menos:
 | ana | Ana López | Casa 12, principal |
 | mariana (recomendado) | Mariana Torres | Casa 24, consulta |
 
-Las claves opcionales jorge, luis y elena vinculan las personas de esas casas a cuentas existentes. Sin esos UUID, siguen siendo habitantes sin cuenta. Andrea y Carlos son habitantes sin cuenta. No provisionar un guardia operativo en esta etapa.
+Las claves opcionales jorge, luis y elena vinculan las personas de esas casas a cuentas existentes. Sin esos UUID, siguen siendo habitantes sin cuenta. Andrea y Carlos son habitantes sin cuenta. La cuenta de guardia se vincula por separado mediante [GUARD_SETUP.md](GUARD_SETUP.md), sin repetir esta semilla.
 
 Los correos pueden diferir de los de la demo local: conservar las identidades conceptuales. Comunicar las credenciales al participante por un canal privado, no por README, tickets, commits ni scripts seed. Configurar Site URL del frontend y redirects exactos para los futuros flujos de Auth; esta etapa utiliza signInWithPassword y no procesa callbacks de recuperación/confirmación en la app. La recuperación de cuentas queda a cargo del responsable mediante Dashboard.
 

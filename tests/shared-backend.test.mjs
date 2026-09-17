@@ -125,9 +125,9 @@ test('consulta pública limita intentos inválidos sin almacenar tokens o crear 
  assert.ok(last.error)
  assert.ok((await db.query('select count(*)::int as n from accesshome_private.public_request_buckets')).rows[0].n<=256)
 })
-test('roles activos: perfil propio, guardia bloqueado, sin perfil e inactivo sin permisos',async()=>{
+test('roles activos: perfil propio, guardia sin administración, sin perfil e inactivo sin permisos',async()=>{
  assert.equal((await as('daniel','session_profile')).name,'Daniel Cuevas')
- assert.equal(await as('guard','session_profile'),null)
+ assert.equal((await as('guard','session_profile')).role,'guard')
  assert.equal(await as('inactive','session_profile'),null)
  assert.equal(await as('unassigned','session_profile'),null)
  for(const role of ['guard','inactive','unassigned']) await assert.rejects(as(role,'community_summary'),/permiso/)

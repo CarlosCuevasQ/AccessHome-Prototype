@@ -1,4 +1,55 @@
-## Revisión SQL previa a aplicar · 17 de septiembre de 2026
+## Etapa 10 · Guardia y caseta
+
+### Ejecutado localmente
+
+- `npm test`: **149/149**. Ocho nuevos casos SQL de caseta, contrato Auth/service guard y rechazo en modo local, además de las 139 regresiones anteriores. PGlite con pgcrypto, Auth simulado: conservación exacta de filas al aplicar la incremental sobre base poblada, provisión/activación, grants, RLS, aislamiento por condominio, datos mínimos, zona horaria, paginación, rechazo de operaciones y metadata sin autoridad.
+- `npm run test:concurrency`: **10/10**, PostgreSQL 17.10 temporal con tres conexiones TCP. Incluye carrera de provisión de guardia (un perfil) y consulta bloqueada por desactivación (rechazo `42501` tras el commit). No usa `.env.local` ni destinos remotos.
+- `npm run build`: correcto; persiste la advertencia de tamaño de bundle superior a 500 kB.
+- Navegador local con HTTP/Auth simulado: login de guardia → caseta, datos correctos, `/admin` rechazado, filtro de salidas, rutas pendientes, menú y logout. Después de logout, `/guardia` vuelve a login. Medido sin scroll horizontal en 375/390 px y tablet 768 px; historial móvil como filas adaptadas. Sin errores de consola.
+
+Fixture visual reproducible: `node tests/helpers/guard-preview.mjs`, abrir `http://127.0.0.1:5175`, correo `guard@fixture.invalid` y cualquier texto efímero no vacío en el campo contraseña. **No son credenciales Auth reales ni datos compartidos**; es un servidor de pruebas local con respuestas simuladas. Solo escucha en loopback, no cambia `.env.local`, no llama al proyecto y no forma parte del frontend compilado. Detener con Ctrl+C al terminar. La seguridad SQL se prueba por separado en las suites anteriores.
+
+### Pruebas manuales remotas pendientes
+
+Preparación exclusiva del responsable: [GUARD_SETUP.md](GUARD_SETUP.md). Aplicar únicamente **20260917000600**, comprobar salud y auditoría, crear/vincular cuenta Auth al condominio existente. No repetir semilla ni reset. Usar el frontend en **Modo compartido**, con una cuenta de guardia, una de administrador y una de residente. La infraestructura base ya funciona según el responsable; las comprobaciones siguientes no se ejecutaron contra su proyecto en esta entrega.
+
+| Caso | Acción | Resultado esperado |
+| --- | --- | --- |
+| G-01 · Login | Iniciar sesión con la cuenta real de guardia; repetir con contraseña errónea | Correcta: `/guardia`; errónea: error sin sesión |
+| G-02 · Panel | Abrir `/guardia`, comparar nombre/condominio con el perfil provisionado | Guardia y condominio correctos, sin datos de otro condominio; fecha/hora en la zona configurada |
+| G-03 · Actividad | Consultar movimientos existentes del ensayo desde admin y guardia | Total de hoy cuenta entradas y salidas; cinco recientes de cada tipo; pendientes son entradas sin salida, incluso vencidas/canceladas. Sin movimientos: ceros y estados vacíos reales |
+| G-04 · Ruta administrativa | Con sesión guardia, abrir `/admin`, `/admin/residencias` y `/residente` | Redirección a caseta con aviso; sin formularios administrativos/residenciales |
+| G-05 · Backend | Intentar operaciones desde services/SDK como se indica abajo | Error de permiso; ninguna residencia, asignación, invitación ni acceso histórico modificado |
+| G-06 · Autoasignación | Con sesión de residente intentar cambiar su perfil a `guard` o llamar provisión privada | Denegado por privilegios/RLS o esquema no expuesto. Cambiar metadata nunca concede autoridad |
+| G-07 · Logout | Cerrar sesión desde menú y volver a `/guardia` o usar Atrás | Login, sin datos de caseta accesibles |
+| G-08 · Móvil/tablet | Repetir login, panel, navegación, filtro, menú y logout en 375–430 px y 768 px | Sin scroll horizontal; controles legibles y accesibles; Escanear principal muestra próxima etapa sin cámara |
+| G-09 · Vigencia del perfil | Con guardia conectado, responsable ejecuta `set_guard_active(...,false)`; consultar panel/historial; repetir provisión idéntica; luego reactivar explícitamente | Consultas rechazadas aun con JWT previo; datos retirados en refetch y sesión pierde perfil. Provisión no reactiva; `true` permite nuevo login |
+| G-10 · Aislamiento/privacidad | Si hay segundo condominio de ensayo, vincular otra cuenta guardia allí sin mover perfiles existentes; consultar panel/historial y tablas | Solo movimientos propios; sin IDs de anfitrión/residencia/invitación, tokens, teléfonos, correos o notas; tablas de dominio vacías para guardia |
+| G-11 · Actualización y próximas etapas | Abrir panel en dos navegadores, consultar movimientos nuevos del flujo administrativo existente; abrir las tres rutas pendientes | Ambos actualizan al enfocar/Actualizar o hasta 30 s visibles; escaneo/servicios/reportes informan próxima etapa y permiten volver, sin simular escrituras |
+
+Para comprobar G-05 desde DevTools del **servidor Vite de desarrollo** con sesión guardia (los módulos no se importan así en producción):
+
+```js
+const { communityService } = await import('/src/services/communityService.ts')
+await communityService.getSummary() // Debe rechazar por permiso, aunque no haya botón.
+await communityService.createResidence({ number: '99999', street: 'Prueba denegada', active: true }) // Debe rechazar y no crear fila.
+```
+
+Para G-06, iniciar sesión como residente, sin pegar tokens ni claves en consola:
+
+```js
+const { getClient } = await import('/src/services/shared/client.ts')
+const { authService } = await import('/src/services/authService.ts')
+const current = await authService.getSession()
+const attempt = await getClient().from('profiles').update({ role: 'guard' }).eq('user_id', current.id)
+console.log(attempt.error?.code) // 42501; no cambia el rol.
+```
+
+Los tests SQL automatizados cubren además principal/habitantes/vehículos/invitaciones/reportes, SQL directo y los helpers privados. SQL Editor ejecutado como `postgres` **no representa** permisos del guardia: usar las cuentas Auth y los services para las pruebas remotas.
+
+No se ejecutó `backend:check` contra el proyecto, no se aplicó SQL remoto, no se provisionaron cuentas ni se modificaron datos remotos durante esta etapa. Permanecen pendientes Auth real, PostgREST, configuración de esquemas expuestos y recorrido entre dispositivos físicos. El fixture de navegador no acredita esos puntos.
+
+## Revisión SQL previa a aplicar · 17 de septiembre de 2026 (histórico)
 
 Pruebas locales aprobadas: `npm test` **139/139**, `npm run test:concurrency` **9/9**, `npm run build` correcto con la advertencia previa de tamaño del bundle. La suite de concurrencia inicia PostgreSQL **17.10** temporal en 127.0.0.1, simula Auth y usa tres conexiones independientes. No lee `.env.local`, no acepta conexiones remotas y elimina su cluster al terminar. Requiere poder ejecutar los binarios de desarrollo; no instala un servicio ni usuarios del sistema. No sustituye las pruebas con Auth/PostgREST reales.
 

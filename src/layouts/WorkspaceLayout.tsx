@@ -29,7 +29,7 @@ export function WorkspaceLayout({ role, showContacts = false }: { role: Workspac
   }
 
   return (
-    <div className="workspace-layout">
+    <div className={`workspace-layout${role === 'guard' ? ' guard-workspace' : ''}`}>
       <a className="skip-link" href="#main-content">Saltar al contenido</a>
       <RouteFocus />
       <header className="workspace-header">

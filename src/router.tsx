@@ -22,8 +22,23 @@ import { ReportsPage } from './pages/ReportsPage'
 import { ReportPage } from './pages/ReportPage'
 import { NewReportPage } from './pages/NewReportPage'
 import { ResidentDashboardPage } from './pages/ResidentDashboardPage'
+import { WorkspaceLayout } from './layouts/WorkspaceLayout'
+import { GuardDashboardPage } from './pages/GuardDashboardPage'
+import { GuardHistoryPage } from './pages/GuardHistoryPage'
+import { GuardUpcomingPage } from './pages/GuardUpcomingPage'
 
 export const router = createBrowserRouter([
+  {
+    element: <ProtectedRoute role="guard" />,
+    children: [{ path: '/guardia', element: <WorkspaceLayout role="guard" />, children: [
+      { index: true, element: <GuardDashboardPage /> },
+      { path: 'historial', element: <GuardHistoryPage /> },
+      { path: 'escanear', element: <GuardUpcomingPage stage="scan" /> },
+      { path: 'servicios', element: <GuardUpcomingPage stage="services" /> },
+      { path: 'reportes', element: <GuardUpcomingPage stage="reports" /> },
+      { path: '*', element: <NotFoundPage homePath="/guardia" /> },
+    ] }],
+  },
   {
     element: <PublicLayout visitor />,
     children: [{ path: '/invitacion/:token', element: <PublicInvitationPage /> }],

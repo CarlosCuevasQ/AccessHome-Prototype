@@ -39,7 +39,7 @@ export function LoginPage() {
         <p className="lead">Bienvenido a AccessHome, un espacio para organizar el acceso y la vida de tu comunidad.</p>
         <div className="project-note">
           <span className="status-badge">Prototipo en desarrollo</span>
-          <p>Explora AccessHome con una cuenta de demostración de administrador o residente.</p>
+          <p>{sharedMode ? 'Ingresa con la cuenta asignada a tu función en el condominio.' : 'Explora AccessHome con una cuenta de demostración de administrador o residente.'}</p>
         </div>
       </div>
       <div className="login-access">
