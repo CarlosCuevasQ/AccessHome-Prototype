@@ -8,7 +8,7 @@ import { installSharedSchema } from './helpers/shared-sql-fixture.mjs'
 
 const db = new PGlite({ extensions: { pgcrypto } })
 const users = Object.fromEntries(['admin','daniel','ana','guard','otherGuard','unassigned'].map(name => [name, randomUUID()]))
-let seed, otherCondo, beforeUpgrade, afterUpgrade, pendingId, completedId, oldId
+let seed, otherCondo, beforeUpgrade, afterUpgrade, afterSharing, pendingId, completedId, oldId
 async function actor(name, fn, metadata = {}) {
   return db.transaction(async tx => {
     await tx.exec(`set local role ${name ? 'authenticated' : 'anon'}`)
@@ -47,6 +47,8 @@ before(async () => {
   beforeUpgrade = await snapshot()
   await db.exec(await readFile('supabase/migrations/20260917000600_guard_workspace.sql','utf8'))
   afterUpgrade = await snapshot()
+  await db.exec(await readFile('supabase/migrations/20260917000700_public_invitation_sharing.sql','utf8'))
+  afterSharing = await snapshot()
   otherCondo = (await db.query("insert into accesshome.condominiums(name) values('Condominio ajeno') returning id")).rows[0].id
   await provision(users.guard,seed.condominiumId,'Claudia Seguridad')
   await provision(users.otherGuard,otherCondo,'Guardia ajeno')
@@ -55,7 +57,9 @@ after(() => db.close())
 
 test('incremental de caseta conserva cada fila de las ocho migraciones ya pobladas',async () => {
   assert.deepEqual(afterUpgrade,beforeUpgrade)
+  assert.deepEqual(afterSharing,afterUpgrade)
   assert.equal((await call(null,'backend_health')).guardWorkspaceVersion,1)
+  assert.equal((await call(null,'backend_health')).publicInvitationVersion,2)
   await db.exec(await readFile('supabase/tests/security_baseline.sql','utf8'))
 })
 

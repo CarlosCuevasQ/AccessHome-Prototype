@@ -16,5 +16,8 @@ if(!url || !key?.startsWith('sb_publishable_')) {
   console.log(data.guardWorkspaceVersion===1
     ? 'Incremental de caseta detectada (guardWorkspaceVersion: 1). Falta comprobar la cuenta de guardia y sus permisos con una sesión real.'
     : 'Incremental de caseta pendiente o no detectada. La conexión base funciona, pero no confirma el panel de guardia.')
+  console.log(data.publicInvitationVersion===2
+    ? 'Proyección pública mínima detectada (publicInvitationVersion: 2).'
+    : 'Proyección pública mínima pendiente: revisar la incremental 20260917000700 antes de publicar invitaciones.')
  } catch(error) { console.error(error.message); process.exitCode=1 }
 }

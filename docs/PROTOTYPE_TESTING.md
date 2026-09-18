@@ -1,4 +1,36 @@
-## Etapa 10 · Guardia y caseta
+## Etapa 11 · Compartir invitaciones y Vercel
+
+### Ejecutado localmente
+
+- `npm test`: **161/161**. Incluye las regresiones anteriores, siete casos de compartir/URL, consulta pública SQL de los cuatro estados, cliente anónimo sin sesión y tres casos de configuración/inspección del artefacto. Las pruebas SQL ejecutan las diez migraciones en PGlite con pgcrypto; conservan grants, RLS, rate limit, snapshots y datos al actualizar desde la base poblada.
+- `npm run test:concurrency`: **10/10**, PostgreSQL 17.10 desechable con conexiones TCP independientes y las diez migraciones. No usa el proyecto remoto.
+- `npm run build` y `npm run build:vercel`: correctos. El segundo incluye `deployment:check` y no detectó claves privilegiadas reconocidas ni archivos privados en `dist`. Advertencia de bundle ~686 kB (~193 kB gzip), superior a 500 kB. Build Vercel repetido con permiso tras bloqueo `spawn EPERM` del sandbox.
+- Navegador: residente crea una visita de 24 horas; Copiar enlace coincide con el enlace público; WhatsApp contiene mensaje y misma URL, sin abrir/enviar mensajes. Visitante accede desde `localhost` sin la sesión del residente en `127.0.0.1`, consulta PGlite y muestra solo datos mínimos/QR. Cancelar desde residente, Actualizar estado y recargar ruta directa muestran Cancelada y retiran el QR. Detalle y visitante sin scroll horizontal en 390 × 844; consola del visitante sin errores. Bloque compartir único tras refetch/cancelación.
+
+Fixture reproducible: `node tests/helpers/invitation-preview.mjs`, abrir `http://127.0.0.1:5176/login`, correo `resident@fixture.invalid` y cualquier texto efímero no vacío como contraseña. **Auth simulado, SQL real desechable en PGlite**, nunca Supabase remoto. Se instala el esquema y semilla únicamente en memoria. No lee credenciales remotas ni modifica `.env.local`; fuerza variables ficticias solo en su proceso y escucha en loopback. Abrir el enlace público cambiando únicamente `127.0.0.1` por `localhost` permite un almacenamiento de sesión separado. Detener con Ctrl+C. Estas direcciones no son URLs de despliegue ni sirven para probar un teléfono.
+
+### Manual/remoto pendiente
+
+Preparación del responsable en [DEPLOYMENT.md](DEPLOYMENT.md): comprobar historial; aplicar solo incrementales faltantes, incluida **20260917000700**; salud `publicInvitationVersion: 2`; publicar frontend con `npm run build:vercel` y las dos variables públicas del mismo Supabase de ensayo. No repetir semilla. Usar residente real principal de Casa 24 y datos ficticios del visitante. La autenticación base remota funciona según el responsable; estas pruebas nuevas aún no se ejecutaron allí.
+
+| Caso | Acción | Resultado esperado |
+| --- | --- | --- |
+| I-01 | Crear invitación de 24 horas como residente real | Detalle Activa, destino Casa 24 y token/QR existentes persistidos en Supabase |
+| I-02 | Pulsar Enviar por WhatsApp | Mensaje breve y URL correctos; residente elige destinatario y decide enviar; sin API Business ni envío automático |
+| I-03 | Copiar enlace y probar Compartir invitación | URL HTTPS del dominio real, `/invitacion/TOKEN`; menú nativo cuando existe, copia/manual si no; cancelar no realiza acciones alternativas |
+| I-04 | Abrir copia en otro navegador/incógnito sin sesión | Vista pública desde Supabase, sin login ni datos locales del residente |
+| I-05 | Abrir desde teléfono, con otra conexión | Misma visita, diseño legible y sin scroll horizontal; sin localhost o 192.168 en enlace |
+| I-06 | Escanear QR con cámara física | Abre la misma visita; visible solo visitante, destino, vigencia, estado, QR e instrucciones; ninguna información privada extra |
+| I-07 | Cancelar desde residente y confirmar | Estado Cancelada persistido, QR retirado y detalle sin bloques duplicados |
+| I-08 | Actualizar estado o F5 en visitante | Nueva consulta a la base; no usa copia de localStorage del residente |
+| I-09 | Comparar visitante y residente | Ambos Cancelada y sin QR; visible refresca también en hasta 10 s o al recuperar foco/conexión |
+| I-10 | Abrir URL pública directamente y recargar en Vercel | Sin 404 del hosting ni login AccessHome/Vercel; estado actual incluso tras cancelación |
+| I-11 | Dejar vencer una visita corta; completar otra mediante el control administrativo existente | Expirada/Completada y sin QR. No es necesario implementar escaneo de Guardia para probar estos estados |
+| I-12 | Abrir token inexistente; bloquear red de prueba y Actualizar estado; restaurarla | Invitación no disponible o error claro, sin datos/QR válidos conservados; al recuperar red permite consultar de nuevo |
+
+Web Share nativo y WhatsApp reales, teléfono/cámara física, dos navegadores reales, Supabase Auth/PostgREST y reglas de Vercel siguen pendientes. No registrar tokens, enlaces completos, HAR, contraseñas o capturas con QR reales en evidencias compartidas. Anotar solo caso, resultado y hora. Una captura de QR no acredita vigencia: la autorización definitiva se comprueba en backend al operar el acceso.
+
+## Etapa 10 · Guardia y caseta (entrega anterior)
 
 ### Ejecutado localmente
 

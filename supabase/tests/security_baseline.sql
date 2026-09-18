@@ -1,4 +1,4 @@
--- Auditoría del catálogo después de las ocho migraciones base y la incremental de caseta. No crea datos.
+-- Auditoría del catálogo después de las diez migraciones (base, caseta y vista pública). No crea datos.
 -- Ejecutar como el propietario de las migraciones en un proyecto de prueba.
 begin;
 set transaction read only;

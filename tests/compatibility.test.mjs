@@ -146,7 +146,8 @@ for (const [label, cryptoApi] of [['sin randomUUID', cryptoWithoutUUID]]) {
     const ids = [...data.users, ...data.residences, ...data.inhabitants, ...data.vehicles, ...data.contacts,
       ...data.contacts.flatMap((contact) => contact.vehicles), ...data.invitations, ...data.accessRecords].map((item) => item.id)
     assert.equal(new Set(ids).size, ids.length)
-    assert.equal((await publicInvitationService.getInvitation(invitation.token)).usedUses, 2)
+    assert.equal((await publicInvitationService.getInvitation(invitation.token)).status, 'completada')
+    assert.equal(data.invitations.find(item => item.id === invitation.id).usedUses, 2)
   })
 }
 

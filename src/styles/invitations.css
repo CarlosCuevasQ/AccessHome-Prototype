@@ -26,8 +26,13 @@
 .invitation-status-activa { color: var(--primary); background: var(--light-blue); }
 .invitation-status-completada { color: var(--primary); background: var(--light-yellow); }
 .cancel-invitation { margin-bottom: 20px; }
+.invitation-share { margin: 28px 0; padding-block: 24px; border-block: 1px solid var(--border); }
+.share-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.share-actions > * { min-height: 48px; }
+.invitation-share input { width: 100%; min-width: 0; }
 .invitation-contact-link a { display: inline-flex; align-items: center; min-height: 44px; }
 @media (max-width: 600px) {
+  .share-actions { flex-direction: column; align-items: stretch; }
   .invitation-filters, .validity-options { grid-template-columns: minmax(0, 1fr); }
   .invitation-row { align-items: stretch; flex-direction: column; gap: 16px; }
   .invitations-page .page-heading > .button-link { width: 100%; }

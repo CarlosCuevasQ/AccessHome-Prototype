@@ -7,6 +7,8 @@
     "dev": "vite",
     "dev:local": "node scripts/dev-local.mjs",
     "build": "tsc --noEmit && vite build",
+    "build:vercel": "tsc --noEmit && vite build --mode shared && node scripts/check-dist.mjs",
+    "deployment:check": "node scripts/check-dist.mjs",
     "preview": "vite preview",
     "backend:check": "node scripts/check-backend.mjs",
     "test": "tsc -p tests/tsconfig.json && node --test tests/*.test.mjs",

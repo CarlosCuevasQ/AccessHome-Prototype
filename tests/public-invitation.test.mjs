@@ -27,12 +27,10 @@ beforeEach(async () => {
 test('token permite lectura sin sesión con proyección pública y sin datos privados', async () => {
   const before = storage.get(DEMO_STORAGE_KEY)
   const publicView = await visitor.getInvitation(invitation.token)
-  assert.deepEqual(Object.keys(publicView).sort(), ['token', 'visitorName', 'residenceName', 'inviterName', 'startsAt', 'expiresAt', 'vehicle', 'status', 'usedUses', 'maxUses', 'canAddVehicle'].sort())
+  assert.deepEqual(Object.keys(publicView).sort(), ['token', 'visitorName', 'residenceName', 'condominiumName', 'startsAt', 'expiresAt', 'status'].sort())
   assert.equal(publicView.visitorName, invitation.visitorName)
   assert.equal(publicView.residenceName, 'Casa 24')
-  assert.equal(publicView.inviterName, 'Daniel Cuevas')
-  assert.equal(publicView.canAddVehicle, true)
-  assert.equal(publicView.vehicle, null)
+  assert.ok(publicView.condominiumName)
   assert.equal(await authService.getSession(), null)
   assert.equal(storage.get(DEMO_STORAGE_KEY), before)
 })
@@ -41,8 +39,7 @@ test('agrega solo placas sin sesión y solo a esa invitación, una única vez', 
   const before = read()
   await visitor.addVehicle(invitation.token, { ...vehicle, plates: ' vis-7788 ', residenceId: 'house-12', status: 'completada' })
   const publicView = await visitor.getInvitation(invitation.token)
-  assert.deepEqual(publicView.vehicle, vehicle)
-  assert.equal(publicView.canAddVehicle, false)
+  assert.equal('vehicle' in publicView, false)
   const after = read()
   assert.deepEqual(after.invitations[0], { ...invitation, vehicle })
   for (const key of ['contacts', 'vehicles', 'users', 'inhabitants', 'residences', 'session', 'accessRecords']) assert.deepEqual(after[key], before[key])
@@ -62,7 +59,7 @@ test('vehículo agregado se refleja en residente, entrada y salida sin modificar
   await authService.logout()
   const completed = await visitor.getInvitation(invitation.token)
   assert.equal(completed.status, 'completada')
-  assert.equal(completed.usedUses, 2)
+  assert.equal(read().invitations.find(i=>i.id===invitation.id).usedUses, 2)
 })
 
 test('un vehículo original de contacto no puede sustituirse desde la vista pública', async () => {
@@ -70,9 +67,9 @@ test('un vehículo original de contacto no puede sustituirse desde la vista púb
   const id = await invitations.createInvitation({ source: 'contact', contactId: 'contact-carlos', vehicleChoice: { kind: 'saved', vehicleId: 'contact-vehicle-carlos' }, validity: { kind: 'today' } })
   const original = await invitations.getInvitation(id)
   await authService.logout()
-  assert.equal((await visitor.getInvitation(original.token)).canAddVehicle, false)
+  assert.equal('vehicle' in await visitor.getInvitation(original.token), false)
   await assert.rejects(visitor.addVehicle(original.token, vehicle), /Solo puedes añadir/)
-  assert.equal((await visitor.getInvitation(original.token)).vehicle.plates, 'JKL-1234')
+  assert.equal(read().invitations.find(i=>i.id===original.id).vehicle.plates, 'JKL-1234')
 })
 
 test('rechaza placas inválidas y token inexistente sin guardar ni alterar otros campos', async () => {
@@ -89,7 +86,7 @@ test('después de entrada sin vehículo no permite agregarlo; conserva ambos reg
   await login('admin@accesshome.demo')
   await accessService.validateToken(invitation.token)
   await authService.logout()
-  assert.equal((await visitor.getInvitation(invitation.token)).canAddVehicle, false)
+  assert.equal('canAddVehicle' in await visitor.getInvitation(invitation.token), false)
   await assert.rejects(visitor.addVehicle(invitation.token, vehicle), /antes de su primer uso/)
   await login('admin@accesshome.demo')
   await accessService.validateToken(invitation.token)
@@ -109,7 +106,7 @@ test('cancelada/expirada/completada mantienen consulta pública y bloquean agreg
   for (const [item, status] of [[invitation, 'expirada'], [cancelled, 'cancelada'], [completed, 'completada']]) {
     const publicView = await visitor.getInvitation(item.token)
     assert.equal(publicView.status, status)
-    assert.equal(publicView.canAddVehicle, false)
+    assert.equal('canAddVehicle' in publicView, false)
     await assert.rejects(visitor.addVehicle(item.token, vehicle), /Solo puedes añadir/)
   }
 })
@@ -125,7 +122,7 @@ test('casa inactiva bloquea agregar vehículo; inicio futuro admite preparación
   const future = await invitations.getInvitation(await invitations.createInvitation({ ...input, validity: { kind: 'custom', startsAt, expiresAt } }))
   await authService.logout()
   await visitor.addVehicle(future.token, vehicle)
-  assert.deepEqual((await visitor.getInvitation(future.token)).vehicle, vehicle)
+  assert.deepEqual(read().invitations.find(i=>i.id===future.id).vehicle, vehicle)
 })
 
 test('fallo de guardado público conserva la invitación sin vehículo y permite reintentar', async () => {
@@ -136,6 +133,6 @@ test('fallo de guardado público conserva la invitación sin vehículo y permite
   assert.equal(storage.get(DEMO_STORAGE_KEY), before)
   window.localStorage.setItem = originalWrite
   await visitor.addVehicle(invitation.token, vehicle)
-  assert.deepEqual((await visitor.getInvitation(invitation.token)).vehicle, vehicle)
+  assert.deepEqual(read().invitations.find(i=>i.id===invitation.id).vehicle, vehicle)
 })
 

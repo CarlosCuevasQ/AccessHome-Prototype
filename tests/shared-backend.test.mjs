@@ -176,7 +176,7 @@ test('invitación compartida: snapshot, token CSPRNG separado, consulta de otro 
  await assert.rejects(as('ana','cancel_invitation',[id]),/no disponible/)
  await assert.rejects(as('outsider','invitation_details',[id]),/no disponible/)
  const projection=await as(null,'public_invitation',[i.token,null])
- for(const field of ['id','phone','email','contactId','residenceId','inviterUserId']) assert.equal(field in projection,false)
+ assert.deepEqual(Object.keys(projection).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status'].sort())
 })
 test('visitante público: inválidos, vehículo una sola vez y sin tablas abiertas',async()=>{
  assert.equal(await as(null,'public_invitation',['invalid',null]),null)
@@ -185,8 +185,30 @@ test('visitante público: inválidos, vehículo una sola vez y sin tablas abiert
  const i=await as('daniel','invitation_details',[id])
  const vehicle={plates:'ABC-123',brand:'',model:'',color:''}
  const updated=await as(null,'public_invitation',[i.token,JSON.stringify(vehicle)],['text','jsonb'])
- assert.equal(updated.vehicle.plates,'ABC-123'); assert.equal(updated.canAddVehicle,false)
+ assert.equal((await as('daniel','invitation_details',[id])).vehicle.plates,'ABC-123')
+ assert.equal('vehicle' in updated,false)
  assert.ok((await as(null,'public_invitation',[i.token,JSON.stringify(vehicle)],['text','jsonb'])).error)
+})
+
+test('consulta anónima usa estado actual en servidor: activa, cancelada, expirada y completada',async()=>{
+ const condoName=(await db.query('select name from accesshome.condominiums where id=$1',[ids.condominiumId])).rows[0].name
+ for(const state of ['activa','cancelada','expirada','completada']) {
+  const id=await as('daniel','create_invitation',[JSON.stringify(occasional())],['jsonb'])
+  const item=await as('daniel','invitation_details',[id])
+  if(state==='cancelada') await as('daniel','cancel_invitation',[id])
+  if(state==='expirada') await db.query("update accesshome.invitations set starts_at=now()-interval '2 days',expires_at=now()-interval '1 day' where id=$1",[id])
+  if(state==='completada') {
+   await as('admin','validate_access',[item.token,randomUUID()]); await as('admin','validate_access',[item.token,randomUUID()])
+  }
+  await actor(null,async tx=>{
+   const data=await call(tx,'public_invitation',[item.token,null])
+   assert.equal(data.status,state)
+   assert.equal(data.condominiumName,condoName)
+   assert.deepEqual(Object.keys(data).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status'].sort())
+   const headers=(await tx.query("select current_setting('response.headers') as value")).rows[0].value
+   assert.deepEqual(JSON.parse(headers),[{'Cache-Control':'no-store'}])
+  })
+ }
 })
 test('acceso administrativo atómico e idempotente, sin habilitar guardia',async()=>{
  const id=await as('daniel','create_invitation',[JSON.stringify(occasional())],['jsonb'])

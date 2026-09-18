@@ -42,12 +42,8 @@ export interface PublicInvitation {
   token: string
   visitorName: string
   residenceName: string
-  inviterName: string
+  condominiumName: string
   startsAt: string
   expiresAt: string
-  vehicle: VisitVehicle | null
   status: InvitationStatus
-  usedUses: number
-  maxUses: number
-  canAddVehicle: boolean
 }

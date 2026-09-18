@@ -1,4 +1,27 @@
-## Etapa 10 · Guardia y caseta
+## Etapa 11 · Compartir invitaciones y preparar Vercel
+
+Entrega implementada y comprobada localmente. **No desplegada ni validada contra Supabase remoto.** Las ocho migraciones base siguen intactas, al igual que la novena de Guardia. Se añade únicamente `20260917000700_public_invitation_sharing.sql`, pendiente de aplicación por el responsable. No se modificó `.env.local`, no se repitió semilla, no hubo commit, push ni cambios remotos.
+
+- Detalle existente con Compartir invitación mediante Web Share, Enviar por WhatsApp y Copiar enlace. Copia alternativa/manual cuando el navegador lo necesita; cancelar el menú no envía ni copia. WhatsApp solo prepara el mensaje y el enlace.
+- QR y todas las acciones usan el origen real del deployment. El build `shared` exige URL pública HTTPS al compartir; no hay dominio inventado ni una nueva variable de entorno. Desarrollo/demo local conserva una advertencia de alcance.
+- Consulta pública mediante cliente Supabase anónimo separado, sin persistencia o dependencia de la sesión del residente. Proyección mínima de visitante, destino, vigencia, estado y token; sin anfitrión, teléfono, correo, usos o vehículo. SQL conserva firma, autorización por token, rate limit, bloqueos y operación opcional de vehículo anterior. Su formulario ya no se muestra en la vista mínima de esta etapa.
+- Activa, Cancelada, Expirada y Completada determinadas por el servidor. QR retirado para estados no activos; refetch al abrir, enfocar/recuperar conexión, cada 10 s visible y con Actualizar estado. Un error de consulta retira los datos.
+- `vercel.json`: rutas SPA directas, encabezados sin referrer/índice/caché pública. `build:vercel`: configuración compartida obligatoria y revisión de `dist` sin revelar valores. Solo las dos variables existentes de `.env.example`; no claves privilegiadas ni analítica.
+- Se corrigió durante la prueba de navegador una colisión de claves React entre compartir y cancelar que duplicaba el bloque al refrescar el detalle.
+
+Validación: **`npm test` 161/161**, **`npm run test:concurrency` 10/10** con PostgreSQL 17.10 temporal, **`npm run build`** y **`npm run build:vercel`** correctos. El último también aprobó la inspección de secretos reconocibles/archivos privados en el artefacto. Persiste la advertencia previa de bundle superior a 500 kB (~686 kB, ~193 kB gzip). El primer intento del build Vercel recibió `spawn EPERM` del sandbox; la repetición local autorizada terminó correctamente.
+
+SQL/PGlite: diez migraciones, grants/RLS y proyección mínima, estados actuales anónimos, no-store y conservación exacta de filas al aplicar incrementales sobre una base poblada. SDK: POST público sin sesión, sin token en URL del RPC ni almacenamiento local de dominio. Compartir: Web Share, cancelación, errores genéricos, WhatsApp/copia y fallback. Build: rechazo de configuración ausente, secreta o HTTP, y separación de demo/metadatos Vercel.
+
+Navegador local sobre PGlite desechable con Auth simulado: crear visita, copiar exactamente su enlace, verificar mensaje WhatsApp sin enviarlo, abrir visitante en otro origen sin sesión, visualizar QR, cancelar, actualizar y recargar la ruta pública; Cancelada y sin QR. Detalle y visitante a 390 px sin desbordamiento horizontal. Consola del visitante sin errores. La prueba no utiliza datos del proyecto remoto ni equivale a dos equipos físicos.
+
+Pendiente del responsable: aplicar solo versiones faltantes, confirmar `publicInvitationVersion: 2`, importar/publicar en Vercel y ejecutar I-01–I-12 de [PROTOTYPE_TESTING.md](PROTOTYPE_TESTING.md). Comprobar teléfono real, cámara QR, Web Share nativo, WhatsApp real, dominio accesible sin protección Vercel que exija login y F5 sin 404. Guía: [DEPLOYMENT.md](DEPLOYMENT.md). La revisión de secretos no detecta todas las contraseñas arbitrarias ni controla logs de proveedores externos.
+
+Archivos principales: `InvitationPage`, `PublicInvitationPage`, `InvitationShare`, `InvitationQr`, `invitationLinks`, `invitationSharingService`, cliente/transporte/adaptadores compartidos, DTO público y CSS; incremental 20260917000700; `vite.config.ts`, `vercel.json`, `package.json`, revisión de artefacto/salud; suites SQL/SDK/compartir/despliegue y fixture visual; README y guías de deployment/status/testing/services/SQL.
+
+Commit sugerido, sin ejecutar: `feat: compartir invitaciones y preparar despliegue de pruebas en Vercel`.
+
+## Etapa 10 · Guardia y caseta (entrega anterior)
 
 Estado actual: las ocho migraciones iniciales, semilla y cuentas base ya están activas remotamente según el responsable. Esta entrega añade **una sola migración incremental pendiente**, `20260917000600_guard_workspace.sql`. No se editaron las ocho aplicadas, no se ejecutaron migraciones remotas ni semilla, no se modificó `.env.local` y no se hizo commit/push.
 

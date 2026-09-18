@@ -1,4 +1,4 @@
-import { getClient } from './client.js'
+import { getClient, getPublicClient } from './client.js'
 
 const listeners = new Set<() => void>()
 export function notifySharedChange() { listeners.forEach((listener) => listener()) }
@@ -15,10 +15,13 @@ export function backendError(error: { code?: string; message: string }): Error {
   return new Error(error.message || 'No se pudo contactar con el servidor. Vuelve a consultar antes de reintentar.')
 }
 
-export async function rpc<T>(name: string, args: Record<string, unknown> = {}, writing = false): Promise<T> {
-  const { data, error } = await getClient().rpc(name, args)
+async function request<T>(client: ReturnType<typeof getClient>, name: string, args: Record<string, unknown>, writing: boolean): Promise<T> {
+  const { data, error } = await client.rpc(name, args)
   if (error) throw backendError(error)
   if (data && typeof data === 'object' && 'error' in data) throw new Error(String(data.error))
   if (writing) notifySharedChange()
   return data as T
 }
+
+export const rpc = <T>(name: string, args: Record<string, unknown> = {}, writing = false) => request<T>(getClient(), name, args, writing)
+export const publicRpc = <T>(args: Record<string, unknown>, writing = false) => request<T>(getPublicClient(), 'public_invitation', args, writing)

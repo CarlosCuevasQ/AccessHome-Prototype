@@ -8,6 +8,7 @@ import { formatDate } from '../utils/dates'
 import { InvitationStatusLabel } from '../components/invitations/InvitationStatusLabel'
 import { CancelInvitation } from '../components/invitations/CancelInvitation'
 import { InvitationQr } from '../components/invitations/InvitationQr'
+import { InvitationShare } from '../components/invitations/InvitationShare'
 import { invitationPath } from '../utils/invitationLinks'
 
 export function InvitationPage() {
@@ -31,12 +32,13 @@ export function InvitationPage() {
         <div><dt>Residencia destino</dt><dd>{invitation.residenceName}</dd></div><div><dt>Invita</dt><dd>{invitation.inviterName}</dd></div>
         <div><dt>Teléfono</dt><dd>{invitation.phone || 'No registrado'}</dd></div><div><dt>Usos utilizados</dt><dd>{invitation.usedUses} de {invitation.maxUses}</dd></div>
         <div><dt>Inicio</dt><dd>{formatDate(invitation.startsAt)}</dd></div><div><dt>Expiración</dt><dd>{formatDate(invitation.expiresAt)}</dd></div>
-        <div><dt>Creada el</dt><dd>{formatDate(invitation.createdAt)}</dd></div><div><dt>Identificador de invitación</dt><dd>{invitation.token}</dd></div>
+        <div><dt>Creada el</dt><dd>{formatDate(invitation.createdAt)}</dd></div><div><dt>Identificador interno</dt><dd>{invitation.id}</dd></div>
       </dl>
       <section className="community-section"><h2>Vehículo para esta visita</h2>
         {invitation.vehicle ? <dl className="detail-fields"><div><dt>Placas</dt><dd>{invitation.vehicle.plates}</dd></div><div><dt>Marca y modelo</dt><dd>{[invitation.vehicle.brand, invitation.vehicle.model].filter(Boolean).join(' ') || 'No registrados'}</dd></div><div><dt>Color</dt><dd>{invitation.vehicle.color || 'No registrado'}</dd></div></dl> : <p className="muted">Sin vehículo</p>}
       </section>
-      <p className="form-help">Los datos del contacto se conservan en esta invitación. Si se creó sin vehículo, el visitante puede añadirlo una sola vez antes de su entrada. Para otras correcciones, cancela la invitación activa y crea una nueva.</p>
+      <p className="form-help">Los datos del contacto se conservan en esta invitación. La vista del visitante muestra solo los datos necesarios para presentar su acceso. Para corregir datos, cancela la invitación activa y crea una nueva.</p>
+      <InvitationShare key={`share-${invitation.id}`} token={invitation.token} />
       <section className="invitation-qr-section" aria-label="Código y enlace del visitante">
         <h2>Código de acceso QR</h2>
         <InvitationQr token={invitation.token} visitorName={invitation.visitorName} status={invitation.status} />

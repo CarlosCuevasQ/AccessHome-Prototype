@@ -23,10 +23,10 @@ const localService = {
     // La vista por token recibe únicamente los datos necesarios para esta visita.
     return {
       token: invitation.token, visitorName: invitation.visitorName,
-      residenceName: invitation.residenceName, inviterName: invitation.inviterName,
+      residenceName: invitation.residenceName,
+      condominiumName: data.condominiums.find(condo => data.residences.some(house => house.id === invitation.residenceId && house.condominiumId === condo.id))?.name ?? '',
       startsAt: invitation.startsAt, expiresAt: invitation.expiresAt,
-      vehicle: invitation.vehicle, status: invitationStatus(invitation),
-      usedUses: invitation.usedUses, maxUses: invitation.maxUses, canAddVehicle: canAddVehicle(data, invitation),
+      status: invitationStatus(invitation),
     }
   },
 

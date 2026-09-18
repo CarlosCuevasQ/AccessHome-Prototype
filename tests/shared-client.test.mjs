@@ -72,7 +72,7 @@ test('all service facades select the shared provider; no domain localStorage rea
  const rpcRequests=requests.filter(r=>r.path.includes('/rpc/'))
  for(const request of rpcRequests) {
   assert.equal(request.headers.get('content-profile'),'accesshome')
-  assert.equal(request.headers.get('authorization'),'Bearer fixture.token.only')
+  assert.equal(request.headers.get('authorization'),request.path.endsWith('/public_invitation') ? 'Bearer '+fixtureEnv.VITE_SUPABASE_PUBLISHABLE_KEY : 'Bearer fixture.token.only')
  }
  assert.throws(readDemoData,/no puede leer/)
  assert.throws(()=>writeDemoData({}),/no puede escribir/)
@@ -109,4 +109,14 @@ test('logout removes session; invalid credentials and missing profile never auth
  profile=null
  await assert.rejects(authService.login({email:'unassigned@example.test',password:randomUUID()}))
  assert.equal(await authService.getSession(),null)
+})
+
+test('visitante sin sesión consulta por POST anónimo sin token en URL ni localStorage',async()=>{
+ const start=requests.length
+ await publicInvitationService.getInvitation('public-token-fixture')
+ const own=requests.slice(start)
+ assert.equal(own.length,1)
+ assert.equal(own[0].path,'/rest/v1/rpc/public_invitation')
+ assert.deepEqual(own[0].body,{token:'public-token-fixture',vehicle:null})
+ assert.equal(own[0].headers.get('authorization'),'Bearer '+fixtureEnv.VITE_SUPABASE_PUBLISHABLE_KEY)
 })

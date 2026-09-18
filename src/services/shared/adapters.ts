@@ -4,7 +4,7 @@ import type { Invitation, InvitationContext, InvitationInput, InvitationStatus, 
 import type { AccessHistoryFilters, AccessInvitationOption, AccessRecord, AccessResult } from '../../types/access.js'
 import type { Report, ReportInput, ReportStatus } from '../../types/reports.js'
 import type { Condominium, Residence } from '../../types/demo.js'
-import { rpc, subscribeShared } from './transport.js'
+import { rpc, publicRpc, subscribeShared } from './transport.js'
 import { generateId } from '../../utils/id.js'
 
 const household = (operation: string, residenceId: string, target: string | null, input: unknown) =>
@@ -53,12 +53,12 @@ export const sharedInvitations = {
 }
 export const sharedPublicInvitation = {
   async getInvitation(token: string): Promise<PublicInvitation> {
-    const invitation = await rpc<PublicInvitation | null>('public_invitation', { token, vehicle: null })
+    const invitation = await publicRpc<PublicInvitation | null>({ token, vehicle: null })
     if (!invitation) throw new Error('Invitación no disponible. Comprueba el enlace con tu anfitrión.')
     return invitation
   },
   async addVehicle(token: string, vehicle: VisitVehicle): Promise<void> {
-    if (!await rpc('public_invitation', { token, vehicle }, true)) throw new Error('Invitación no disponible.')
+    if (!await publicRpc({ token, vehicle }, true)) throw new Error('Invitación no disponible.')
   },
 }
 export const sharedReports = {

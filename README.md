@@ -2,7 +2,7 @@
 
 Prototipo universitario en React, Vite y TypeScript. Conserva las pantallas de administración, residencia, contactos, invitaciones/QR, historial y reportes.
 
-La integración base con Supabase, las ocho migraciones iniciales y las cuentas reales ya funcionan en el proyecto de ensayo, según la confirmación del responsable. **La nueva etapa de Guardia está implementada y probada localmente; su migración incremental todavía no se aplicó al proyecto remoto.** Consulta [GUARD_SETUP.md](docs/GUARD_SETUP.md) para activarla y vincular una cuenta Auth sin repetir la semilla ni modificar datos existentes.
+La integración base con Supabase, las ocho migraciones iniciales y las cuentas reales ya funcionan en el proyecto de ensayo, según la confirmación del responsable. **Compartir invitaciones y la preparación para Vercel están implementados localmente; la nueva migración pública y el deployment siguen pendientes.** Consulta [DEPLOYMENT.md](docs/DEPLOYMENT.md) para aplicar únicamente las versiones pendientes y publicar el ensayo. La etapa previa de Guardia mantiene su guía en [GUARD_SETUP.md](docs/GUARD_SETUP.md); no se reconfirmó su activación remota.
 
 ## Ejecutar
 
@@ -48,9 +48,9 @@ Los RPCs expuestos son SECURITY INVOKER. La lógica privilegiada está en access
 
 ## Configuración compartida
 
-La configuración existente de `.env.local`, las ocho migraciones y los datos se conservan. Para esta etapa el responsable debe aplicar únicamente `20260917000600_guard_workspace.sql`, crear o reutilizar una cuenta Auth individual y vincularla mediante `accesshome_private.provision_guard`. La activación/desactivación usa `set_guard_active`; ambos procedimientos son exclusivos del propietario de migraciones, no del administrador de la aplicación.
+La configuración existente de `.env.local`, las migraciones anteriores y los datos se conservan. Esta etapa añade `20260917000700_public_invitation_sharing.sql`: proyección pública mínima y respuestas sin caché, sin cambiar filas ni tokens. Aplicarla antes de publicar el nuevo frontend. Verificar primero si la incremental previa `20260917000600_guard_workspace.sql` ya está aplicada; no repetirla ni modificar las ocho iniciales.
 
-Seguir [GUARD_SETUP.md](docs/GUARD_SETUP.md) y el recorrido G-01–G-11 de [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. `npm run backend:check` conserva el chequeo base e indica si detecta `guardWorkspaceVersion: 1`; no prueba el login.
+Seguir [DEPLOYMENT.md](docs/DEPLOYMENT.md) y los recorridos de [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. `npm run backend:check` conserva el chequeo base e indica si detecta `guardWorkspaceVersion: 1` y `publicInvitationVersion: 2`; no prueba login ni despliegue. No se ejecutó contra el proyecto en esta entrega.
 
 Para instalaciones completamente nuevas, [SHARED_BACKEND_SETUP.md](docs/SHARED_BACKEND_SETUP.md) documenta la base inicial. Mantener expuesto `accesshome` y privado `accesshome_private`.
 
@@ -63,6 +63,10 @@ El servidor genera tokens públicos de 32 bytes con pgcrypto, separados del UUID
 Un mismo contacto no puede tener invitaciones activas con periodos superpuestos en la misma residencia, incluso con altas concurrentes. Se permiten periodos consecutivos y reutilizar contactos de invitaciones canceladas, completadas o ya vencidas. No se compara por nombre ni se deduplican visitantes sin contacto.
 
 El enlace del visitante consulta la misma base desde cualquier dispositivo con acceso al frontend. Nunca se importa la base local para resolver el QR. El endpoint público tiene una proyección limitada y control básico de frecuencia en SQL (256 buckets, 240 consultas por minuto y bucket); no abre tablas. No hay protección completa contra ataques distribuidos.
+
+El detalle ofrece **Compartir invitación**, **Enviar por WhatsApp** y **Copiar enlace**. Usa Web Share cuando está disponible, copia alternativa y selección manual si el portapapeles falla. WhatsApp solo prepara el mensaje; el residente elige destinatario y envío. Enlace y QR usan el origen real del deployment, sin una nueva variable ni dominios inventados.
+
+La vista pública no requiere cuenta: un cliente Supabase anónimo sin persistencia de sesión consulta visitante, casa/condominio, vigencia y estado. No muestra anfitrión, teléfono, correo, usos ni vehículo. Las invitaciones canceladas, expiradas o completadas conservan su estado visible y retiran el QR. **Actualizar estado** permite consultar inmediatamente; el refresco visible automático usa 10 segundos. La operación pública de añadir vehículo conserva su contrato SQL anterior, pero el formulario ya no forma parte de esta vista mínima.
 
 Las consultas refrescan al abrir la pantalla, recuperar foco o conexión y después de escrituras locales. Las pantallas que ya actualizaban automáticamente consultan cada 10 segundos en compartido, solo si están visibles. No se usa Realtime ni infraestructura adicional. Los dashboards agregan en SQL y devuelven solo cinco movimientos recientes.
 
@@ -81,6 +85,9 @@ npm run preview
 
 Las pruebas incluyen regresión local, PostgreSQL/PGlite con pgcrypto, RLS, RPCs, snapshots, límites públicos y cliente Supabase con HTTP simulado. test:concurrency ejecuta además PostgreSQL nativo temporal con conexiones independientes, sin leer .env.local ni aceptar destinos remotos. No sustituyen las pruebas de Auth y PostgREST contra el proyecto remoto.
 
+Para Vercel, Build Command **`npm run build:vercel`**, Output Directory **`dist`**, Node **24.x**, las mismas dos variables públicas del proyecto Supabase de ensayo. El build exige configuración compartida y ejecuta la revisión de secretos reconocibles en `dist` (`npm run deployment:check`). `vercel.json` prepara las rutas SPA, incluidos enlaces directos del visitante. El responsable importa el repositorio y autoriza el deployment siguiendo la guía; no se publica automáticamente desde esta tarea.
+
+- [Compartir invitaciones y desplegar el ensayo en Vercel](docs/DEPLOYMENT.md)
 - [Guardia: migración incremental y provisión segura](docs/GUARD_SETUP.md)
 - [Configuración base para instalaciones nuevas](docs/SHARED_BACKEND_SETUP.md)
 - [Estado y límites de la entrega](docs/PROTOTYPE_STATUS.md)
