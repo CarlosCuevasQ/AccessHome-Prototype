@@ -16,6 +16,7 @@ const hooks=registerHooks({
 })
 const requests=[]
 let responseError=false
+let lostAccessResponse=false
 let signInError=false
 let profile={id:randomUUID(),name:'Daniel',role:'resident',condominiumId:randomUUID(),residenceId:randomUUID()}
 const originalFetch=globalThis.fetch
@@ -30,6 +31,7 @@ globalThis.fetch=async (url,options={})=>{
  }
  if(path==='/auth/v1/logout') return new Response('{}',{status:200})
  if(path.endsWith('/session_profile')) return new Response(JSON.stringify(profile),{status:200})
+ if(path.endsWith('/validate_access') && lostAccessResponse) throw new TypeError('Fixture: response lost')
  if(profile?.role==='guard' && path.endsWith('/manage_community')) return new Response(JSON.stringify({code:'42501',message:'Denied'}),{status:403})
  if(path.endsWith('/guard_dashboard')) return new Response(JSON.stringify({guardName:profile.name,condominiumName:'Condominio fixture',todayAccessCount:2}),{status:200})
  if(path.endsWith('/guard_history')) return new Response(JSON.stringify({records:[],hasMore:false}),{status:200})
@@ -119,4 +121,49 @@ test('visitante sin sesión consulta por POST anónimo sin token en URL ni local
  assert.equal(own[0].path,'/rest/v1/rpc/public_invitation')
  assert.deepEqual(own[0].body,{token:'public-token-fixture',vehicle:null})
  assert.equal(own[0].headers.get('authorization'),'Bearer '+fixtureEnv.VITE_SUPABASE_PUBLISHABLE_KEY)
+})
+
+test('cliente compartido conserva addVehicle solo como compatibilidad y no intenta escribir',async()=>{
+ const start=requests.length
+ await assert.rejects(publicInvitationService.addVehicle('token-fixture',{plates:'AB-123',brand:'',model:'',color:''}),/solo lectura/)
+ assert.equal(requests.length,start)
+})
+
+test('guardia reutiliza validate_access y el mismo request_id tras fallo de red; nunca envía autorizado ni actor',async()=>{
+ profile={id:randomUUID(),name:'Guardia fixture',role:'guard',condominiumId:randomUUID(),residenceId:null}
+ await authService.login({email:'guard@fixture.invalid',password:randomUUID()})
+ const start=requests.length
+ lostAccessResponse=true
+ await assert.rejects(guardService.validateToken('a'.repeat(64),'MANUAL'))
+ lostAccessResponse=false
+ await guardService.validateToken('a'.repeat(64),'MANUAL')
+ await guardService.validateToken('a'.repeat(64),'QR')
+ const attempts=requests.slice(start).filter(r=>r.path.endsWith('/validate_access'))
+ assert.equal(attempts.length,3)
+ assert.equal(attempts[0].body.request_id,attempts[1].body.request_id)
+ assert.notEqual(attempts[1].body.request_id,attempts[2].body.request_id)
+ assert.equal(attempts[0].body.scan_method,'MANUAL');assert.equal(attempts[2].body.scan_method,'QR')
+ for(const attempt of attempts) {
+  assert.deepEqual(Object.keys(attempt.body).sort(),['request_id','scan_method','token'])
+  assert.equal(attempt.headers.get('authorization'),'Bearer fixture.token.only')
+ }
+})
+
+test('reconfirmar la misma sesión Auth conserva el reintento; cambiar de cuenta lo elimina',async()=>{
+ const unsubscribe=authService.subscribe(()=>{})
+ try {
+  await authService.login({email:'guard@fixture.invalid',password:randomUUID()})
+  lostAccessResponse=true
+  await assert.rejects(guardService.validateToken('b'.repeat(64),'QR'))
+  const first=requests.findLast(r=>r.path.endsWith('/validate_access')).body.request_id
+  // Real SDK emits SIGNED_IN again for the same user, as during session recovery.
+  await getClient().auth.signInWithPassword({email:'guard@fixture.invalid',password:randomUUID()})
+  await assert.rejects(guardService.validateToken('b'.repeat(64),'QR'))
+  assert.equal(requests.findLast(r=>r.path.endsWith('/validate_access')).body.request_id,first)
+  profile={...profile,id:randomUUID()}
+  await getClient().auth.signInWithPassword({email:'other-guard@fixture.invalid',password:randomUUID()})
+  lostAccessResponse=false
+  await guardService.validateToken('b'.repeat(64),'QR')
+  assert.notEqual(requests.findLast(r=>r.path.endsWith('/validate_access')).body.request_id,first)
+ } finally {lostAccessResponse=false;unsubscribe()}
 })

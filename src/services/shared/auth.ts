@@ -33,8 +33,13 @@ export const sharedAuth = {
   },
   subscribe(listener: () => void): () => void {
     try {
-      const { data } = getClient().auth.onAuthStateChange((event) => {
-        if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') clearSharedSession()
+      let userId: string | null = null
+      const { data } = getClient().auth.onAuthStateChange((event, session) => {
+        const nextUserId = session?.user.id ?? null
+        // SIGNED_IN also fires when the same session is recovered on tab focus.
+        // Keep uncertain access retries until the identity actually changes.
+        if (event === 'SIGNED_OUT' || nextUserId !== userId) clearSharedSession()
+        userId = nextUserId
         // Defer SDK calls until the Auth callback releases its lock.
         setTimeout(() => { listener(); notifySharedChange() }, 0)
       })

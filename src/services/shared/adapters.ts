@@ -57,8 +57,11 @@ export const sharedPublicInvitation = {
     if (!invitation) throw new Error('Invitación no disponible. Comprueba el enlace con tu anfitrión.')
     return invitation
   },
-  async addVehicle(token: string, vehicle: VisitVehicle): Promise<void> {
-    if (!await publicRpc({ token, vehicle }, true)) throw new Error('Invitación no disponible.')
+  async addVehicle(_token: string, _vehicle: VisitVehicle): Promise<void> {
+    // Keep the old service contract for callers compiled against stage 11,
+    // while making the shared visitor surface explicitly read-only. The SQL
+    // function also rejects a non-null vehicle for untrusted callers.
+    throw new Error('La consulta pública compartida es de solo lectura. El residente debe definir el vehículo al crear la invitación.')
   },
 }
 export const sharedReports = {
@@ -72,17 +75,24 @@ export const sharedHistory = {
   getContext: () => rpc<{ administrative: boolean; residences: { id: string; name: string }[] }>('history_context'),
   listRecords: (filters: AccessHistoryFilters = {}) => rpc<AccessRecord[]>('list_access', { filters }),
 }
-let retry: { token: string; requestId: string } | null = null
+let retry: { token: string; requestId: string; method: string } | null = null
 export function clearSharedSession() { retry = null }
+// Shared by admin and guard. An ambiguous response retains the same operation ID.
+export async function validateSharedAccess<T>(token: string, method?: 'QR' | 'MANUAL'): Promise<T> {
+  const normalized = token.trim()
+  const selectedMethod = method ?? 'QR'
+  if (retry?.token !== normalized || retry.method !== selectedMethod) retry = { token: normalized, requestId: generateId(), method: selectedMethod }
+  const attempt = retry
+  const args = { token: normalized, request_id: attempt.requestId, ...(method ? { scan_method: method } : {}) }
+  const result = await rpc<T>('validate_access', args, true)
+  if (retry === attempt) retry = null
+  return result
+}
 export const sharedAccess = {
   listActiveInvitations: () => rpc<AccessInvitationOption[]>('active_access_invitations'),
   listAccessRecords: () => rpc<AccessRecord[]>('list_access', { filters: {} }),
   async validateToken(token: string): Promise<AccessResult> {
-    const normalized = token.trim()
-    if (retry?.token !== normalized) retry = { token: normalized, requestId: generateId() }
-    const result = await rpc<AccessResult>('validate_access', { token: normalized, request_id: retry.requestId }, true)
-    retry = null
-    return result
+    return validateSharedAccess<AccessResult>(token)
   },
 }
 interface CommonDashboard { activeInvitationCount: number; vehicleCount: number; pendingReportCount: number; recentAccess: AccessRecord[] }

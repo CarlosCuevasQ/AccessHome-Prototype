@@ -178,16 +178,26 @@ test('invitación compartida: snapshot, token CSPRNG separado, consulta de otro 
  const projection=await as(null,'public_invitation',[i.token,null])
  assert.deepEqual(Object.keys(projection).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status'].sort())
 })
-test('visitante público: inválidos, vehículo una sola vez y sin tablas abiertas',async()=>{
+test('visitante público: solo consulta; vehicle rechazado sin modificar datos',async()=>{
  assert.equal(await as(null,'public_invitation',['invalid',null]),null)
  assert.equal(await as(null,'public_invitation',['a'.repeat(64),null]),null)
  const id=await as('daniel','create_invitation',[JSON.stringify(occasional())],['jsonb'])
  const i=await as('daniel','invitation_details',[id])
- const vehicle={plates:'ABC-123',brand:'',model:'',color:''}
- const updated=await as(null,'public_invitation',[i.token,JSON.stringify(vehicle)],['text','jsonb'])
- assert.equal((await as('daniel','invitation_details',[id])).vehicle.plates,'ABC-123')
- assert.equal('vehicle' in updated,false)
- assert.ok((await as(null,'public_invitation',[i.token,JSON.stringify(vehicle)],['text','jsonb'])).error)
+ const before=(await db.query('select to_jsonb(i) as data from accesshome.invitations i where id=$1',[id])).rows[0].data
+ for(const user of [null,'daniel','admin','guard']) {
+  for(const vehicle of [{plates:'ABC-123',brand:'',model:'',color:''},{},[],false,'anything']) {
+   const result=await as(user,'public_invitation',[i.token,JSON.stringify(vehicle)],['text','jsonb'])
+   assert.match(result.error,/solo lectura/)
+   assert.deepEqual(Object.keys(result),['error'])
+  }
+ }
+ const privateAttempt=await actor(null,tx=>tx.query('select accesshome_private.public_invitation($1,$2::jsonb) as data',[i.token,JSON.stringify({plates:'FORGED'})]))
+ assert.match(privateAttempt.rows[0].data.error,/solo lectura/)
+ const normal=await as(null,'public_invitation',[i.token,null])
+ assert.deepEqual(await as(null,'public_invitation',[i.token]),normal)
+ assert.deepEqual(await as(null,'public_invitation',[i.token,'null'],['text','jsonb']),normal)
+ assert.equal('vehicle' in normal,false)
+ assert.deepEqual((await db.query('select to_jsonb(i) as data from accesshome.invitations i where id=$1',[id])).rows[0].data,before)
 })
 
 test('consulta anónima usa estado actual en servidor: activa, cancelada, expirada y completada',async()=>{
@@ -210,14 +220,14 @@ test('consulta anónima usa estado actual en servidor: activa, cancelada, expira
   })
  }
 })
-test('acceso administrativo atómico e idempotente, sin habilitar guardia',async()=>{
+test('acceso administrativo conserva atomicidad e idempotencia y rechaza residentes',async()=>{
  const id=await as('daniel','create_invitation',[JSON.stringify(occasional())],['jsonb'])
  const i=await as('daniel','invitation_details',[id]); const request=randomUUID()
- await assert.rejects(as('guard','validate_access',[i.token,request]),/permiso/)
+ await assert.rejects(as('ana','validate_access',[i.token,request]),/permiso/)
  const entry=await as('admin','validate_access',[i.token,request])
  const duplicate=await as('admin','validate_access',[i.token,request])
  assert.equal(entry.authorized,true); assert.equal(entry.record.type,'entrada')
- assert.deepEqual(duplicate,entry)
+ assert.deepEqual(duplicate,{...entry,replayed:true})
  const exit=await as('admin','validate_access',[i.token,randomUUID()])
  assert.equal(exit.record.type,'salida'); assert.equal(exit.status,'completada')
  assert.equal((await as('admin','validate_access',[i.token,randomUUID()])).reason,'completed')
@@ -298,11 +308,11 @@ test('duplicados se identifican por contacto y residencia, nunca solo por nombre
  await assert.rejects(create(contactInvitation(first,start,end)),/superpuesta/)
 })
 
-test('12 interfaces invoker conservan contratos y conceden solo EXECUTE específico',async()=>{
+test('interfaces invoker y adaptador legado conservan contratos y EXECUTE específico',async()=>{
  const signatures=['manage_community(text,uuid,jsonb)','assign_principal(uuid,uuid)',
   'manage_household(text,uuid,uuid,jsonb)','manage_contact(text,uuid,jsonb,uuid)',
   'invitation_details(uuid)','create_invitation(jsonb)','cancel_invitation(uuid)',
-  'public_invitation(text,jsonb)','active_access_invitations()','validate_access(text,uuid)',
+  'public_invitation(text,jsonb)','active_access_invitations()','validate_access(text,uuid)','validate_access(text,uuid,text)',
   'create_report(jsonb)','advance_report(uuid,text)']
  for(const signature of signatures) {
   const publicOid='accesshome.'+signature, privateOid='accesshome_private.'+signature
@@ -312,7 +322,7 @@ test('12 interfaces invoker conservan contratos y conceden solo EXECUTE específ
    has_function_privilege('authenticated',p.oid,'EXECUTE') as authenticated,
    has_function_privilege('anon',p.oid,'EXECUTE') as anon
    from pg_proc p,pg_proc w where p.oid=$1::regprocedure and w.oid=$2::regprocedure`,[privateOid,publicOid])).rows[0]
-  assert.deepEqual(result,{elevated:true,wrapper_elevated:false,same_names:true,same_types:true,same_return:true,authenticated:true,anon:signature.startsWith('public_invitation(')})
+  assert.deepEqual(result,{elevated:signature!=='validate_access(text,uuid)',wrapper_elevated:false,same_names:true,same_types:true,same_return:true,authenticated:true,anon:signature.startsWith('public_invitation(')})
  }
  for(const role of ['anon','authenticated','service_role']) {
   const privileges=(await db.query("select has_schema_privilege($1,'accesshome','CREATE') as exposed,has_schema_privilege($1,'accesshome_private','CREATE') as private",[role])).rows[0]
@@ -333,6 +343,7 @@ test('implementaciones privadas no permiten saltarse autorización ni el límite
  ]
  for(const role of ['guard','unassigned','inactive']) {
   for(const invocation of calls) {
+   if(role==='guard' && invocation.startsWith('validate_access(')) continue // Now explicitly allowed; scanner suite verifies scope.
    await assert.rejects(actor(role,tx=>tx.query('select accesshome_private.'+invocation)),error=>error.code==='42501')
   }
  }

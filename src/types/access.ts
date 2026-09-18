@@ -10,15 +10,18 @@ export interface AccessRecord {
   inviterName: string
   vehicle: VisitVehicle | null
   type: 'entrada' | 'salida'
-  method: 'QR'
+  method: 'QR' | 'MANUAL'
+  validatorName?: string | null
+  invitationStatusBefore?: InvitationStatus | null
+  invitationEffectiveStatusBefore?: InvitationStatus | null
   occurredAt: string
   authorized: true
 }
 
-export type AccessRejection = 'not_found' | 'cancelled' | 'expired' | 'completed' | 'outside_period' | 'inactive_residence'
+export type AccessRejection = 'not_found' | 'cancelled' | 'expired' | 'completed' | 'outside_period' | 'inactive_residence' | 'concurrent_scan' | 'recent_scan' | 'invalid_sequence'
 
-export type AccessResult =
-  | { authorized: true; record: AccessRecord; usedUses: number; maxUses: number; status: InvitationStatus }
+export type AccessResult<Record = AccessRecord> =
+  | { authorized: true; record: Record; usedUses: number; maxUses: number; status: InvitationStatus; replayed?: boolean }
   | { authorized: false; reason: AccessRejection; message: string }
 
 export interface AccessInvitationOption {

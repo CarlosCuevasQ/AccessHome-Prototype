@@ -106,7 +106,7 @@ async function race({second=input(10,20),rollback=false,isolation='READ COMMITTE
  }
 }
 
-test('PostgreSQL nativo: diez migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
+test('PostgreSQL nativo: once migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
  t.diagnostic('PostgreSQL '+version+'; tres conexiones TCP locales, Auth simulado.')
  assert.notEqual(a.processID,b.processID)
 })
@@ -224,4 +224,98 @@ test('provisión concurrente de guardia es idempotente y la desactivación vence
   if(pending) await pending
   await b.query('rollback')
  }
+})
+
+const scannerUsers=[randomUUID(),randomUUID()]
+let scannersReady=false
+async function scanFixture() {
+ if(!scannersReady) {
+  const condo=(await owner.query('select condominium_id from accesshome.residences where id=$1',[house])).rows[0].condominium_id
+  for(const id of scannerUsers) {
+   await owner.query('insert into auth.users values($1)',[id])
+   await owner.query('select accesshome_private.provision_guard($1,$2,$3)',[id,condo,'Guardia de prueba'])
+  }
+  scannersReady=true
+ }
+ await begin(a)
+ try {
+  const id=(await create(a,{source:'occasional',visitorName:'Carrera de escaneo',phone:'',vehicle:null,saveAsContact:false,validity:{kind:'24hours'}})).rows[0].id
+  const invitation=(await a.query('select accesshome.invitation_details($1) as data',[id])).rows[0].data
+  await a.query('commit')
+  return invitation
+ } catch(error) {await a.query('rollback');throw error}
+}
+async function beginGuard(client,index=0,isolation='READ COMMITTED') {
+ await begin(client,isolation)
+ await client.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:scannerUsers[index],is_anonymous:false})])
+}
+const validate=(client,token,request=randomUUID())=>client.query('select accesshome.validate_access($1,$2,$3) as data',[token,request,'QR'])
+async function scanRace({sameRequest=false,rollback=false,isolation='READ COMMITTED',exit=false,holdMs=0}={}) {
+ const i=await scanFixture(),request=randomUUID()
+ if(exit) {
+  await beginGuard(a);await validate(a,i.token);await a.query('commit')
+  await owner.query("update accesshome.access_records set occurred_at=clock_timestamp()-interval '4 seconds' where invitation_id=$1",[i.id])
+ }
+ let pending
+ try {
+  await beginGuard(a,0,isolation);await beginGuard(b,sameRequest?0:1,isolation)
+  await b.query('select count(*) from accesshome.invitations')
+  const first=(await validate(a,i.token,request)).rows[0].data
+  pending=settled(validate(b,i.token,sameRequest?request:randomUUID()))
+  await waitBlocked(b,a)
+  if(holdMs) await delay(holdMs)
+  await a.query(rollback?'rollback':'commit')
+  const second=await pending
+  await b.query(second.error?'rollback':'commit')
+  const records=(await owner.query('select direction from accesshome.access_records where invitation_id=$1 order by occurred_at',[i.id])).rows
+  const uses=(await owner.query('select used_uses from accesshome.invitations where id=$1',[i.id])).rows[0].used_uses
+  return {first,second,records,uses}
+ } finally {
+  await a.query('rollback');if(pending) await pending;await b.query('rollback')
+ }
+}
+test('escáner: dos guardias con solicitudes distintas producen una entrada y ninguna salida (5 carreras)',async()=>{
+ for(let n=0;n<5;n++) {
+  const {second,records,uses}=await scanRace()
+  assert.equal(second.error,undefined)
+  assert.equal(second.value.rows[0].data.reason,'concurrent_scan')
+  assert.deepEqual(records,[{direction:'entrada'}]);assert.equal(uses,1)
+ }
+})
+test('escáner: reintentos concurrentes del mismo request recuperan el registro sin otro uso',async()=>{
+ const {first,second,records,uses}=await scanRace({sameRequest:true})
+ assert.deepEqual(second.value.rows[0].data,{...first,replayed:true})
+ assert.equal(records.length,1);assert.equal(uses,1)
+})
+
+test('escáner: esperar más de 3 segundos por el lock tampoco convierte el duplicado en salida',async()=>{
+ const {second,records,uses}=await scanRace({holdMs:3100})
+ assert.equal(second.value.rows[0].data.reason,'concurrent_scan')
+ assert.deepEqual(records,[{direction:'entrada'}]);assert.equal(uses,1)
+})
+test('escáner: ROLLBACK libera el primer uso para el segundo guardia',async()=>{
+ const {second,records,uses}=await scanRace({rollback:true})
+ assert.equal(second.value.rows[0].data.authorized,true)
+ assert.deepEqual(records,[{direction:'entrada'}]);assert.equal(uses,1)
+})
+test('escáner: dos salidas simultáneas registran solo una y completan la invitación',async()=>{
+ const {second,records,uses}=await scanRace({exit:true})
+ assert.equal(second.value.rows[0].data.reason,'completed')
+ assert.deepEqual(records,[{direction:'entrada'},{direction:'salida'}]);assert.equal(uses,2)
+})
+test('escáner: snapshot antiguo en REPEATABLE READ aborta sin consumir otro movimiento',async()=>{
+ const {second,records,uses}=await scanRace({isolation:'REPEATABLE READ'})
+ assert.equal(second.error.code,'40001');assert.equal(records.length,1);assert.equal(uses,1)
+})
+test('escáner: cancelación en otra conexión vence a lectura bloqueada',async()=>{
+ const i=await scanFixture()
+ let pending
+ try {
+  await begin(a);await a.query('select accesshome.cancel_invitation($1)',[i.id])
+  await beginGuard(b,1);pending=settled(validate(b,i.token))
+  await waitBlocked(b,a);await a.query('commit')
+  assert.equal((await pending).value.rows[0].data.reason,'cancelled')
+  await b.query('commit')
+  assert.equal((await owner.query('select count(*)::int as n from accesshome.access_records where invitation_id=$1',[i.id])).rows[0].n,0)
+ } finally {await a.query('rollback');if(pending) await pending;await b.query('rollback')}
 })

@@ -49,6 +49,15 @@ before(async () => {
   afterUpgrade = await snapshot()
   await db.exec(await readFile('supabase/migrations/20260917000700_public_invitation_sharing.sql','utf8'))
   afterSharing = await snapshot()
+  await db.exec(await readFile('supabase/migrations/20260918000100_guard_scanning.sql','utf8'))
+  const afterScanning = await snapshot()
+  for (const row of afterScanning['accesshome.access_records']) {
+    for (const field of ['validator_name','invitation_status_before','invitation_effective_status_before']) {
+      assert.equal(row[field],null)
+      delete row[field]
+    }
+  }
+  assert.deepEqual(afterScanning,afterSharing)
   otherCondo = (await db.query("insert into accesshome.condominiums(name) values('Condominio ajeno') returning id")).rows[0].id
   await provision(users.guard,seed.condominiumId,'Claudia Seguridad')
   await provision(users.otherGuard,otherCondo,'Guardia ajeno')
@@ -60,6 +69,7 @@ test('incremental de caseta conserva cada fila de las ocho migraciones ya poblad
   assert.deepEqual(afterSharing,afterUpgrade)
   assert.equal((await call(null,'backend_health')).guardWorkspaceVersion,1)
   assert.equal((await call(null,'backend_health')).publicInvitationVersion,2)
+  assert.equal((await call(null,'backend_health')).guardScanningVersion,1)
   await db.exec(await readFile('supabase/tests/security_baseline.sql','utf8'))
 })
 
@@ -131,7 +141,7 @@ test('guardia no administra, no modifica invitaciones ni accesos por RPC o SQL d
     ['manage_household',['update_vehicle',seed.residence24,randomUUID(),'{}'],['text','uuid','uuid','jsonb']],
     ['list_contacts'],['manage_contact',['create',null,'{}',null],['text','uuid','jsonb','uuid']],
     ['create_invitation',['{}'],['jsonb']],['cancel_invitation',[pendingId]],['invitation_details',[completedId]],
-    ['validate_access',['token',randomUUID()]],['active_access_invitations'],
+    ['active_access_invitations'],
     ['create_report',['{}'],['jsonb']],['advance_report',[randomUUID(),'en_proceso']],
   ]
   for(const [rpc,args,casts] of operations) await assert.rejects(call('guard',rpc,args,casts),/permiso|principal/,rpc)

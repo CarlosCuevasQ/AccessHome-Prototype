@@ -1,3 +1,48 @@
+## Etapa 12 · Escáner QR y movimientos compartidos
+
+### Ejecutado localmente
+
+- `npm test`: **182/182**. Regresiones de la aplicación local/compartida; once migraciones SQL, grants/RLS y conservación de datos poblados; escenarios SQL de entrada/salida normal, salida controlada tras cancelación/expiración, trazabilidad, entradas/salidas inválidas y seis escenarios de lector/cámara/sesión. Dos casos adicionales del SDK verifican método, request_id estable tras perder respuesta, ausencia de campos de autoridad y reconfirmación/cambio de identidad Auth. El parámetro público `vehicle` se prueba con anon, residente, administrador y guardia y no modifica filas; el service compartido tampoco intenta escribir.
+- `npm run test:concurrency`: **17/17**, PostgreSQL 17.10 temporal, tres conexiones TCP y Auth simulado. Cinco carreras con solicitudes distintas producen una entrada y ninguna salida; esperar más de 3 segundos por el lock tampoco consume salida. Reintentos del mismo ID, rollback del primero, salidas simultáneas, snapshot obsoleto y cancelación concurrente probados. Las diez pruebas previas de invitaciones/caseta siguen pasando.
+- `npm run build` y `npm run build:vercel`: correctos. El segundo también revisó `dist` sin claves privilegiadas reconocibles ni archivos privados. Advertencia previa de chunk principal >500 kB (~695 kB, ~196 kB gzip); decodificador QR diferido ~35 kB (~14 kB gzip).
+- Lector real: imagen QR generada y decodificada, extracción de token y rechazo de formatos ajenos. Runtime de cámara controlado en tests: no permiso inicial, una única lectura, cierre de tracks, permiso tardío, denegación, hardware ausente, fallo de reproducción/canvas y desmontaje. **Estas simulaciones no verifican una cámara física.**
+- Navegador sobre PGlite desechable: residente crea invitación de 24 h; guardia en sesión/origen separado registra ENTRADA manual; administrador consulta un registro con Claudia Seguridad/método Manual. Guardia registra SALIDA; administrador recarga y consulta exactamente dos registros. Tercer intento rechazado como completada. Activar/Detener cámara probado con solicitud de permiso pendiente, sin captura física. Resultado verde/rojo y controles comprobados a 390 × 844; sin desbordamiento horizontal a 390/768 px, consolas guard/admin sin errores.
+
+Fixture reproducible: `node tests/helpers/invitation-preview.mjs`, abrir `http://127.0.0.1:5176/login` como `resident@fixture.invalid` o `admin@fixture.invalid`, y `http://localhost:5176/login` como `guard@fixture.invalid`. Acepta cualquier texto efímero no vacío en contraseña **solo en esta simulación Auth**, sin cuentas remotas. Ambos orígenes tienen sesiones separadas y consultan la misma base PGlite en memoria. El fixture instala esquema/datos únicamente en su memoria y no usa credenciales del proyecto. Detener con Ctrl+C. No publicar este servidor ni usarlo como backend de ensayo remoto.
+
+### Manual y remoto pendiente
+
+Preparación: [GUARD_SCANNING.md](GUARD_SCANNING.md). El responsable aplica solo las migraciones faltantes en orden y verifica **guardScanningVersion: 1** y auditoría SQL. Usar el deployment HTTPS real, mismo proyecto de ensayo, cuentas reales de residente principal, administrador y guardia del mismo condominio, visitante ficticio y dos dispositivos. No cambiar `.env.local` ni repetir semilla para estas pruebas.
+
+| Caso | Acción | Resultado esperado |
+| --- | --- | --- |
+| E-01 | Como residente de Casa 24, crear invitación vigente de dos usos con visitante y vehículo ficticios | Activa, QR/enlace disponible, cero usos; datos persistidos en Supabase |
+| E-02 | Pulsar Enviar por WhatsApp y compartir deliberadamente con el dispositivo visitante | Mensaje con enlace HTTPS real; envío decidido por el residente |
+| E-03 | Abrir enlace en navegador sin sesión del visitante | Datos mínimos y QR, sin login ni datos locales del residente |
+| E-04 | Guardia inicia sesión, entra a `/guardia/escanear` y pulsa Activar cámara | No pide permiso antes del botón. Tras concederlo, vista de cámara; guardia/condominio correctos |
+| E-05 | Enfocar el QR del otro dispositivo y mantenerlo enfocado | Una ENTRADA verde con visitante, Casa 24, vehículo/placas, método QR, operador y hora del servidor; stream se detiene y resultado permanece |
+| E-06 | Administrador abre/refresca historial desde otra sesión | Exactamente una entrada autorizada, datos y operador correspondientes; caseta cuenta visita pendiente |
+| E-07 | Al salir realmente el visitante, pulsar Escanear siguiente y Activar cámara; leer el mismo QR | SALIDA verde, dos usos e invitación completada. Separar las lecturas al menos 3 segundos |
+| E-08 | Administrador actualiza historial y visitante actualiza invitación | Exactamente entrada y salida; visitante Completada sin QR, pendiente de salida desaparece de caseta |
+| E-09 | Releer una copia del QR completado o pegar el mismo enlace manualmente | Rojo: completada. No aparece un tercer registro ni se consume otro uso |
+| E-10 | Crear otra invitación, conservar código y cancelarla desde residente antes de escanear | Rechazo cancelada, sin movimientos nuevos; captura antigua no autoriza |
+| E-11 | Crear una visita con vigencia corta y esperar a que venza; leer su código conservado | Rechazo expirada según hora del servidor, sin movimientos |
+| E-12 | Dos guardias/dispositivos leen simultáneamente una nueva visita; mantener QR enfocado y repetir rápidamente tras Siguiente | Un solo movimiento. El otro dispositivo obtiene advertencia concurrente/lectura reciente, nunca salida por esa ráfaga; comprobar historial. Una lectura deliberada posterior a 3 segundos puede registrar salida |
+| E-13 | Denegar permiso de cámara y pegar enlace/token en el campo manual | Aviso comprensible; validación manual funciona y guarda método MANUAL. Sin hardware disponible ofrece la misma alternativa |
+
+Comprobaciones adicionales necesarias:
+
+- **Permisos:** residente/anon no ejecutan `validate_access`; guardia no valida invitación de otro condominio (Invitación no encontrada) ni modifica residencias, habitantes, vehículos, roles o movimientos mediante services/SQL directo. Perfil guard inactivo se rechaza aun con JWT previo. La auditoría/SQL Editor como propietario no sustituye estos intentos con Auth real.
+- **Ciclo de cámara:** detener durante permiso pendiente, cambiar ruta, cerrar sesión, esconder la pestaña o bloquear el teléfono. El indicador de cámara debe apagarse; volver exige Activar. Probar Chrome Android y Safari iOS, enfoque/iluminación/orientación y controles a 375–430/768 px. No se ha realizado con hardware físico.
+- **Respuesta perdida:** si se interrumpe la conexión al validar, no mostrar verde ni permitir siguiente; restablecer y pulsar Reintentar misma operación. Si ya se confirmó en servidor, devolver el mismo movimiento en amarillo, sin duplicar. Reenfocar pestaña con la misma sesión no cambia el request_id. Tras una recarga completa/cambio de cuenta, consultar historial antes de volver a operar.
+- **Secuencia:** cancelar o dejar vencer después de entrada impide una nueva entrada, pero un guardia activo del mismo condominio puede cerrar la única entrada abierta mediante la salida controlada. La salida guarda el estado previo (cancelada/expirada), completa la invitación sin reabrirla y no funciona sin entrada, con segunda salida, para otra residencia o con residencia inactiva. No permite editar historial.
+- **Vehículo público:** la migración 11 mantiene `public_invitation(text,jsonb)` por compatibilidad, pero cualquier `vehicle` distinto de `null` se rechaza en backend como solo lectura. Se comprueba que no cambia la invitación para anon, residentes, administradores ni guardias. El modo local conserva su demo aislada; no representa el backend compartido.
+- **Privacidad:** resultado de caseta solo con visitante/casa/vehículo/operación; sin correo/teléfono/notas/anfitrión. No registrar tokens, video ni claves en logs/analítica, ni exportar capturas/solicitudes reales durante las comprobaciones.
+
+**Pendiente:** todas las pruebas con Supabase Auth/PostgREST remotos, teléfonos físicos, cámara real, WhatsApp real y hosting. Las pruebas locales anteriores no demuestran esos resultados remotos. Servicios y reportes de turno no se implementan en esta etapa.
+
+Las siguientes secciones son el registro histórico de entregas previas. Para probar el escáner actual usar E-01–E-13; los avisos históricos de próxima etapa para escaneo ya no describen el frontend actual.
+
 ## Etapa 11 · Compartir invitaciones y Vercel
 
 ### Ejecutado localmente

@@ -15,6 +15,9 @@ const rejectionMessages: Record<AccessRejection, string> = {
   completed: 'Invitación completada. No quedan usos disponibles.',
   outside_period: 'Fuera del periodo permitido. La vigencia aún no comienza.',
   inactive_residence: 'La residencia destino está inactiva.',
+  concurrent_scan: 'Otra lectura cambió la invitación. Revisa el historial.',
+  recent_scan: 'Lectura reciente. Espera al menos 3 segundos antes de registrar la salida.',
+  invalid_sequence: 'La secuencia de movimientos requiere revisión administrativa.',
 }
 
 export function rejectedAccess(reason: AccessRejection): AccessResult {

@@ -26,6 +26,7 @@ import { WorkspaceLayout } from './layouts/WorkspaceLayout'
 import { GuardDashboardPage } from './pages/GuardDashboardPage'
 import { GuardHistoryPage } from './pages/GuardHistoryPage'
 import { GuardUpcomingPage } from './pages/GuardUpcomingPage'
+import { GuardScanPage } from './pages/GuardScanPage'
 
 export const router = createBrowserRouter([
   {
@@ -33,7 +34,7 @@ export const router = createBrowserRouter([
     children: [{ path: '/guardia', element: <WorkspaceLayout role="guard" />, children: [
       { index: true, element: <GuardDashboardPage /> },
       { path: 'historial', element: <GuardHistoryPage /> },
-      { path: 'escanear', element: <GuardUpcomingPage stage="scan" /> },
+      { path: 'escanear', element: <GuardScanPage /> },
       { path: 'servicios', element: <GuardUpcomingPage stage="services" /> },
       { path: 'reportes', element: <GuardUpcomingPage stage="reports" /> },
       { path: '*', element: <NotFoundPage homePath="/guardia" /> },

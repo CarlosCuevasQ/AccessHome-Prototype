@@ -12,11 +12,22 @@ const db=new PGlite({extensions:{pgcrypto}})
 await installSharedSchema(db)
 const users={admin:randomUUID(),daniel:randomUUID(),ana:randomUUID()}
 for(const id of Object.values(users)) await db.query('insert into auth.users values($1)',[id])
-await db.query('select accesshome_private.seed_demo($1)',[JSON.stringify(users)])
-const sessions=new Set()
+const seed=(await db.query('select accesshome_private.seed_demo($1) as data',[JSON.stringify(users)])).rows[0].data
+users.guard=randomUUID()
+await db.query('insert into auth.users values($1)',[users.guard])
+await db.query('select accesshome_private.provision_guard($1,$2,$3)',[users.guard,seed.condominiumId,'Claudia Seguridad'])
+const accounts={'resident@fixture.invalid':users.daniel,'guard@fixture.invalid':users.guard,'admin@fixture.invalid':users.admin}
+const sessions=new Map()
 const queries={
  session_profile:()=>['select accesshome.session_profile() as data',[]],
  resident_dashboard:()=>['select accesshome.resident_dashboard() as data',[]],
+ admin_dashboard:()=>['select accesshome.admin_dashboard() as data',[]],
+ community_summary:()=>['select accesshome.community_summary() as data',[]],
+ history_context:()=>['select accesshome.history_context() as data',[]],
+ list_access:b=>['select accesshome.list_access($1::jsonb) as data',[JSON.stringify(b.filters??{})]],
+ guard_dashboard:()=>['select accesshome.guard_dashboard() as data',[]],
+ guard_history:b=>['select accesshome.guard_history($1,$2) as data',[b.movement??'',b.page??0]],
+ validate_access:b=>['select accesshome.validate_access($1,$2,$3) as data',[b.token,b.request_id,b.scan_method??'QR']],
  contact_access:()=>['select accesshome.contact_access() as data',[]],
  invitation_context:()=>['select accesshome.invitation_context() as data',[]],
  create_invitation:b=>['select accesshome.create_invitation($1::jsonb) as data',[JSON.stringify(b.input)]],
@@ -42,15 +53,15 @@ const server=await createServer({server:{host:'127.0.0.1',port:5176,strictPort:t
     let raw='';for await(const chunk of req) raw+=chunk
     const body=raw?JSON.parse(raw):{}
     if(path==='/auth/v1/token') {
-     if(body.email!=='resident@fixture.invalid'||!body.password) return reply({error:'invalid_grant'},400)
-     const token=randomUUID();sessions.add(token)
-     return reply({access_token:token,refresh_token:randomUUID(),token_type:'bearer',expires_in:3600,user:{id:users.daniel,email:body.email}})
+     if(!Object.hasOwn(accounts,body.email)||!body.password) return reply({error:'invalid_grant'},400)
+     const token=randomUUID();sessions.set(token,accounts[body.email])
+     return reply({access_token:token,refresh_token:randomUUID(),token_type:'bearer',expires_in:3600,user:{id:accounts[body.email],email:body.email}})
     }
     const bearer=req.headers.authorization?.replace(/^Bearer /,'')
     if(path==='/auth/v1/logout'){sessions.delete(bearer);return reply({})}
     const query=queries[path.split('/').at(-1)]
     if(!query) return reply({message:'Fixture route not supported'},404)
-    const user=sessions.has(bearer)?users.daniel:null
+    const user=sessions.get(bearer)??null
     const data=await db.transaction(async tx=>{
      await tx.exec('set local role '+(user?'authenticated':'anon'))
      await tx.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:user,is_anonymous:false})])
@@ -63,6 +74,6 @@ const server=await createServer({server:{host:'127.0.0.1',port:5176,strictPort:t
  },
 }]})
 await server.listen()
-console.log('Fixture SQL local: http://127.0.0.1:5176 · resident@fixture.invalid · texto efímero no vacío en contraseña (Auth simulado).')
+console.log('Fixture SQL local: http://127.0.0.1:5176 · resident@fixture.invalid, guard@fixture.invalid, admin@fixture.invalid · texto efímero no vacío en contraseña (Auth simulado).')
 async function stop(){await server.close();await db.close();process.exit(0)}
 process.on('SIGINT',stop);process.on('SIGTERM',stop)

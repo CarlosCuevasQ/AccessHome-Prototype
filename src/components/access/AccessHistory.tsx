@@ -2,6 +2,7 @@ import type { AccessRecord } from '../../types/access'
 import type { GuardAccess } from '../../types/guard'
 import { formatDate } from '../../utils/dates'
 import { useId } from 'react'
+import { invitationStatusLabels } from '../invitations/InvitationStatusLabel'
 
 export function AccessHistory({ records, filtered = false, timeZone, operational = false }: {
   records: (AccessRecord | GuardAccess)[]; filtered?: boolean; timeZone?: string; operational?: boolean
@@ -17,8 +18,8 @@ export function AccessHistory({ records, filtered = false, timeZone, operational
         <td data-label="Visita">{record.visitorName}<span className="cell-secondary">{record.residenceName}{'inviterName' in record && ` · Anfitrión: ${record.inviterName}`}</span></td>
         <td data-label="Movimiento">{record.type === 'entrada' ? 'Entrada' : 'Salida'}</td>
         <td data-label="Vehículo">{record.vehicle?.plates ?? 'Sin vehículo'}{record.vehicle && 'brand' in record.vehicle && <span className="cell-secondary">{[record.vehicle.brand, record.vehicle.model, record.vehicle.color].filter(Boolean).join(' · ') || 'Sin datos adicionales'}</span>}</td>
-        <td data-label="Método">{record.method}</td>
-        <td data-label="Estado"><span className="vehicle-status is-active">Autorizado</span></td>
+        <td data-label="Método">{record.method === 'MANUAL' ? 'Manual' : 'QR'}{'validatorName' in record && record.validatorName && <span className="cell-secondary">{record.validatorName}</span>}</td>
+        <td data-label="Estado"><span className="vehicle-status is-active">Autorizado</span>{'invitationEffectiveStatusBefore' in record && record.invitationEffectiveStatusBefore && record.invitationEffectiveStatusBefore !== 'activa' && <span className="cell-secondary">Estado previo: {invitationStatusLabels[record.invitationEffectiveStatusBefore]}</span>}</td>
       </tr>)}</tbody>
     </table> : <p className="empty-list">{filtered ? 'No hay movimientos que coincidan con estos filtros.' : 'Todavía no se han autorizado entradas o salidas.'}</p>}
   </section>

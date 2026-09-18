@@ -19,5 +19,8 @@ if(!url || !key?.startsWith('sb_publishable_')) {
   console.log(data.publicInvitationVersion===2
     ? 'Proyección pública mínima detectada (publicInvitationVersion: 2).'
     : 'Proyección pública mínima pendiente: revisar la incremental 20260917000700 antes de publicar invitaciones.')
+  console.log(data.guardScanningVersion===1
+    ? 'Escaneo de guardia detectado (guardScanningVersion: 1). Falta probar cámara y movimientos con cuentas reales.'
+    : 'Escaneo de guardia pendiente: revisar la incremental 20260918000100.')
  } catch(error) { console.error(error.message); process.exitCode=1 }
 }

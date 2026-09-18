@@ -1,12 +1,17 @@
-import type { GuardDashboard, GuardHistory } from '../types/guard.js'
+import type { GuardDashboard, GuardHistory, GuardScanResult } from '../types/guard.js'
 import type { AccessHistoryFilters } from '../types/access.js'
 import { sharedMode } from './shared/provider.js'
 import { rpc } from './shared/transport.js'
+import { validateSharedAccess } from './shared/adapters.js'
 
 function requireShared() {
   if (!sharedMode) throw new Error('El panel de caseta requiere una cuenta real de Supabase y la migración de guardia.')
 }
 export const guardService = {
+  async validateToken(token: string, method: 'QR' | 'MANUAL'): Promise<GuardScanResult> {
+    requireShared()
+    return validateSharedAccess(token, method)
+  },
   async getDashboard(): Promise<GuardDashboard> {
     requireShared()
     return rpc('guard_dashboard')

@@ -4,6 +4,8 @@ Esta etapa reutiliza `profiles.role = 'guard'`, `condominiums`, `invitations` y 
 
 **Estado remoto:** según el contexto proporcionado, las ocho migraciones iniciales y `seed_demo` ya se aplicaron y el login base funciona. La nueva migración de caseta está probada localmente; **no se aplicó ni se comprobó el rol guard remotamente en esta entrega**.
 
+Esta guía conserva el procedimiento de provisión de cuentas. El escáner ya está implementado en la etapa 12 y requiere además la incremental `20260918000100`; seguir [GUARD_SCANNING.md](GUARD_SCANNING.md) para el orden actual y las pruebas. No se reconfirmó ninguna de estas activaciones remotas.
+
 ## 1. Aplicar únicamente la incremental, por el responsable
 
 Archivo nuevo: [`20260917000600_guard_workspace.sql`](../supabase/migrations/20260917000600_guard_workspace.sql). Las ocho versiones anteriores permanecen intactas. Esta migración no borra, reinicia, importa ni actualiza filas existentes; añade funciones y amplía `session_profile` para reconocer el rol ya existente.
@@ -15,7 +17,7 @@ supabase migration list --linked
 supabase db push --dry-run
 ```
 
-Las primeras ocho versiones deben figurar aplicadas; la única pendiente debe ser **20260917000600**. Si aparece otra diferencia, detenerse y reconciliar el historial; no reparar ni volver a ejecutar las ocho por suposición. Cuando el responsable decida aplicar:
+Las primeras ocho versiones deben figurar aplicadas. En el repositorio actual pueden faltar **20260917000600** (caseta), **20260917000700** (consulta pública) y **20260918000100** (escaneo); verificar cuáles faltan y revisar sus guías antes de aplicarlas en orden. Ante diferencias de las ocho iniciales, reconciliar el historial; no reparar ni volver a ejecutarlas por suposición. Cuando el responsable decida aplicar las pendientes revisadas:
 
 ```sh
 supabase db push
@@ -25,7 +27,7 @@ Estos comandos son instrucciones manuales; no se ejecutaron en esta entrega. El 
 
 Mantener `accesshome` en **Data API → Exposed schemas**. **No agregar `accesshome_private` a Exposed schemas ni Extra search path**. No conceder `ALL` ni permisos adicionales para resolver errores.
 
-Después de aplicar, ejecutar `npm run backend:check`: debe seguir informando esquema 9 y ahora **guardWorkspaceVersion: 1**. Es una consulta pública de salud, no una prueba de login. El 9 es la versión del contrato base existente, no el número de archivos SQL. Ejecutar también [`supabase/tests/security_baseline.sql`](../supabase/tests/security_baseline.sql) en SQL Editor con el propietario: es una auditoría de solo lectura y debe terminar sin excepciones.
+Después de caseta, `npm run backend:check` debe seguir informando esquema 9 y **guardWorkspaceVersion: 1**. Tras las incrementales siguientes debe incluir también `publicInvitationVersion: 2` y `guardScanningVersion: 1`. Es una consulta pública de salud, no una prueba de login. El 9 es la versión del contrato base existente, no el número de archivos SQL. Después de completar las once migraciones, ejecutar [`supabase/tests/security_baseline.sql`](../supabase/tests/security_baseline.sql) en SQL Editor con el propietario: la auditoría actual exige el esquema completo y debe terminar sin excepciones.
 
 ## 2. Crear la cuenta Auth
 
@@ -85,12 +87,12 @@ Para reactivar, repetir con `true`. La función únicamente modifica un perfil `
 | Actividad | Cinco entradas y cinco salidas más recientes del propio condominio |
 | Pendientes de salida | Total de entradas sin salida y las diez más antiguas; incluye visitas canceladas o vencidas con entrada registrada |
 | `/guardia/historial` | Últimos siete días de calendario incluido hoy, filtro entrada/salida, 50 movimientos por página; solo consulta |
-| `/guardia/escanear` | Acción principal y aviso **Próxima etapa**; todavía no abre cámara, valida QR ni registra movimientos |
+| `/guardia/escanear` | Escáner y alternativa manual implementados en etapa 12; requiere incremental `20260918000100`, ver GUARD_SCANNING.md |
 | `/guardia/servicios` y `/guardia/reportes` | Estados de próxima etapa con navegación funcional; no simulan altas ni muestran reportes privados de residentes |
 
 Las proyecciones de acceso incluyen únicamente ID del movimiento, visitante, nombre de casa, entrada/salida, método, fecha y placas. No incluyen tokens, teléfonos, correos, notas, anfitrión ni identificadores de cuentas, invitaciones o residencias. El condominio se obtiene de `auth.uid()` y el perfil activo, nunca de parámetros controlados por el navegador.
 
-Las políticas RLS existentes se conservan: el guardia solo puede leer directamente su perfil y condominio. No recibe listados de residentes, vehículos, invitaciones, accesos completos ni reportes. No tiene escrituras SQL directas. Los RPCs administrativos/residenciales conservan `require_actor` y rechazan `guard`; incluso `validate_access` continúa reservado al flujo administrativo ya existente.
+Las políticas RLS existentes se conservan: el guardia solo puede leer directamente su perfil y condominio. No recibe listados de residentes, vehículos, invitaciones, accesos completos ni reportes. No tiene escrituras SQL directas. Los RPCs administrativos/residenciales conservan `require_actor` y rechazan `guard`. Con la incremental de etapa 12, `validate_access` permite al guardia registrar únicamente el siguiente movimiento autorizado de una invitación del propio condominio, mediante el mismo motor que utiliza administración; no permite editar historia.
 
 `guard_dashboard` y `guard_history` expuestos son `SECURITY INVOKER`. Sus implementaciones privilegiadas viven en el esquema privado con `search_path` vacío y autorizan internamente cada llamada. Solo `authenticated` puede ejecutar esas dos interfaces/implementaciones; `PUBLIC`, `anon` y `service_role` no. `require_guard`, la proyección interna y las funciones de provisión no reciben EXECUTE de cliente. La autorización procede del perfil SQL, nunca de metadata editable. Este diseño sigue las recomendaciones de [funciones de Supabase](https://supabase.com/docs/guides/database/functions) y [RLS y funciones privadas](https://supabase.com/docs/guides/database/postgres/row-level-security).
 

@@ -1,4 +1,4 @@
--- Auditoría del catálogo después de las diez migraciones (base, caseta y vista pública). No crea datos.
+-- Auditoría del catálogo después de las once migraciones. No crea datos.
 -- Ejecutar como el propietario de las migraciones en un proyecto de prueba.
 begin;
 set transaction read only;
@@ -22,7 +22,7 @@ declare
     'accesshome_private.cancel_invitation(uuid)',
     'accesshome_private.public_invitation(text,jsonb)',
     'accesshome_private.active_access_invitations()',
-    'accesshome_private.validate_access(text,uuid)',
+    'accesshome_private.validate_access(text,uuid,text)',
     'accesshome_private.create_report(jsonb)',
     'accesshome_private.advance_report(uuid,text)',
     'accesshome_private.guard_dashboard()',
