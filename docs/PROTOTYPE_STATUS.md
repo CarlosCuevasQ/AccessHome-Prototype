@@ -1,4 +1,15 @@
-## Etapa 12 · Escáner QR y movimientos compartidos
+## Estado actual · Mejora de etapa 12: salidas sin QR
+
+El responsable confirmó las once migraciones aplicadas, Vercel y el flujo QR en dispositivos físicos. **Esta mejora está probada localmente; la nueva migración `20260918000200_open_visit_exits.sql` y el frontend actualizado siguen pendientes de aplicación/publicación remota.** Las once migraciones previas no se editaron.
+
+- La proyección pública añade solo `hasOpenEntry` desde los movimientos reales. QR cancelado/vencido con entrada abierta conserva el aviso «Código válido únicamente para salida». Sin entrada o completada no muestra QR utilizable.
+- `/guardia/salidas` lista pendientes del propio condominio y confirma visitante, residencia y hora de entrada. El RPC requiere guardia activo, bloquea las filas y delega en el mismo motor con método MANUAL; mantiene idempotencia, trazabilidad y prevención de duplicados.
+- `npm test`: **191/191**; `npm run test:concurrency`: **22/22** en PostgreSQL 17.10 local; `npm run build`: aprobado. Se conserva la advertencia previa de bundle >500 kB. Auditoría SQL y actualización sin alteración de datos existentes verificadas.
+- Navegador local con SQL real desechable/Auth simulado: QR de salida visible tras cancelación y vencimiento, confirmación y salida manual, retiro de pendiente y estado público Completada sin QR al refrescar. Confirmación y QR revisados a 390 px sin desbordamiento.
+
+Procedimiento y aceptación remota: [OPEN_VISIT_EXITS.md](OPEN_VISIT_EXITS.md). No hubo SQL remoto, cambios de configuración privada, commit, push ni despliegue. Las secciones siguientes son registros históricos; sus pendientes previos quedan sustituidos por este estado.
+
+## Etapa 12 · Escáner QR y movimientos compartidos (registro histórico)
 
 Implementada y verificada localmente. **Pendientes: aplicación remota de `20260918000100_guard_scanning.sql`, prueba con Auth/PostgREST reales y cámaras físicas.** Las diez migraciones anteriores permanecen intactas. No se modificó `.env.local`, no se ejecutó SQL remoto ni semilla remota, no hubo commit, push o despliegue.
 

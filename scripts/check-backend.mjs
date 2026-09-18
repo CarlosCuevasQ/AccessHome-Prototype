@@ -16,11 +16,14 @@ if(!url || !key?.startsWith('sb_publishable_')) {
   console.log(data.guardWorkspaceVersion===1
     ? 'Incremental de caseta detectada (guardWorkspaceVersion: 1). Falta comprobar la cuenta de guardia y sus permisos con una sesión real.'
     : 'Incremental de caseta pendiente o no detectada. La conexión base funciona, pero no confirma el panel de guardia.')
-  console.log(data.publicInvitationVersion===2
-    ? 'Proyección pública mínima detectada (publicInvitationVersion: 2).'
+  console.log(data.publicInvitationVersion>=2
+    ? 'Proyección pública mínima detectada.'
     : 'Proyección pública mínima pendiente: revisar la incremental 20260917000700 antes de publicar invitaciones.')
   console.log(data.guardScanningVersion===1
     ? 'Escaneo de guardia detectado (guardScanningVersion: 1). Falta probar cámara y movimientos con cuentas reales.'
     : 'Escaneo de guardia pendiente: revisar la incremental 20260918000100.')
+  console.log(data.openVisitExitsVersion===1 && data.publicInvitationVersion>=3
+    ? 'Salidas sin QR e indicador público de entrada abierta detectados. Falta probar los flujos con cuentas reales.'
+    : 'Salidas sin QR pendientes: revisar la incremental 20260918000200.')
  } catch(error) { console.error(error.message); process.exitCode=1 }
 }

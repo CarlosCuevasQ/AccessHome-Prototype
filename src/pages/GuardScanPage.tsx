@@ -98,6 +98,6 @@ export function GuardScanPage() {
     {phase === 'uncertain' && <button type="button" className="button-link" onClick={() => { void run(() => session.current.retry()) }}>Reintentar misma operación</button>}
     {phase === 'done' && <button type="button" className="button-link scanner-next" onClick={next}>Escanear siguiente</button>}
     <p className="form-help">La lectura se detiene al detectar un código. Verifica nombre, residencia y vehículo antes de permitir el paso. No se registra otro movimiento hasta pulsar Escanear siguiente. Las lecturas de guardia de una misma visita deben separarse al menos 3 segundos.</p>
-    <nav className="scanner-actions" aria-label="Consultas de caseta"><Link to="/guardia/historial">Consultar historial</Link><Link to="/guardia">Volver a caseta</Link></nav>
+    <nav className="scanner-actions" aria-label="Consultas de caseta"><Link to="/guardia/salidas">Registrar salida sin QR</Link><Link to="/guardia/historial">Consultar historial</Link><Link to="/guardia">Volver a caseta</Link></nav>
   </section>
 }

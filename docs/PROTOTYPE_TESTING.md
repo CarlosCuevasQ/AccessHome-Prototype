@@ -1,4 +1,16 @@
-## Etapa 12 · Escáner QR y movimientos compartidos
+## Mejora de etapa 12 · Salidas con invitación revocada y sin QR
+
+Ejecutado localmente: `npm test` **191/191**, `npm run test:concurrency` **22/22**, `npm run build` aprobado. La migración 12 conserva exactamente las filas de la base poblada. La auditoría verifica RLS, ausencia de escrituras generales y funciones privilegiadas fuera del esquema expuesto.
+
+Casos nuevos: QR cancelado/vencido solo con entrada registrada, proyección pública exacta sin historial privado, salida QR después de cancelación/vencimiento, salida manual activa/cancelada/vencida, paginación de pendientes antiguos, exclusión de visitas cerradas, rechazo a residente/visitante/admin/guardia ajeno/inactivo, replay de salida sin confundirlo con entrada y método MANUAL en historial administrativo. PostgreSQL con conexiones independientes verifica carreras manual/manual, manual/QR, QR/manual, mismo request_id y rollback.
+
+Navegador local con PGlite/Auth simulado: confirmación con identidad/destino/hora; salida manual de visita cancelada; actualización de pendientes y vista pública completada sin QR; vista pública vencida conserva QR y aviso de solo salida. Confirmación y QR a 390 px sin scroll horizontal. No se usaron cámaras físicas ni cuentas del proyecto remoto para esta mejora.
+
+Las once migraciones y el flujo anterior están confirmados remotamente por el responsable. Esta mejora requiere **solo `20260918000200_open_visit_exits.sql` y frontend actualizado**, pendientes. Seguir [OPEN_VISIT_EXITS.md](OPEN_VISIT_EXITS.md) para aplicar y ejecutar S-01–S-15, con datos y resultados esperados. Incluye vencimiento real, cancelación posterior a entrada, salida sin QR, dos guardias simultáneos, método administrativo, permisos y móvil. No repetir `seed_demo`.
+
+Fixture: `node tests/helpers/invitation-preview.mjs --open-exits`. Casos de cancelada/vencida con entrada y vencida sin entrada en memoria desechable; no toca Supabase remoto. Los resultados siguientes documentan etapas históricas, no pruebas remotas nuevas.
+
+## Etapa 12 · Escáner QR y movimientos compartidos (registro histórico)
 
 ### Ejecutado localmente
 

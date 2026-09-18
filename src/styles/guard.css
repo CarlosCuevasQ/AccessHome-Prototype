@@ -25,6 +25,9 @@
 .guard-scanner .access-result h2 { font-size: clamp(1.5rem, 4vw, 2rem); }
 .guard-scanner .access-movement { font-size: 2rem; }
 .access-warning { color: #634909; background: var(--light-yellow); border-color: var(--accent); }
+.guard-open-visits { list-style: none; padding: 0; }
+.guard-open-visits li { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--border); }
+.guard-open-visits p { margin: 6px 0; }
 @media (max-width: 480px) {
   .scanner-actions > button, .scanner-next { width: 100%; }
   .scanner-camera { min-height: 200px; }

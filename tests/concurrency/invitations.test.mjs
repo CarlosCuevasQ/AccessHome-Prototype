@@ -106,10 +106,11 @@ async function race({second=input(10,20),rollback=false,isolation='READ COMMITTE
  }
 }
 
-test('PostgreSQL nativo: once migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
+test('PostgreSQL nativo: doce migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
  t.diagnostic('PostgreSQL '+version+'; tres conexiones TCP locales, Auth simulado.')
  assert.notEqual(a.processID,b.processID)
 })
+
 test('dos conexiones: el segundo alta espera COMMIT y rechaza el duplicado (5 carreras)',async()=>{
  for(let n=0;n<5;n++) {
   const {result,counts}=await race()
@@ -319,3 +320,33 @@ test('escáner: cancelación en otra conexión vence a lectura bloqueada',async(
   assert.equal((await owner.query('select count(*)::int as n from accesshome.access_records where invitation_id=$1',[i.id])).rows[0].n,0)
  } finally {await a.query('rollback');if(pending) await pending;await b.query('rollback')}
 })
+
+for(const scenario of ['manual/manual','manual/QR','QR/manual','replay','rollback']) {
+ test('salida sin QR concurrente: '+scenario,async()=>{
+  const i=await scanFixture(),request=randomUUID()
+  await beginGuard(a)
+  const entry=(await validate(a,i.token)).rows[0].data.record
+  await a.query('commit')
+  await owner.query("update accesshome.access_records set occurred_at=clock_timestamp()-interval '4 seconds' where invitation_id=$1",[i.id])
+  await owner.query("update accesshome.invitations set status='cancelada' where id=$1",[i.id])
+  const manual=(client,id)=>client.query('select accesshome.guard_register_exit($1,$2) as data',[entry.id,id])
+  let pending
+  try {
+   await beginGuard(a);await beginGuard(b,scenario==='replay'?0:1)
+   const first=(await (scenario==='QR/manual'?validate(a,i.token,request):manual(a,request))).rows[0].data
+   assert.equal(first.authorized,true)
+   pending=settled(scenario==='manual/QR'?validate(b,i.token):manual(b,scenario==='replay'?request:randomUUID()))
+   await waitBlocked(b,a)
+   await a.query(scenario==='rollback'?'rollback':'commit')
+   const second=await pending
+   assert.equal(second.error,undefined)
+   await b.query('commit')
+   if(scenario==='replay') assert.deepEqual(second.value.rows[0].data,{...first,replayed:true})
+   else assert.equal(second.value.rows[0].data.authorized,scenario==='rollback')
+   const records=(await owner.query('select direction,method,invitation_status_before from accesshome.access_records where invitation_id=$1 order by occurred_at',[i.id])).rows
+   assert.equal(records.length,2); assert.equal(records[1].direction,'salida')
+   assert.equal(records[1].method,scenario==='QR/manual'?'QR':'MANUAL')
+   assert.equal(records[1].invitation_status_before,'cancelada')
+  } finally {await a.query('rollback');if(pending) await pending;await b.query('rollback')}
+ })
+}

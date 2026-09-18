@@ -1,8 +1,8 @@
 # Base SQL del prototipo integrado
 
-## Estado vigente: base activa; incremental de escaneo pendiente
+## Estado vigente: once versiones aplicadas; mejora de salidas pendiente
 
-El responsable confirmó que las ocho migraciones iniciales, la semilla y Auth ya funcionan remotamente. **Esta entrega añade únicamente `20260918000100_guard_scanning.sql`, todavía pendiente de aplicar remotamente.** Las once se probaron localmente; ninguna de las diez anteriores se editó. No se modificó `.env.local`, no se crearon cuentas externas ni se ejecutó SQL remoto. La aplicación remota de las incrementales de caseta/consulta pública no se reconfirmó: consultar el historial antes de aplicar pendientes.
+El responsable confirmó las once migraciones, Auth, Vercel y QR entre dispositivos. **Esta entrega añade únicamente `20260918000200_open_visit_exits.sql`, pendiente de aplicar remotamente.** Las doce se probaron localmente; ninguna de las once anteriores se editó. Guía de actualización: [OPEN_VISIT_EXITS.md](../docs/OPEN_VISIT_EXITS.md). No se modificó `.env.local`, no se crearon cuentas externas ni se ejecutó SQL remoto.
 
 Para escaneo sigue [GUARD_SCANNING.md](../docs/GUARD_SCANNING.md); para compartir/publicar, [DEPLOYMENT.md](../docs/DEPLOYMENT.md); para provisionar Guardia, [GUARD_SETUP.md](../docs/GUARD_SETUP.md). No repetir `seed_demo` ni las versiones ya aplicadas. Las instrucciones de instalación base que siguen son solo para proyectos nuevos; no corresponden al proyecto existente.
 
@@ -24,6 +24,7 @@ Diseño completo, matriz de permisos y orden de adaptación: [SHARED_BACKEND_PLA
 | 20260917000700 | `migrations/20260917000700_public_invitation_sharing.sql` | Proyección pública mínima, condominio y Cache-Control no-store. Conserva firma/rate limit/token, pero rechaza `vehicle` no nulo como solo lectura; grants limitados. Salud añade publicInvitationVersion: 2. Sin tablas ni cambios de filas. |
 | 20260918000100 | `migrations/20260918000100_guard_scanning.sql` | Amplía validate_access para guard/admin con un solo motor; método MANUAL y nombre de operador en movimientos. Protección concurrente, secuencia, reintentos y DTO guard mínimo. Salud añade guardScanningVersion: 1. Sin tablas nuevas ni reescritura de datos. |
 | Auditoría | `tests/security_baseline.sql` | Comprueba catálogo: tablas con RLS, políticas SELECT, grants limitados y funciones internas restringidas. No reemplaza pruebas con usuarios. |
+| 20260918000200 | `migrations/20260918000200_open_visit_exits.sql` | Indicador público hasOpenEntry, pendientes mínimos y salida manual por ID de entrada delegada al motor existente. Salud: publicInvitationVersion 3 y openVisitExitsVersion 1. Solo funciones/permisos, sin cambios de filas. |
 
 Requieren un proyecto Supabase con `auth.users`, `auth.uid()`, `auth.jwt()` y roles PostgreSQL `anon`/`authenticated`. Se aplican como propietario de migraciones controlado (por ejemplo, `postgres` del proyecto). Los IDs de dominio usan `gen_random_uuid()` del PostgreSQL de Supabase. No necesitan Docker ni una base PostgreSQL instalada en este equipo.
 

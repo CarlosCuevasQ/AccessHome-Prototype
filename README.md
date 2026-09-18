@@ -2,7 +2,7 @@
 
 Prototipo universitario en React, Vite y TypeScript. Conserva las pantallas de administración, residencia, contactos, invitaciones/QR, historial y reportes.
 
-La integración base con Supabase, las ocho migraciones iniciales y las cuentas reales ya funcionan en el proyecto de ensayo, según la confirmación del responsable. **El escáner del guardia y los movimientos sincronizados están implementados y probados localmente; su migración incremental no se aplicó al proyecto remoto.** Consulta [GUARD_SCANNING.md](docs/GUARD_SCANNING.md) para activar esta etapa y [DEPLOYMENT.md](docs/DEPLOYMENT.md) para publicar el ensayo. No se reconfirmó la aplicación remota de las incrementales previas de caseta y consulta pública ni el deployment.
+El responsable confirmó Vercel, Supabase, las once migraciones y el flujo QR de entrada/salida en dispositivos reales. Esta mejora conserva el QR exclusivamente para salir de una visita abierta cancelada/vencida y añade **Registrar salida sin QR** para guardias. Requiere la nueva migración `20260918000200_open_visit_exits.sql`, todavía pendiente de aplicación remota. Guía: [OPEN_VISIT_EXITS.md](docs/OPEN_VISIT_EXITS.md).
 
 ## Ejecutar
 
@@ -39,7 +39,7 @@ En modo compartido, cada persona usa su cuenta de Supabase Auth y una contraseñ
 | Administrador | Estructura y principales del propio condominio, consulta de habitantes/vehículos, control de acceso existente, historial y estados de reportes |
 | Residente principal | Habitantes/vehículos de su casa activa, agenda privada, creación/cancelación de invitaciones, reportes propios |
 | Residente adicional | Consulta de su casa, invitaciones e historial; reportes propios históricos |
-| Guardia | Panel `/guardia`, historial mínimo y escáner `/guardia/escanear`; entrada/salida solo mediante RPC autorizado del propio condominio. Sin gestión administrativa ni escrituras directas |
+| Guardia | Panel `/guardia`, historial mínimo, escáner `/guardia/escanear` y salida sin QR `/guardia/salidas`; movimientos solo mediante RPC autorizado del propio condominio. Sin gestión administrativa ni escrituras directas |
 | Visitante | Solo proyección de su invitación mediante token; sin acceso general a tablas |
 
 Las políticas RLS limitan lecturas; ningún cliente tiene INSERT/UPDATE/DELETE general. Los RPCs de escritura autorizan identidad y pertenencia, con transacciones. Un perfil inactivo o residente sin habitante activo queda bloqueado. La provisión inicial y vinculación de cuentas se ejecutan de forma controlada, fuera del frontend.
@@ -48,9 +48,9 @@ Los RPCs expuestos son SECURITY INVOKER. La lógica privilegiada está en access
 
 ## Configuración compartida
 
-La configuración existente de `.env.local`, las migraciones anteriores y los datos se conservan. Esta etapa añade únicamente `20260918000100_guard_scanning.sql`, la undécima migración: amplía el motor de validación y el registro existente para guardia, método manual y nombre del operador. Las diez anteriores permanecen intactas. Antes de publicar, el responsable debe verificar el historial y aplicar solo las versiones faltantes en orden, incluidas caseta y consulta pública si aún faltan.
+La configuración existente de `.env.local`, las once migraciones aplicadas y los datos se conservan. Esta mejora añade únicamente `20260918000200_open_visit_exits.sql`: proyección pública con `hasOpenEntry`, listado mínimo de pendientes y salida manual delegada al motor de accesos existente. El responsable debe revisar/aplicar solo esta versión nueva y publicar el frontend actualizado.
 
-Seguir [GUARD_SCANNING.md](docs/GUARD_SCANNING.md) y los recorridos de [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. `npm run backend:check` conserva el chequeo base e indica si detecta `guardWorkspaceVersion: 1`, `publicInvitationVersion: 2` y `guardScanningVersion: 1`; no prueba login, cámara ni despliegue. No se ejecutó contra el proyecto en esta entrega.
+Seguir [OPEN_VISIT_EXITS.md](docs/OPEN_VISIT_EXITS.md) y [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. `npm run backend:check` indica las capacidades existentes y, para esta mejora, `publicInvitationVersion: 3` y `openVisitExitsVersion: 1`; no prueba login, cámara ni despliegue. No se ejecutó contra el proyecto en esta entrega.
 
 Para instalaciones completamente nuevas, [SHARED_BACKEND_SETUP.md](docs/SHARED_BACKEND_SETUP.md) documenta la base inicial. Mantener expuesto `accesshome` y privado `accesshome_private`.
 

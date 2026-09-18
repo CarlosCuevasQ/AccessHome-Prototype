@@ -5,6 +5,11 @@ export type GuardAccess = Pick<AccessRecord, 'id' | 'visitorName' | 'residenceNa
 }
 export type GuardScanRecord = Omit<GuardAccess, 'vehicle'> & Pick<AccessRecord, 'vehicle' | 'validatorName' | 'invitationStatusBefore' | 'invitationEffectiveStatusBefore'>
 export type GuardScanResult = AccessResult<GuardScanRecord>
+export interface GuardOpenVisits {
+  timeZone: string
+  hasMore: boolean
+  records: GuardAccess[]
+}
 export interface GuardDashboard {
   guardName: string
   condominiumName: string

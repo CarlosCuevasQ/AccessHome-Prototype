@@ -1,17 +1,14 @@
 # Escáner de guardia y movimientos compartidos
 
-Etapa implementada localmente. **La migración de escaneo no se aplicó al proyecto remoto y las cámaras físicas no se probaron.** No hubo commit, push, despliegue, modificación de `.env.local` ni operaciones sobre datos remotos.
+El responsable confirmó las once migraciones aplicadas y las pruebas QR de entrada/salida en dispositivos reales. La mejora de salida sin QR y conservación del QR para visitas abiertas requiere **`20260918000200_open_visit_exits.sql`**, todavía pendiente de aplicación remota. Esta entrega no hizo cambios remotos.
 
-## Preparar el proyecto de ensayo
+## Preparar el proyecto de ensayo existente
 
-1. El responsable debe seleccionar el mismo Supabase de ensayo y revisar su historial de migraciones. Las ocho iniciales ya están aplicadas según su confirmación. Verificar las incrementales `20260917000600_guard_workspace.sql` y `20260917000700_public_invitation_sharing.sql`; aplicar solo las que falten, en orden, siguiendo [GUARD_SETUP.md](GUARD_SETUP.md) y [DEPLOYMENT.md](DEPLOYMENT.md).
-2. Revisar y aplicar **únicamente la nueva versión pendiente** [`20260918000100_guard_scanning.sql`](../supabase/migrations/20260918000100_guard_scanning.sql) completa como propietario controlado. Puede usarse SQL Editor o el procedimiento CLI con historial reconciliado, revisión de `supabase migration list` y `supabase db push --dry-run` antes de autorizar la aplicación. Son instrucciones para el responsable: no se ejecutaron contra su proyecto. No repetir archivos aplicados, `seed_demo`, provisión existente ni reset.
-3. Ejecutar la auditoría de solo lectura [`security_baseline.sql`](../supabase/tests/security_baseline.sql), ahora correspondiente a las once migraciones. Debe terminar sin excepciones. Mantener `accesshome` expuesto y `accesshome_private` fuera de Data API/Extra search path.
-4. Ejecutar `npm run backend:check`: esperar esquema base 9, `guardWorkspaceVersion: 1`, `publicInvitationVersion: 2` y **`guardScanningVersion: 1`**. La versión base no es un contador de migraciones. Este chequeo no demuestra permisos con Auth ni funcionamiento de la cámara. Si falta la nueva versión, detener la prueba de escaneo y resolver la migración; no conceder permisos generales ni recurrir al almacenamiento local.
-5. Reutilizar la cuenta Auth individual y el perfil `guard` del condominio. Si aún no existen, el responsable sigue el procedimiento controlado de [GUARD_SETUP.md](GUARD_SETUP.md); la aplicación no crea cuentas ni asigna roles. No cambiar perfiles de residentes/administradores ni guardar contraseñas en código.
-6. Compilar/publicar el frontend solo cuando lo autorice el responsable. No hay variables nuevas: siguen siendo exactamente `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` de `.env.example`, del mismo proyecto de ensayo. Para teléfonos usar la dirección HTTPS real del deployment; abrir HTTP por IP LAN no habilita cámara. Ver [requisitos de getUserMedia](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia).
+Seguir [OPEN_VISIT_EXITS.md](OPEN_VISIT_EXITS.md): revisar historial, aplicar únicamente la versión 20260918000200, ejecutar la auditoría para doce migraciones y comprobar `publicInvitationVersion: 3` / `openVisitExitsVersion: 1`. No repetir las once anteriores ni `seed_demo`. Mantener `accesshome_private` fuera de Data API. El escáner base conserva `guardScanningVersion: 1`.
 
-La nueva migración no crea tablas ni reescribe filas anteriores. Amplía el CHECK de `access_records.method` para `MANUAL` y añade `validator_name` nullable; los registros previos mantienen sus valores y el nuevo campo nulo, sin backfill. Reemplaza la implementación de validación por un solo motor y conserva la firma anterior. El cambio requiere un bloqueo breve de esquema sobre `access_records`; aplicarlo en una ventana de ensayo sin operaciones de caseta en curso.
+Reutilizar cuentas existentes y las dos variables públicas de `.env.example`. No hay claves ni dependencias nuevas. El responsable publica el frontend por el procedimiento autorizado en [DEPLOYMENT.md](DEPLOYMENT.md). Las pruebas con nuevas salidas y teléfonos remotos quedan pendientes después de aplicar/publicar.
+
+La versión de escaneo 20260918000100 ya aplicada amplió el CHECK de métodos y añadió snapshots del operador y estado anterior. La versión 20260918000200 solo añade/reemplaza funciones: no altera tablas ni filas. La salida sin QR confirma visitante, residencia y hora en `/guardia/salidas` antes de delegar al mismo motor con método MANUAL.
 
 ## Operación en caseta
 

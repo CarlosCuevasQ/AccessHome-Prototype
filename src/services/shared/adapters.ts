@@ -76,7 +76,15 @@ export const sharedHistory = {
   listRecords: (filters: AccessHistoryFilters = {}) => rpc<AccessRecord[]>('list_access', { filters }),
 }
 let retry: { token: string; requestId: string; method: string } | null = null
-export function clearSharedSession() { retry = null }
+let exitRetry: { entryId: string; requestId: string } | null = null
+export function clearSharedSession() { retry = null; exitRetry = null }
+export async function registerSharedExit<T>(entryId: string): Promise<T> {
+  if (exitRetry?.entryId !== entryId) exitRetry = { entryId, requestId: generateId() }
+  const attempt = exitRetry
+  const result = await rpc<T>('guard_register_exit', { entry_id: entryId, request_id: attempt.requestId }, true)
+  if (exitRetry === attempt) exitRetry = null
+  return result
+}
 // Shared by admin and guard. An ambiguous response retains the same operation ID.
 export async function validateSharedAccess<T>(token: string, method?: 'QR' | 'MANUAL'): Promise<T> {
   const normalized = token.trim()

@@ -176,7 +176,7 @@ test('invitación compartida: snapshot, token CSPRNG separado, consulta de otro 
  await assert.rejects(as('ana','cancel_invitation',[id]),/no disponible/)
  await assert.rejects(as('outsider','invitation_details',[id]),/no disponible/)
  const projection=await as(null,'public_invitation',[i.token,null])
- assert.deepEqual(Object.keys(projection).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status'].sort())
+ assert.deepEqual(Object.keys(projection).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status','hasOpenEntry'].sort())
 })
 test('visitante público: solo consulta; vehicle rechazado sin modificar datos',async()=>{
  assert.equal(await as(null,'public_invitation',['invalid',null]),null)
@@ -214,7 +214,7 @@ test('consulta anónima usa estado actual en servidor: activa, cancelada, expira
    const data=await call(tx,'public_invitation',[item.token,null])
    assert.equal(data.status,state)
    assert.equal(data.condominiumName,condoName)
-   assert.deepEqual(Object.keys(data).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status'].sort())
+   assert.deepEqual(Object.keys(data).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status','hasOpenEntry'].sort())
    const headers=(await tx.query("select current_setting('response.headers') as value")).rows[0].value
    assert.deepEqual(JSON.parse(headers),[{'Cache-Control':'no-store'}])
   })

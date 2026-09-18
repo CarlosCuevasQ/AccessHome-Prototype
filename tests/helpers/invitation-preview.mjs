@@ -16,6 +16,22 @@ const seed=(await db.query('select accesshome_private.seed_demo($1) as data',[JS
 users.guard=randomUUID()
 await db.query('insert into auth.users values($1)',[users.guard])
 await db.query('select accesshome_private.provision_guard($1,$2,$3)',[users.guard,seed.condominiumId,'Claudia Seguridad'])
+// Optional examples exist only in this newly allocated, disposable database.
+if(process.argv.includes('--open-exits')) {
+ for(const [visitorName,status,hasEntry] of [['Visita cancelada','cancelada',true],['Visita vencida','expirada',true],['Sin entrada','expirada',false]]) {
+  await db.transaction(async tx=>{
+   await tx.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:users.daniel,is_anonymous:false})])
+   const id=(await tx.query('select accesshome.create_invitation($1) as data',[JSON.stringify({source:'occasional',visitorName,phone:'',vehicle:{plates:'DEMO-24',brand:'',model:'',color:''},saveAsContact:false,validity:{kind:'24hours'}})])).rows[0].data
+   const invitation=(await tx.query('select accesshome.invitation_details($1) as data',[id])).rows[0].data
+   if(hasEntry) {
+    await tx.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:users.guard,is_anonymous:false})])
+    await tx.query("select accesshome.validate_access($1,$2,'QR')",[invitation.token,randomUUID()])
+    await tx.query("update accesshome.access_records set occurred_at=now()-interval '1 hour' where invitation_id=$1",[id])
+   }
+   await tx.query("update accesshome.invitations set status=$2::accesshome.invitation_status,starts_at=now()-interval '2 days',expires_at=now()-interval '1 day' where id=$1",[id,status])
+  })
+ }
+}
 const accounts={'resident@fixture.invalid':users.daniel,'guard@fixture.invalid':users.guard,'admin@fixture.invalid':users.admin}
 const sessions=new Map()
 const queries={
@@ -27,6 +43,8 @@ const queries={
  list_access:b=>['select accesshome.list_access($1::jsonb) as data',[JSON.stringify(b.filters??{})]],
  guard_dashboard:()=>['select accesshome.guard_dashboard() as data',[]],
  guard_history:b=>['select accesshome.guard_history($1,$2) as data',[b.movement??'',b.page??0]],
+ guard_open_visits:b=>['select accesshome.guard_open_visits($1) as data',[b.page??0]],
+ guard_register_exit:b=>['select accesshome.guard_register_exit($1,$2) as data',[b.entry_id,b.request_id]],
  validate_access:b=>['select accesshome.validate_access($1,$2,$3) as data',[b.token,b.request_id,b.scan_method??'QR']],
  contact_access:()=>['select accesshome.contact_access() as data',[]],
  invitation_context:()=>['select accesshome.invitation_context() as data',[]],

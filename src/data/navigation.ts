@@ -8,6 +8,7 @@ export const workspaces: Record<WorkspaceRole, WorkspaceConfig> = {
     navigation: [
       { label: 'Caseta', path: '/guardia' },
       { label: 'Escanear acceso', path: '/guardia/escanear' },
+      { label: 'Salida sin QR', path: '/guardia/salidas' },
       { label: 'Registrar servicio', path: '/guardia/servicios' },
       { label: 'Historial', path: '/guardia/historial' },
       { label: 'Reportes de turno', path: '/guardia/reportes' },

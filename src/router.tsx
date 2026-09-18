@@ -27,6 +27,7 @@ import { GuardDashboardPage } from './pages/GuardDashboardPage'
 import { GuardHistoryPage } from './pages/GuardHistoryPage'
 import { GuardUpcomingPage } from './pages/GuardUpcomingPage'
 import { GuardScanPage } from './pages/GuardScanPage'
+import { GuardExitPage } from './pages/GuardExitPage'
 
 export const router = createBrowserRouter([
   {
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
       { index: true, element: <GuardDashboardPage /> },
       { path: 'historial', element: <GuardHistoryPage /> },
       { path: 'escanear', element: <GuardScanPage /> },
+      { path: 'salidas', element: <GuardExitPage /> },
       { path: 'servicios', element: <GuardUpcomingPage stage="services" /> },
       { path: 'reportes', element: <GuardUpcomingPage stage="reports" /> },
       { path: '*', element: <NotFoundPage homePath="/guardia" /> },

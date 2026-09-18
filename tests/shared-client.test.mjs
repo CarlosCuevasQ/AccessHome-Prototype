@@ -31,10 +31,11 @@ globalThis.fetch=async (url,options={})=>{
  }
  if(path==='/auth/v1/logout') return new Response('{}',{status:200})
  if(path.endsWith('/session_profile')) return new Response(JSON.stringify(profile),{status:200})
- if(path.endsWith('/validate_access') && lostAccessResponse) throw new TypeError('Fixture: response lost')
+ if((path.endsWith('/validate_access') || path.endsWith('/guard_register_exit')) && lostAccessResponse) throw new TypeError('Fixture: response lost')
  if(profile?.role==='guard' && path.endsWith('/manage_community')) return new Response(JSON.stringify({code:'42501',message:'Denied'}),{status:403})
  if(path.endsWith('/guard_dashboard')) return new Response(JSON.stringify({guardName:profile.name,condominiumName:'Condominio fixture',todayAccessCount:2}),{status:200})
  if(path.endsWith('/guard_history')) return new Response(JSON.stringify({records:[],hasMore:false}),{status:200})
+ if(path.endsWith('/guard_open_visits')) return new Response(JSON.stringify({records:[],hasMore:false,timeZone:'America/Mexico_City'}),{status:200})
  return new Response(JSON.stringify(path.endsWith('/create_invitation')?'new-invitation':[]),{status:200})
 }
 globalThis.window=new EventTarget()
@@ -54,6 +55,27 @@ const {readDemoData,writeDemoData}=await import('../.test-build/services/demoSto
 const {getClient}=await import('../.test-build/services/shared/client.js')
 after(()=>{ getClient().auth.stopAutoRefresh(); globalThis.fetch=originalFetch; hooks.deregister(); delete globalThis.window })
 
+test('salida sin QR: RPC acotado, reintento de red con mismo ID y limpieza al cerrar sesión',async()=>{
+ const entry=randomUUID()
+ assert.deepEqual((await guardService.getOpenVisits(1)).records,[])
+ assert.deepEqual(requests.findLast(r=>r.path.endsWith('/guard_open_visits')).body,{page:1})
+ lostAccessResponse=true
+ await assert.rejects(guardService.registerExit(entry))
+ const first=requests.findLast(r=>r.path.endsWith('/guard_register_exit')).body
+ assert.deepEqual(Object.keys(first).sort(),['entry_id','request_id'])
+ assert.equal(first.entry_id,entry)
+ lostAccessResponse=false
+ await guardService.registerExit(entry)
+ assert.deepEqual(requests.findLast(r=>r.path.endsWith('/guard_register_exit')).body,first)
+ lostAccessResponse=true
+ await assert.rejects(guardService.registerExit(entry))
+ const uncertain=requests.findLast(r=>r.path.endsWith('/guard_register_exit')).body
+ await authService.logout()
+ lostAccessResponse=false
+ await guardService.registerExit(entry)
+ assert.notEqual(requests.findLast(r=>r.path.endsWith('/guard_register_exit')).body.request_id,uncertain.request_id)
+})
+
 test('Auth real adapter sends individual credentials to Auth and resolves the role through RPC',async()=>{
  const password=randomUUID()
  const user=await authService.login({email:'daniel@example.test',password})
@@ -65,13 +87,14 @@ test('Auth real adapter sends individual credentials to Auth and resolves the ro
  assert.equal((await authService.getSession()).residenceId,profile.residenceId)
 })
 test('all service facades select the shared provider; no domain localStorage reads/writes',async()=>{
+ const start=requests.length
  await communityService.getSummary(); await communityService.listResidences(); await communityService.getResidence()
  await contactsService.listContacts(); await invitationsService.listInvitations()
  await invitationsService.createInvitation({source:'occasional',visitorName:'Test',phone:'',vehicle:null,saveAsContact:false,validity:{kind:'24hours'}})
  await invitationsService.cancelInvitation('new-invitation'); await publicInvitationService.getInvitation('token-fixture')
  await reportsService.listReports(); await accessHistoryService.listRecords(); await dashboardService.getResidentDashboard()
  await demoService.getProfileContext(profile.id)
- const rpcRequests=requests.filter(r=>r.path.includes('/rpc/'))
+ const rpcRequests=requests.slice(start).filter(r=>r.path.includes('/rpc/'))
  for(const request of rpcRequests) {
   assert.equal(request.headers.get('content-profile'),'accesshome')
   assert.equal(request.headers.get('authorization'),request.path.endsWith('/public_invitation') ? 'Bearer '+fixtureEnv.VITE_SUPABASE_PUBLISHABLE_KEY : 'Bearer fixture.token.only')

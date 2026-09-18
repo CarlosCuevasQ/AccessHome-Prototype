@@ -23,7 +23,7 @@ export function PublicInvitationPage() {
       <h1>{data.visitorName}</h1>
       <p className="visitor-destination">{data.residenceName} <span>{data.condominiumName}</span></p>
       <InvitationStatusLabel status={data.status} />
-      <InvitationQr token={data.token} visitorName={data.visitorName} status={data.status} />
+      <InvitationQr token={data.token} visitorName={data.visitorName} status={data.status} hasOpenEntry={data.hasOpenEntry} />
       <section className="visitor-details" aria-label="Vigencia de tu visita">
         <h2>Vigencia</h2>
         <dl className="detail-fields">

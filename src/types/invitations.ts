@@ -46,4 +46,6 @@ export interface PublicInvitation {
   startsAt: string
   expiresAt: string
   status: InvitationStatus
+  /** Shared backend ledger projection. Missing on older backends/local demo. */
+  hasOpenEntry?: boolean
 }

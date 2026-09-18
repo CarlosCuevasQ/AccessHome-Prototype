@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { PGlite } from '@electric-sql/pglite'
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
 import { installSharedSchema } from './helpers/shared-sql-fixture.mjs'
+import { invitationQrPurpose } from '../.test-build/services/invitationQrPurpose.js'
 
 const db=new PGlite({extensions:{pgcrypto}})
 const users=Object.fromEntries(['admin','daniel','ana','guard','guard2','other','unassigned'].map(name=>[name,randomUUID()]))
@@ -32,6 +33,99 @@ before(async()=>{
   await db.query('select accesshome_private.provision_guard($1,$2,$3)',[users.other,other,'Guardia ajeno'])
 })
 after(()=>db.close())
+
+const publicView=i=>call(null,'select accesshome.public_invitation($1,null) as data',[i.token])
+const openVisits=(user='guard',page=0)=>call(user,'select accesshome.guard_open_visits($1) as data',[page])
+const manualExit=(entryId,user='guard',request=randomUUID())=>call(user,'select accesshome.guard_register_exit($1,$2) as data',[entryId,request])
+
+for (const state of ['cancelada','expirada']) {
+ test('QR público '+state+': solo salida con entrada real, sin revelar historial',async()=>{
+  const i=await invite()
+  const initial=await publicView(i)
+  assert.equal(initial.hasOpenEntry,false)
+  assert.equal(invitationQrPurpose(initial.status,initial.hasOpenEntry),'access')
+  await scan(i.token); await ageEntry(i.id)
+  if(state==='cancelada') await call('daniel','select accesshome.cancel_invitation($1) as data',[i.id])
+  else await db.query("update accesshome.invitations set starts_at=now()-interval '2 days',expires_at=now()-interval '1 day' where id=$1",[i.id])
+  const projection=await publicView(i)
+  assert.equal(projection.status,state); assert.equal(projection.hasOpenEntry,true)
+  assert.equal(invitationQrPurpose(projection.status,projection.hasOpenEntry),'exit')
+  assert.deepEqual(Object.keys(projection).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status','hasOpenEntry'].sort())
+  assert.equal(projection.token,i.token)
+  const result=await scan(i.token)
+  assert.equal(result.authorized,true); assert.equal(result.record.type,'salida'); assert.equal(result.record.method,'QR')
+  assert.equal(result.record.invitationEffectiveStatusBefore,state)
+  const final=await publicView(i)
+  assert.equal(final.hasOpenEntry,false); assert.equal(final.status,'completada')
+  assert.equal(invitationQrPurpose(final.status,final.hasOpenEntry),'unavailable')
+  assert.equal((await scan(i.token)).reason,'completed')
+  const unused=await invite()
+  if(state==='cancelada') await call('daniel','select accesshome.cancel_invitation($1) as data',[unused.id])
+  else await db.query("update accesshome.invitations set starts_at=now()-interval '2 days',expires_at=now()-interval '1 day' where id=$1",[unused.id])
+  const denied=await publicView(unused)
+  assert.equal(denied.hasOpenEntry,false)
+  assert.equal(invitationQrPurpose(denied.status,denied.hasOpenEntry),'unavailable')
+  assert.equal((await scan(unused.token)).authorized,false)
+ })
+}
+
+test('presentación: backend anterior sin indicador falla cerrado; completada nunca muestra QR utilizable',()=>{
+ for(const status of ['expirada','cancelada','completada']) assert.equal(invitationQrPurpose(status),'unavailable')
+ assert.equal(invitationQrPurpose('completada',true),'unavailable')
+ assert.equal(invitationQrPurpose('cancelada','true'),'unavailable')
+})
+
+for(const state of ['activa','cancelada','expirada']) {
+ test('salida sin QR '+state+': lista, confirmación por ID, trazabilidad e idempotencia',async()=>{
+  const i=await invite(), entry=await scan(i.token)
+  await ageEntry(i.id)
+  if(state==='cancelada') await call('daniel','select accesshome.cancel_invitation($1) as data',[i.id])
+  if(state==='expirada') await db.query("update accesshome.invitations set starts_at=now()-interval '2 days',expires_at=now()-interval '1 day' where id=$1",[i.id])
+  const before=(await db.query('select * from accesshome.invitations where id=$1',[i.id])).rows[0]
+  const pending=(await openVisits()).records.find(r=>r.id===entry.record.id)
+  assert.ok(pending); assert.equal(pending.visitorName,i.visitorName); assert.equal(pending.residenceName,i.residenceName)
+  assert.deepEqual(Object.keys(pending).sort(),['id','visitorName','residenceName','type','method','occurredAt','vehicle'].sort())
+  assert.deepEqual(pending.vehicle,{plates:i.vehicle.plates})
+  const request=randomUUID(), result=await manualExit(entry.record.id,'guard',request)
+  assert.equal(result.authorized,true); assert.equal(result.record.type,'salida'); assert.equal(result.record.method,'MANUAL')
+  assert.equal(result.record.invitationEffectiveStatusBefore,state)
+  assert.deepEqual(await manualExit(entry.record.id,'guard',request),{...result,replayed:true})
+  assert.equal((await manualExit(entry.record.id)).authorized,false)
+  assert.equal((await manualExit(result.record.id)).authorized,false)
+  assert.equal((await openVisits()).records.some(r=>r.id===entry.record.id),false)
+  const stored=await rows(i.id)
+  assert.equal(stored.length,2); assert.equal(stored[1].validated_by,users.guard)
+  const after=(await db.query('select * from accesshome.invitations where id=$1',[i.id])).rows[0]
+  assert.deepEqual(after.starts_at,before.starts_at); assert.deepEqual(after.expires_at,before.expires_at)
+  assert.equal(after.status,'completada')
+  assert.equal((await publicView(i)).token,i.token)
+  const history=await call('admin','select accesshome.list_access() as data')
+  assert.equal(history.find(r=>r.id===result.record.id).method,'MANUAL')
+  await assert.rejects(manualExit(entry.record.id,'guard2',request),/operación no disponible/)
+ })
+}
+
+test('salida sin QR: autorización interna incluso al llamar la función privada, IDs y estado inválidos',async()=>{
+ const i=await invite(), request=randomUUID()
+ const entry=await scan(i.token,'guard',request,'MANUAL'); await ageEntry(i.id)
+ for(const user of [null,'daniel','ana','admin','unassigned']) {
+  await assert.rejects(openVisits(user),/permission denied|Solo un guardia/)
+  await assert.rejects(manualExit(entry.record.id,user),/permission denied|Solo un guardia/)
+  await assert.rejects(call(user,'select accesshome_private.guard_register_exit($1,$2) as data',[entry.record.id,randomUUID()]),/permission denied|Solo un guardia/)
+ }
+ assert.deepEqual((await openVisits('other')).records,[])
+ assert.equal((await manualExit(entry.record.id,'other')).reason,'not_found')
+ assert.equal((await manualExit(i.id)).reason,'not_found') // An invitation ID is not an entry.
+ assert.equal((await manualExit(randomUUID())).reason,'not_found')
+ await assert.rejects(manualExit(entry.record.id,'guard',request),/operación no disponible/) // Never replay an entry as an exit.
+ await assert.rejects(manualExit(entry.record.id,'guard',null),/Identificador/)
+ for(const page of [-1,10001,null]) await assert.rejects(openVisits('guard',page),/Página/)
+ await db.query('select accesshome_private.set_guard_active($1,$2,false)',[users.guard,seed.condominiumId])
+ try {await assert.rejects(manualExit(entry.record.id),/Solo un guardia/); await assert.rejects(openVisits(),/Solo un guardia/)}
+ finally {await db.query('select accesshome_private.set_guard_active($1,$2,true)',[users.guard,seed.condominiumId])}
+ assert.equal((await rows(i.id)).length,1)
+ assert.equal((await manualExit(entry.record.id)).authorized,true)
+})
 
 test('guardia: entrada, salida, método/actor/servidor persistidos y tercer intento rechazado',async()=>{
   const i=await invite()
@@ -148,6 +242,7 @@ test('roles, condominio y actividad se autorizan en SQL sin acceso a tablas ni m
 test('secuencia incoherente rechazada; fallo de insert revierte contador e historial juntos',async()=>{
   const i=await invite()
   await db.query('update accesshome.invitations set used_uses=1 where id=$1',[i.id])
+  assert.equal((await publicView(i)).hasOpenEntry,false) // Ledger evidence, not a counter.
   assert.equal((await scan(i.token)).reason,'invalid_sequence')
   await db.query('update accesshome.invitations set used_uses=0 where id=$1',[i.id])
   await db.exec("create function accesshome_private.fixture_failure() returns trigger language plpgsql as $$ begin raise exception 'fixture failure'; end $$; create trigger fixture_failure before insert on accesshome.access_records for each row execute function accesshome_private.fixture_failure();")
@@ -155,4 +250,20 @@ test('secuencia incoherente rechazada; fallo de insert revierte contador e histo
   finally { await db.exec('drop trigger fixture_failure on accesshome.access_records; drop function accesshome_private.fixture_failure();') }
   assert.equal((await rows(i.id)).length,0)
   assert.equal((await db.query('select used_uses from accesshome.invitations where id=$1',[i.id])).rows[0].used_uses,0)
+})
+
+test('pendientes paginados incluyen visitas antiguas y nunca historial de salidas',async()=>{
+ const created=[]
+ for(let n=0;n<51;n++) {
+  const i=await invite(), entry=await scan(i.token)
+  created.push(entry.record.id)
+ }
+ await db.query("update accesshome.access_records set occurred_at=now()-interval '10 days' where id=$1",[created[0]])
+ const first=await openVisits('guard',0),second=await openVisits('guard',1)
+ assert.equal(first.records.length,50);assert.equal(first.hasMore,true);assert.equal(second.hasMore,false)
+ const ids=[...first.records,...second.records].map(r=>r.id)
+ assert.equal(new Set(ids).size,ids.length)
+ for(const id of created) assert.ok(ids.includes(id))
+ assert.ok(first.records.some(r=>r.id===created[0]))
+ assert.deepEqual((await openVisits('other')).records,[])
 })

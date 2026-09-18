@@ -50,6 +50,9 @@ before(async () => {
   await db.exec(await readFile('supabase/migrations/20260917000700_public_invitation_sharing.sql','utf8'))
   afterSharing = await snapshot()
   await db.exec(await readFile('supabase/migrations/20260918000100_guard_scanning.sql','utf8'))
+  const beforeExits = await snapshot()
+  await db.exec(await readFile('supabase/migrations/20260918000200_open_visit_exits.sql','utf8'))
+  assert.deepEqual(await snapshot(),beforeExits)
   const afterScanning = await snapshot()
   for (const row of afterScanning['accesshome.access_records']) {
     for (const field of ['validator_name','invitation_status_before','invitation_effective_status_before']) {
@@ -68,7 +71,8 @@ test('incremental de caseta conserva cada fila de las ocho migraciones ya poblad
   assert.deepEqual(afterUpgrade,beforeUpgrade)
   assert.deepEqual(afterSharing,afterUpgrade)
   assert.equal((await call(null,'backend_health')).guardWorkspaceVersion,1)
-  assert.equal((await call(null,'backend_health')).publicInvitationVersion,2)
+  assert.equal((await call(null,'backend_health')).publicInvitationVersion,3)
+  assert.equal((await call(null,'backend_health')).openVisitExitsVersion,1)
   assert.equal((await call(null,'backend_health')).guardScanningVersion,1)
   await db.exec(await readFile('supabase/tests/security_baseline.sql','utf8'))
 })
