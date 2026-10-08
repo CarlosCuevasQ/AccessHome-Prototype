@@ -2,7 +2,7 @@
 
 Prototipo universitario en React, Vite y TypeScript. Conserva las pantallas de administración, residencia, contactos, invitaciones/QR, historial y reportes.
 
-El responsable confirmó Vercel, Supabase, las once migraciones y el flujo QR de entrada/salida en dispositivos reales. Esta mejora conserva el QR exclusivamente para salir de una visita abierta cancelada/vencida y añade **Registrar salida sin QR** para guardias. Requiere la nueva migración `20260918000200_open_visit_exits.sql`, todavía pendiente de aplicación remota. Guía: [OPEN_VISIT_EXITS.md](docs/OPEN_VISIT_EXITS.md).
+El responsable confirmó Vercel, Supabase, las doce migraciones y el flujo QR/salida manual en dispositivos reales. El Prompt 13 añade **Servicios y repartidores**: caseta registra la llegada, confirma presencialmente la entrada o rechaza y registra la salida. No depende de una autorización residencial. Requiere únicamente la nueva migración `20260919000100_service_access.sql`, todavía pendiente de aplicación remota. Guía: [SERVICE_ACCESS.md](docs/SERVICE_ACCESS.md).
 
 ## Ejecutar
 
@@ -39,7 +39,7 @@ En modo compartido, cada persona usa su cuenta de Supabase Auth y una contraseñ
 | Administrador | Estructura y principales del propio condominio, consulta de habitantes/vehículos, control de acceso existente, historial y estados de reportes |
 | Residente principal | Habitantes/vehículos de su casa activa, agenda privada, creación/cancelación de invitaciones, reportes propios |
 | Residente adicional | Consulta de su casa, invitaciones e historial; reportes propios históricos |
-| Guardia | Panel `/guardia`, historial mínimo, escáner `/guardia/escanear` y salida sin QR `/guardia/salidas`; movimientos solo mediante RPC autorizado del propio condominio. Sin gestión administrativa ni escrituras directas |
+| Guardia | Panel `/guardia`, historial mínimo, escáner `/guardia/escanear`, salida sin QR `/guardia/salidas` y servicios `/guardia/servicios`; operaciones mediante RPC del propio condominio. Sin gestión administrativa ni escrituras directas |
 | Visitante | Solo proyección de su invitación mediante token; sin acceso general a tablas |
 
 Las políticas RLS limitan lecturas; ningún cliente tiene INSERT/UPDATE/DELETE general. Los RPCs de escritura autorizan identidad y pertenencia, con transacciones. Un perfil inactivo o residente sin habitante activo queda bloqueado. La provisión inicial y vinculación de cuentas se ejecutan de forma controlada, fuera del frontend.
@@ -48,9 +48,9 @@ Los RPCs expuestos son SECURITY INVOKER. La lógica privilegiada está en access
 
 ## Configuración compartida
 
-La configuración existente de `.env.local`, las once migraciones aplicadas y los datos se conservan. Esta mejora añade únicamente `20260918000200_open_visit_exits.sql`: proyección pública con `hasOpenEntry`, listado mínimo de pendientes y salida manual delegada al motor de accesos existente. El responsable debe revisar/aplicar solo esta versión nueva y publicar el frontend actualizado.
+La configuración existente de `.env.local`, las doce migraciones aplicadas y los datos se conservan. Esta etapa añade únicamente `20260919000100_service_access.sql`: registros y eventos de servicios, RPCs privados con interfaces mínimas, RLS y permisos específicos. El responsable debe revisar/aplicar solo esta versión nueva y publicar el frontend actualizado.
 
-Seguir [OPEN_VISIT_EXITS.md](docs/OPEN_VISIT_EXITS.md) y [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. `npm run backend:check` indica las capacidades existentes y, para esta mejora, `publicInvitationVersion: 3` y `openVisitExitsVersion: 1`; no prueba login, cámara ni despliegue. No se ejecutó contra el proyecto en esta entrega.
+Seguir [SERVICE_ACCESS.md](docs/SERVICE_ACCESS.md) y [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. `npm run backend:check` debe indicar `serviceAccessVersion: 1` después de aplicar la nueva migración; conserva las capacidades anteriores. No prueba login, cámara ni despliegue. No se ejecutó contra el proyecto en esta entrega.
 
 Para instalaciones completamente nuevas, [SHARED_BACKEND_SETUP.md](docs/SHARED_BACKEND_SETUP.md) documenta la base inicial. Mantener expuesto `accesshome` y privado `accesshome_private`.
 
@@ -66,13 +66,15 @@ El enlace del visitante consulta la misma base desde cualquier dispositivo con a
 
 El detalle ofrece **Compartir invitación**, **Enviar por WhatsApp** y **Copiar enlace**. Usa Web Share cuando está disponible, copia alternativa y selección manual si el portapapeles falla. WhatsApp solo prepara el mensaje; el residente elige destinatario y envío. Enlace y QR usan el origen real del deployment, sin una nueva variable ni dominios inventados.
 
-La vista pública no requiere cuenta: un cliente Supabase anónimo sin persistencia de sesión consulta visitante, casa/condominio, vigencia y estado. No muestra anfitrión, teléfono, correo, usos ni vehículo. Las invitaciones canceladas, expiradas o completadas conservan su estado visible y retiran el QR. **Actualizar estado** permite consultar inmediatamente; el refresco visible automático usa 10 segundos. La interfaz y el RPC público son de solo lectura: el parámetro `vehicle` se conserva por compatibilidad de firma, pero cualquier objeto no nulo se rechaza sin modificar la invitación. El residente debe definir el vehículo al crearla.
+La vista pública no requiere cuenta: un cliente Supabase anónimo sin persistencia de sesión consulta visitante, casa/condominio, vigencia y estado. No muestra anfitrión, teléfono, correo, usos ni vehículo. Las canceladas o expiradas conservan QR exclusivamente para salir si existe entrada abierta; sin entrada o completadas no muestran QR utilizable. **Actualizar estado** permite consultar inmediatamente; el refresco visible automático usa 10 segundos. La interfaz y el RPC público son de solo lectura: el parámetro `vehicle` se conserva por compatibilidad de firma, pero cualquier objeto no nulo se rechaza sin modificar la invitación. El residente debe definir el vehículo al crearla.
 
 Las consultas refrescan al abrir la pantalla, recuperar foco o conexión y después de escrituras locales. Las pantallas que ya actualizaban automáticamente consultan cada 10 segundos en compartido, solo si están visibles. No se usa Realtime ni infraestructura adicional. Los dashboards agregan en SQL y devuelven solo cinco movimientos recientes.
 
 El control administrativo y el escáner de guardia reutilizan un único motor `validate_access`, con autorización SQL, bloqueo, secuencia entrada/salida e idempotencia. `/guardia/escanear` solicita cámara solo al pulsar **Activar cámara**; permite detenerla o pegar el enlace/token manualmente. Cada lectura detiene el stream y conserva el resultado hasta **Escanear siguiente**. Un fallo de red ofrece reintentar la misma operación; no anuncia autorización. Las lecturas de guardia de una misma visita deben separarse al menos 3 segundos, además de la protección transaccional contra solicitudes simultáneas.
 
-Los movimientos guardan la identidad del operador, snapshots del visitante/residencia/vehículo, fecha del servidor, método QR/MANUAL y resultado autorizado. Los rechazos no crean movimientos. Administración y residencia consultan el historial compartido existente. Caseta/historial de guardia refrescan cada 30 segundos visibles, al consultar o recuperar foco; historial de siete días y 50 registros por página. **Registrar servicio** y **Reportes de turno** conservan sus estados de próxima etapa.
+Los movimientos guardan la identidad del operador, snapshots del visitante/residencia/vehículo, fecha del servidor, método QR/MANUAL y resultado autorizado. Los rechazos no crean movimientos. Administración y residencia consultan el historial compartido existente. Caseta/historial de guardia refrescan cada 30 segundos visibles, al consultar o recuperar foco; historial de siete días y 50 registros por página. **Reportes de turno** permanece como próxima etapa.
+
+Servicios tiene estados Registrado, Rechazado, En sitio, Finalizado y Cancelado. Registrar llegada no produce entrada: requiere una segunda acción explícita con confirmación. La vigencia de 30 minutos limita nuevas entradas; una entrada abierta puede cerrarse después. Empresa sugerida no otorga permisos. `/admin/servicios` consulta por separado llegadas, decisiones, entrada/salida MANUAL y responsables. Ambas pantallas refrescan cada 15 segundos visibles. El módulo exige modo compartido; no escribe servicios en localStorage ni añade acciones al residente.
 
 En la demo local, los identificadores se generan con Web Crypto comprobando disponibilidad; se eliminó el fallback de Math.random/timestamp. Los tokens locales históricos no se publican ni migran automáticamente.
 
@@ -81,7 +83,9 @@ En la demo local, los identificadores se generan con Web Crypto comprobando disp
 ```sh
 npm test
 npm run test:concurrency
-npm run build
+npm run build:vercel
+npm run deployment:check
+git diff --check
 npm run preview
 ```
 
@@ -90,6 +94,7 @@ Las pruebas incluyen regresión local, PostgreSQL/PGlite con pgcrypto, RLS, RPCs
 Para Vercel, Build Command **`npm run build:vercel`**, Output Directory **`dist`**, Node **24.x**, las mismas dos variables públicas del proyecto Supabase de ensayo. El build exige configuración compartida y ejecuta la revisión de secretos reconocibles en `dist` (`npm run deployment:check`). `vercel.json` prepara las rutas SPA, incluidos enlaces directos del visitante. El responsable importa el repositorio y autoriza el deployment siguiendo la guía; no se publica automáticamente desde esta tarea.
 
 - [Compartir invitaciones y desplegar el ensayo en Vercel](docs/DEPLOYMENT.md)
+- [Servicios y repartidores: estados, migración y prueba guardia/administrador](docs/SERVICE_ACCESS.md)
 - [Guardia: migración incremental y provisión segura](docs/GUARD_SETUP.md)
 - [Escáner QR, entradas/salidas y pruebas con dispositivos](docs/GUARD_SCANNING.md)
 - [Configuración base para instalaciones nuevas](docs/SHARED_BACKEND_SETUP.md)

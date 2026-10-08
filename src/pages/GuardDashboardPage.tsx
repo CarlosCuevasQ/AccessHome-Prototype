@@ -5,6 +5,7 @@ import { useCommunityQuery } from '../hooks/useCommunityQuery'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { AccessNotice } from '../components/AccessNotice'
 import { RecentAccess } from '../components/access/RecentAccess'
+import { ServiceSummary } from '../components/services/ServiceSummary'
 
 function GuardClock({ serverTime, timeZone }: { serverTime: string; timeZone: string }) {
   const [now, setNow] = useState(new Date(serverTime).getTime())
@@ -40,7 +41,7 @@ export function GuardDashboardPage() {
         <Link className="button-link guard-scan" to="/guardia/escanear">Escanear acceso</Link>
         <Link className="secondary-button" to="/guardia/salidas">Registrar salida sin QR</Link>
         <Link className="secondary-button" to="/guardia/historial">Historial</Link>
-        <Link className="secondary-button" to="/guardia/servicios">Registrar servicio <small>Próxima etapa</small></Link>
+        <Link className="secondary-button" to="/guardia/servicios">Registrar servicio</Link>
         <Link className="secondary-button" to="/guardia/reportes">Reportes de turno <small>Próxima etapa</small></Link>
       </nav>
       <dl className="summary-strip guard-metrics">
@@ -55,7 +56,7 @@ export function GuardDashboardPage() {
       </div>
       <RecentAccess records={data.pendingExits} title="Pendientes de salida" timeZone={data.timeZone} empty="No hay visitas con salida pendiente." />
       {data.pendingExitCount > data.pendingExits.length && <p className="form-help">Se muestran las 10 entradas pendientes más antiguas de {data.pendingExitCount}.</p>}
-      <section className="community-section"><h2>Servicios pendientes</h2><p>El registro de servicios se habilitará en una próxima etapa. Todavía no hay un módulo para consultar este dato.</p></section>
+      <ServiceSummary />
     </>}
     {error && <button type="button" className="secondary-button" onClick={() => setRevision(value => value + 1)}>Volver a consultar</button>}
   </section>

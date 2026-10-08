@@ -1,4 +1,15 @@
-## Estado actual · Mejora de etapa 12: salidas sin QR
+## Estado actual · Prompt 13: servicios y repartidores
+
+El responsable confirmó las doce migraciones hasta `20260918000200_open_visit_exits.sql` y los flujos anteriores en dispositivos reales. **Esta entrega añade `20260919000100_service_access.sql`, pendiente de aplicación remota y publicación del frontend.** Ninguna migración aplicada se editó.
+
+- Guardia: `/guardia/servicios`, llegada sin entrada, confirmación explícita, entrada/rechazo/cancelación y salida sin QR. Residencias activas del propio condominio; categorías/empresas sugeridas sin permisos automáticos. Sin autorización ni sesión residencial.
+- Admin: `/admin/servicios`, consulta separada de llegadas, decisiones, entrada/salida MANUAL y responsables. Estado/eventos atómicos, hora SQL, RLS y wrappers mínimos; bloqueos e idempotencia. Vigencia de 30 minutos para nuevas entradas, salida abierta permitida después del vencimiento.
+- `npm test`: **203/203**; `npm run test:concurrency`: **31/31** en PostgreSQL 17.10 local; `npm run build:vercel`: aprobado con revisión de artefacto. Persiste advertencia de chunk principal >500 kB. Regresiones de invitaciones/QR/salida manual aprobadas localmente.
+- La herramienta de control del navegador detuvo la prueba visual al no determinar con seguridad la URL. Móvil/tablet, recorrido visual y pruebas remotas del módulo quedan pendientes; no se declara operativo en Supabase/Vercel.
+
+Guía de migración, permisos y recorrido celular guardia/computadora admin: [SERVICE_ACCESS.md](SERVICE_ACCESS.md). No se implementaron reportes de turno. Sin cambios remotos, `.env.local`, commit, push ni despliegue. Las secciones siguientes son registros históricos; sus pendientes anteriores quedan sustituidos por este estado.
+
+## Mejora de etapa 12: salidas sin QR (registro histórico)
 
 El responsable confirmó las once migraciones aplicadas, Vercel y el flujo QR en dispositivos físicos. **Esta mejora está probada localmente; la nueva migración `20260918000200_open_visit_exits.sql` y el frontend actualizado siguen pendientes de aplicación/publicación remota.** Las once migraciones previas no se editaron.
 

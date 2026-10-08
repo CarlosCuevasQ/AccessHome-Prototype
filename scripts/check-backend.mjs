@@ -25,5 +25,8 @@ if(!url || !key?.startsWith('sb_publishable_')) {
   console.log(data.openVisitExitsVersion===1 && data.publicInvitationVersion>=3
     ? 'Salidas sin QR e indicador público de entrada abierta detectados. Falta probar los flujos con cuentas reales.'
     : 'Salidas sin QR pendientes: revisar la incremental 20260918000200.')
+  console.log(data.serviceAccessVersion===1
+    ? 'Módulo de servicios detectado (serviceAccessVersion: 1). Falta comprobar roles y operación con cuentas reales.'
+    : 'Módulo de servicios pendiente: revisar 20260919000100_service_access.sql.')
  } catch(error) { console.error(error.message); process.exitCode=1 }
 }

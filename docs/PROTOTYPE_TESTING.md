@@ -1,4 +1,18 @@
-## Mejora de etapa 12 · Salidas con invitación revocada y sin QR
+## Prompt 13 · Servicios y repartidores
+
+Ejecutado localmente: `npm test` **203/203**, `npm run test:concurrency` **31/31**, `npm run build:vercel` aprobado (incluye revisión del artefacto sin secretos reconocibles). Persiste la advertencia de chunk principal >500 kB. Las doce migraciones anteriores no se modificaron; la prueba incremental verifica datos poblados intactos y dos tablas nuevas vacías antes de operar servicios.
+
+`npm run deployment:check` y `git diff --check`: aprobados. Este último solo muestra avisos de normalización LF/CRLF de Git en Windows.
+
+`tests/service-access.test.mjs` comprueba llegada sin entrada, cinco estados/transiciones, vigencia SQL, salida posterior al vencimiento, autor/hora/método, historial distinto al residencial, permisos por rol/condominio/perfil activo, tablas sin DML cliente, RPCs privados restringidos, validaciones, rollback y reintentos. `tests/shared-client.test.mjs` verifica IDs independientes de reintento y limpieza de sesión. Regresiones de QR e invitaciones incluidas en la suite.
+
+Concurrencia: PostgreSQL 17.10 local con conexiones independientes, 22 casos previos y nueve nuevos de servicios: entrada/entrada, salida/salida, entrada/rechazo, entrada/cancelación, mismo ID en llegada/entrada/salida, rollback y vigencia vencida mientras espera lock. No hay movimientos duplicados.
+
+La prueba visual fue detenida por la herramienta al no determinar con seguridad la URL del navegador Windows. **No se declara aprobado el formulario en móvil ni el recorrido visual guardia/admin.** Supabase Auth/PostgREST real, dos dispositivos físicos y regresión remota quedan pendientes.
+
+Seguir [SERVICE_ACCESS.md](SERVICE_ACCESS.md): aplicar solo migración 13 `20260919000100_service_access.sql`, comprobar `serviceAccessVersion: 1`, publicar mediante responsable y ejecutar matriz de 26 casos. El recorrido usa celular con guardia y computadora con administrador: Amazon/Casa 24 → llegada sin entrada → confirmar entrada → salida → consulta administrativa. No iniciar sesión como residente. No repetir semilla ni tocar migraciones aplicadas.
+
+## Mejora de etapa 12 · Salidas con invitación revocada y sin QR (registro histórico)
 
 Ejecutado localmente: `npm test` **191/191**, `npm run test:concurrency` **22/22**, `npm run build` aprobado. La migración 12 conserva exactamente las filas de la base poblada. La auditoría verifica RLS, ausencia de escrituras generales y funciones privilegiadas fuera del esquema expuesto.
 

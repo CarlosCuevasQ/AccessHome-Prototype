@@ -1,0 +1,20 @@
+.service-arrival fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.service-page label { display: grid; gap: 8px; }
+.service-page input, .service-page select, .service-page textarea { width: 100%; min-width: 0; max-width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 4px; font: inherit; background: white; color: inherit; }
+.service-page .form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.service-page .form-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0; }
+.service-page .service-consent { display: flex; align-items: flex-start; line-height: 1.6; margin: 20px 0; }
+.service-consent input { width: 24px; min-width: 24px; height: 24px; }
+.service-list { list-style: none; padding: 0; }
+.service-list > li { padding: 24px 0; border-bottom: 1px solid var(--border); }
+.service-state { display: inline-block; padding: 4px 8px; font-weight: 600; }
+.service-registrado { background: var(--light-yellow); color: #634909; }
+.service-en_sitio { background: #edf7f0; color: #24633e; }
+.service-rechazado { background: #fff1f1; color: #922b32; }
+.service-finalizado, .service-cancelado { background: var(--light-blue); color: var(--primary); }
+.service-receipt { padding: 20px; margin: 24px 0; border-left: 4px solid currentColor; }
+.service-timeline { padding-left: 24px; }
+.service-timeline li { margin: 12px 0; line-height: 1.6; }
+.service-confirmation { max-width: 740px; }
+.service-page summary { cursor: pointer; padding: 12px 0; color: var(--action); }
+@media (max-width: 600px) { .service-page .form-grid { grid-template-columns: 1fr; } .service-page .form-actions button { width: 100%; } }

@@ -31,7 +31,7 @@ globalThis.fetch=async (url,options={})=>{
  }
  if(path==='/auth/v1/logout') return new Response('{}',{status:200})
  if(path.endsWith('/session_profile')) return new Response(JSON.stringify(profile),{status:200})
- if((path.endsWith('/validate_access') || path.endsWith('/guard_register_exit')) && lostAccessResponse) throw new TypeError('Fixture: response lost')
+ if((path.endsWith('/validate_access') || path.endsWith('/guard_register_exit') || path.endsWith('/service_command')) && lostAccessResponse) throw new TypeError('Fixture: response lost')
  if(profile?.role==='guard' && path.endsWith('/manage_community')) return new Response(JSON.stringify({code:'42501',message:'Denied'}),{status:403})
  if(path.endsWith('/guard_dashboard')) return new Response(JSON.stringify({guardName:profile.name,condominiumName:'Condominio fixture',todayAccessCount:2}),{status:200})
  if(path.endsWith('/guard_history')) return new Response(JSON.stringify({records:[],hasMore:false}),{status:200})
@@ -49,11 +49,38 @@ const {reportsService}=await import('../.test-build/services/reportsService.js')
 const {accessHistoryService}=await import('../.test-build/services/accessHistoryService.js')
 const {dashboardService}=await import('../.test-build/services/dashboardService.js')
 const {guardService}=await import('../.test-build/services/guardService.js')
+const {serviceAccessService}=await import('../.test-build/services/serviceAccessService.js')
 const {getRoleHome}=await import('../.test-build/utils/auth.js')
 const {demoService}=await import('../.test-build/services/demoService.js')
 const {readDemoData,writeDemoData}=await import('../.test-build/services/demoStorage.js')
 const {getClient}=await import('../.test-build/services/shared/client.js')
 after(()=>{ getClient().auth.stopAutoRefresh(); globalThis.fetch=originalFetch; hooks.deregister(); delete globalThis.window })
+
+test('servicios: llegada no envía decisión, IDs de reintento independientes y sin campos de autoridad',async()=>{
+ const input={category:'paqueteria',company:'Amazon',residenceId:randomUUID(),providerName:'',plates:'',notes:''}
+ const target=randomUUID()
+ await serviceAccessService.context();await serviceAccessService.list('en_sitio',2)
+ assert.deepEqual(requests.findLast(r=>r.path.endsWith('/list_services')).body,{status_filter:'en_sitio',page:2})
+ lostAccessResponse=true
+ await assert.rejects(serviceAccessService.register(input))
+ const arrival=requests.findLast(r=>r.path.endsWith('/service_command')).body
+ assert.deepEqual(Object.keys(arrival).sort(),['input','operation','request_id','target'])
+ assert.equal(arrival.operation,'register');assert.equal(arrival.target,null);assert.deepEqual(arrival.input,input)
+ await assert.rejects(serviceAccessService.decide('allow',target))
+ const decision=requests.findLast(r=>r.path.endsWith('/service_command')).body
+ assert.deepEqual(decision.input,{})
+ lostAccessResponse=false
+ await serviceAccessService.register(input)
+ assert.deepEqual(requests.findLast(r=>r.path.endsWith('/service_command')).body,arrival)
+ await serviceAccessService.decide('allow',target)
+ assert.deepEqual(requests.findLast(r=>r.path.endsWith('/service_command')).body,decision)
+ lostAccessResponse=true
+ await assert.rejects(serviceAccessService.decide('exit',target))
+ const exit=requests.findLast(r=>r.path.endsWith('/service_command')).body
+ await authService.logout();lostAccessResponse=false
+ await serviceAccessService.decide('exit',target)
+ assert.notEqual(requests.findLast(r=>r.path.endsWith('/service_command')).body.request_id,exit.request_id)
+})
 
 test('salida sin QR: RPC acotado, reintento de red con mismo ID y limpieza al cerrar sesión',async()=>{
  const entry=randomUUID()

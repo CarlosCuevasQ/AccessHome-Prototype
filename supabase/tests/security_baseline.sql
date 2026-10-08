@@ -1,4 +1,4 @@
--- Auditoría del catálogo después de las doce migraciones. No crea datos.
+-- Auditoría del catálogo después de las trece migraciones. No crea datos.
 -- Ejecutar como el propietario de las migraciones en un proyecto de prueba.
 begin;
 set transaction read only;
@@ -28,7 +28,10 @@ declare
     'accesshome_private.guard_dashboard()',
     'accesshome_private.guard_history(text,integer)',
     'accesshome_private.guard_open_visits(integer)',
-    'accesshome_private.guard_register_exit(uuid,uuid)'
+    'accesshome_private.guard_register_exit(uuid,uuid)',
+    'accesshome_private.service_context()',
+    'accesshome_private.list_services(text,integer)',
+    'accesshome_private.service_command(text,uuid,jsonb,uuid)'
   ];
 begin
   foreach permission in array array['anon','authenticated','service_role'] loop
@@ -37,8 +40,8 @@ begin
       raise exception 'CREATE inesperado para %',permission;
     end if;
   end loop;
-  if (select count(*) from pg_tables where schemaname = 'accesshome') <> 10 then
-    raise exception 'Se esperaban diez tablas de AccessHome';
+  if (select count(*) from pg_tables where schemaname = 'accesshome') <> 12 then
+    raise exception 'Se esperaban doce tablas de AccessHome';
   end if;
   if to_regclass('accesshome_private.invitation_tokens') is null then
     raise exception 'Falta la tabla privada de tokens';
@@ -61,7 +64,7 @@ begin
       raise exception 'Falta SELECT autenticado en %', item.relname;
     end if;
   end loop;
-  if (select count(*) from pg_policies where schemaname = 'accesshome' and cmd = 'SELECT') <> 10 then
+  if (select count(*) from pg_policies where schemaname = 'accesshome' and cmd = 'SELECT') <> 12 then
     raise exception 'Faltan políticas de lectura';
   end if;
   if exists (select 1 from pg_policies where schemaname in ('accesshome', 'accesshome_private') and cmd <> 'SELECT') then

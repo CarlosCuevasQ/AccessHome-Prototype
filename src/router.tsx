@@ -28,6 +28,7 @@ import { GuardHistoryPage } from './pages/GuardHistoryPage'
 import { GuardUpcomingPage } from './pages/GuardUpcomingPage'
 import { GuardScanPage } from './pages/GuardScanPage'
 import { GuardExitPage } from './pages/GuardExitPage'
+import { ServiceAccessPage } from './pages/ServiceAccessPage'
 
 export const router = createBrowserRouter([
   {
@@ -37,7 +38,7 @@ export const router = createBrowserRouter([
       { path: 'historial', element: <GuardHistoryPage /> },
       { path: 'escanear', element: <GuardScanPage /> },
       { path: 'salidas', element: <GuardExitPage /> },
-      { path: 'servicios', element: <GuardUpcomingPage stage="services" /> },
+      { path: 'servicios', element: <ServiceAccessPage /> },
       { path: 'reportes', element: <GuardUpcomingPage stage="reports" /> },
       { path: '*', element: <NotFoundPage homePath="/guardia" /> },
     ] }],
@@ -65,6 +66,7 @@ export const router = createBrowserRouter([
           { path: 'residencias/:residenceId', element: <ResidencePage administrative /> },
           { path: 'control-acceso', element: <AccessControlPage /> },
           { path: 'historial', element: <AccessHistoryPage /> },
+          { path: 'servicios', element: <ServiceAccessPage administrative /> },
           { path: 'reportes', element: <ReportsPage /> },
           { path: 'reportes/:reportId', element: <ReportPage /> },
           { path: 'perfil', element: <WorkspacePage role="admin" /> },

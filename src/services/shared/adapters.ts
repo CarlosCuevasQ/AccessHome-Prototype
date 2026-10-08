@@ -77,7 +77,16 @@ export const sharedHistory = {
 }
 let retry: { token: string; requestId: string; method: string } | null = null
 let exitRetry: { entryId: string; requestId: string } | null = null
-export function clearSharedSession() { retry = null; exitRetry = null }
+const serviceRetries = new Map<string, { requestId: string }>()
+export function clearSharedSession() { retry = null; exitRetry = null; serviceRetries.clear() }
+export async function runServiceCommand<T>(operation: string, target: string | null, input: unknown): Promise<T> {
+  const key = JSON.stringify([operation, target, input])
+  if (!serviceRetries.has(key)) serviceRetries.set(key, { requestId: generateId() })
+  const attempt = serviceRetries.get(key)!
+  const result = await rpc<T>('service_command', { operation, target, input, request_id: attempt.requestId }, true)
+  if (serviceRetries.get(key) === attempt) serviceRetries.delete(key)
+  return result
+}
 export async function registerSharedExit<T>(entryId: string): Promise<T> {
   if (exitRetry?.entryId !== entryId) exitRetry = { entryId, requestId: generateId() }
   const attempt = exitRetry

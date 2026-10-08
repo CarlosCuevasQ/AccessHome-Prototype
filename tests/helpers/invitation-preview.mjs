@@ -35,6 +35,9 @@ if(process.argv.includes('--open-exits')) {
 const accounts={'resident@fixture.invalid':users.daniel,'guard@fixture.invalid':users.guard,'admin@fixture.invalid':users.admin}
 const sessions=new Map()
 const queries={
+ service_context:()=>['select accesshome.service_context() as data',[]],
+ list_services:b=>['select accesshome.list_services($1,$2) as data',[b.status_filter??'todos',b.page??0]],
+ service_command:b=>['select accesshome.service_command($1,$2,$3,$4) as data',[b.operation,b.target,JSON.stringify(b.input),b.request_id]],
  session_profile:()=>['select accesshome.session_profile() as data',[]],
  resident_dashboard:()=>['select accesshome.resident_dashboard() as data',[]],
  admin_dashboard:()=>['select accesshome.admin_dashboard() as data',[]],

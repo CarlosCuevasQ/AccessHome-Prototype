@@ -106,7 +106,7 @@ async function race({second=input(10,20),rollback=false,isolation='READ COMMITTE
  }
 }
 
-test('PostgreSQL nativo: doce migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
+test('PostgreSQL nativo: trece migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
  t.diagnostic('PostgreSQL '+version+'; tres conexiones TCP locales, Auth simulado.')
  assert.notEqual(a.processID,b.processID)
 })
@@ -350,3 +350,60 @@ for(const scenario of ['manual/manual','manual/QR','QR/manual','replay','rollbac
   } finally {await a.query('rollback');if(pending) await pending;await b.query('rollback')}
  })
 }
+
+const serviceCommand=(client,operation,target,request=randomUUID())=>client.query(
+ 'select accesshome.service_command($1,$2,$3,$4) as data',
+ [operation,target,JSON.stringify(operation==='register'?{residenceId:house,category:'paqueteria',company:'Amazon',providerName:'',plates:'',notes:''}:{}),request])
+
+for(const scenario of [
+ {name:'dos entradas',operation:'allow'},
+ {name:'dos salidas',operation:'exit'},
+ {name:'entrada frente a rechazo',operation:'allow',second:'reject'},
+ {name:'entrada frente a cancelación',operation:'allow',second:'cancel'},
+ {name:'reintento de llegada',operation:'register',replay:true},
+ {name:'reintento de entrada',operation:'allow',replay:true},
+ {name:'reintento de salida',operation:'exit',replay:true},
+ {name:'rollback de entrada',operation:'allow',rollback:true},
+]) {
+ test('servicios concurrentes: '+scenario.name,async()=>{
+  if(!scannersReady) await scanFixture()
+  let id=null,pending
+  if(scenario.operation!=='register') {
+   await beginGuard(a)
+   id=(await serviceCommand(a,'register',null)).rows[0].data.record.id
+   if(scenario.operation==='exit') await serviceCommand(a,'allow',id)
+   await a.query('commit')
+  }
+  const request=randomUUID()
+  try {
+   await beginGuard(a);await beginGuard(b,scenario.replay?0:1)
+   const first=(await serviceCommand(a,scenario.operation,id,request)).rows[0].data
+   pending=settled(serviceCommand(b,scenario.second??scenario.operation,id,scenario.replay?request:randomUUID()))
+   await waitBlocked(b,a)
+   await a.query(scenario.rollback?'rollback':'commit')
+   const second=await pending
+   await b.query(second.error?'rollback':'commit')
+   if(scenario.replay) {assert.equal(second.error,undefined);assert.deepEqual(second.value.rows[0].data,{...first,replayed:true})}
+   else if(scenario.rollback) assert.equal(second.error,undefined)
+   else assert.match(second.error?.message??'',/decisión|entrada abierta/)
+   const events=(await owner.query('select operation from accesshome.service_events where service_id=$1 order by occurred_at,id',[first.record.id])).rows.map(r=>r.operation)
+   assert.deepEqual(events,scenario.operation==='register'?['register']:scenario.operation==='exit'?['register','allow','exit']:['register','allow'])
+   assert.equal((await owner.query('select count(*)::int as n from accesshome.service_events where request_id=$1',[request])).rows[0].n,scenario.rollback?0:1)
+  } finally {await a.query('rollback');if(pending) await pending;await b.query('rollback')}
+ })
+}
+
+test('servicio vence mientras espera residencia: no autoriza con el reloj previo al bloqueo',async()=>{
+ await beginGuard(a)
+ const id=(await serviceCommand(a,'register',null)).rows[0].data.record.id
+ await a.query('commit')
+ await owner.query("update accesshome.service_visits set registered_at=clock_timestamp()-interval '1 hour',expires_at=clock_timestamp()+interval '1 second' where id=$1",[id])
+ let pending
+ try {
+  await a.query('begin');await a.query('select id from accesshome.residences where id=$1 for update',[house])
+  await beginGuard(b,1);pending=settled(serviceCommand(b,'allow',id))
+  await waitBlocked(b,a);await delay(1100);await a.query('commit')
+  assert.match((await pending).error.message,/vencido/);await b.query('rollback')
+  assert.equal((await owner.query('select count(*)::int as n from accesshome.service_events where service_id=$1',[id])).rows[0].n,1)
+ } finally {await a.query('rollback');if(pending) await pending;await b.query('rollback')}
+})
