@@ -69,6 +69,12 @@ before(async () => {
     delete afterServices['accesshome.'+name]
   }
   assert.deepEqual(afterServices,beforeServices)
+  const beforeReports = await snapshot()
+  await db.exec(await readFile('supabase/migrations/20261007000100_guard_reports.sql','utf8'))
+  const afterReports = await snapshot()
+  assert.deepEqual(afterReports['accesshome.guard_shift_reports'],[])
+  delete afterReports['accesshome.guard_shift_reports']
+  assert.deepEqual(afterReports,beforeReports)
   otherCondo = (await db.query("insert into accesshome.condominiums(name) values('Condominio ajeno') returning id")).rows[0].id
   await provision(users.guard,seed.condominiumId,'Claudia Seguridad')
   await provision(users.otherGuard,otherCondo,'Guardia ajeno')

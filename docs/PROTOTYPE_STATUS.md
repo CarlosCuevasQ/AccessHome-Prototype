@@ -1,4 +1,16 @@
-## Estado actual · Prompt 13: servicios y repartidores
+## Estado actual · Prompt 14: reportes de caseta y cierre de turno
+
+El responsable confirmó las trece migraciones hasta `20260919000100_service_access.sql` y visitas/servicios con dispositivos reales. Esta entrega agrega **solo `20261007000100_guard_reports.sql`, pendiente de aplicación remota**. Las trece anteriores no se modificaron.
+
+- Guardia: `/guardia/reportes`, periodo en zona del condominio, preview SQL, observaciones/incidencias y cierre finalizado. Lista propia y detalle/CSV; el backend calcula las cifras y bloquea cierres equivalentes concurrentes.
+- Admin: `/admin/reportes-caseta`, filtros por fecha/guardia, mismo snapshot de solo lectura. Separado del modelo residencial existente. No edición ni eliminación.
+- Métricas de movimientos en `[inicio, fin)` y pendientes actuales al generar, incluidos vencidos/cancelados. Guarda referencias fuente para auditoría. No registra salidas ni cambia eventos al cerrar. Rechazos de visitantes: No disponible; rechazos de servicios contados desde eventos reales.
+- Validación final: **214/214** en `npm test`, **36/36** en `test:concurrency`, `build:vercel` con TypeScript y `deployment:check` aprobados. `git diff --check` aprobado. Persiste chunk >500 kB. Una ejecución intermedia tuvo EBUSY al limpiar un temporal Windows; repetición completa aprobada.
+- Pendientes: aplicar incremental, publicación por responsable, cuentas Auth/PostgREST remotas, dos dispositivos y revisión visual/física móvil/tablet. No se declara funcionamiento remoto del módulo nuevo.
+
+Guía y manifest de archivos: [GUARD_REPORTS.md](GUARD_REPORTS.md). Sin datos remotos, `.env.local`, semilla remota, commit, push o despliegue; no se implementó el rediseño del Prompt 15. Las secciones siguientes conservan resultados históricos; sus pendientes anteriores quedan sustituidos por este estado.
+
+## Prompt 13: servicios y repartidores (registro histórico)
 
 El responsable confirmó las doce migraciones hasta `20260918000200_open_visit_exits.sql` y los flujos anteriores en dispositivos reales. **Esta entrega añade `20260919000100_service_access.sql`, pendiente de aplicación remota y publicación del frontend.** Ninguna migración aplicada se editó.
 

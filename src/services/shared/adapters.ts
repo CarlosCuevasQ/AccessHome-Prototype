@@ -78,7 +78,16 @@ export const sharedHistory = {
 let retry: { token: string; requestId: string; method: string } | null = null
 let exitRetry: { entryId: string; requestId: string } | null = null
 const serviceRetries = new Map<string, { requestId: string }>()
-export function clearSharedSession() { retry = null; exitRetry = null; serviceRetries.clear() }
+const shiftRetries = new Map<string, { requestId: string }>()
+export function clearSharedSession() { retry = null; exitRetry = null; serviceRetries.clear(); shiftRetries.clear() }
+export async function generateSharedShift<T>(input: unknown): Promise<T> {
+  const key = JSON.stringify(input)
+  if (!shiftRetries.has(key)) shiftRetries.set(key, { requestId: generateId() })
+  const attempt = shiftRetries.get(key)!
+  const result = await rpc<T>('guard_reports', { operation: 'generate', input, request_id: attempt.requestId }, true)
+  if (shiftRetries.get(key) === attempt) shiftRetries.delete(key)
+  return result
+}
 export async function runServiceCommand<T>(operation: string, target: string | null, input: unknown): Promise<T> {
   const key = JSON.stringify([operation, target, input])
   if (!serviceRetries.has(key)) serviceRetries.set(key, { requestId: generateId() })

@@ -1,4 +1,4 @@
--- Auditoría del catálogo después de las trece migraciones. No crea datos.
+-- Auditoría del catálogo después de las catorce migraciones. No crea datos.
 -- Ejecutar como el propietario de las migraciones en un proyecto de prueba.
 begin;
 set transaction read only;
@@ -31,7 +31,8 @@ declare
     'accesshome_private.guard_register_exit(uuid,uuid)',
     'accesshome_private.service_context()',
     'accesshome_private.list_services(text,integer)',
-    'accesshome_private.service_command(text,uuid,jsonb,uuid)'
+    'accesshome_private.service_command(text,uuid,jsonb,uuid)',
+    'accesshome_private.guard_reports(text,jsonb,uuid)'
   ];
 begin
   foreach permission in array array['anon','authenticated','service_role'] loop
@@ -40,8 +41,8 @@ begin
       raise exception 'CREATE inesperado para %',permission;
     end if;
   end loop;
-  if (select count(*) from pg_tables where schemaname = 'accesshome') <> 12 then
-    raise exception 'Se esperaban doce tablas de AccessHome';
+  if (select count(*) from pg_tables where schemaname = 'accesshome') <> 13 then
+    raise exception 'Se esperaban trece tablas de AccessHome';
   end if;
   if to_regclass('accesshome_private.invitation_tokens') is null then
     raise exception 'Falta la tabla privada de tokens';
@@ -60,11 +61,18 @@ begin
         raise exception 'authenticated tiene % inesperado en %', permission, item.relname;
       end if;
     end loop;
-    if item.nspname = 'accesshome' and not has_table_privilege('authenticated', item.oid, 'SELECT') then
+    if item.nspname = 'accesshome' and item.relname = 'guard_shift_reports' then
+      foreach permission in array array['anon','authenticated','service_role'] loop
+        if has_table_privilege(permission,item.oid,'SELECT')
+          or has_any_column_privilege(permission,item.oid,'SELECT') then
+          raise exception 'SELECT directo inesperado para % en guard_shift_reports',permission;
+        end if;
+      end loop;
+    elsif item.nspname = 'accesshome' and not has_table_privilege('authenticated', item.oid, 'SELECT') then
       raise exception 'Falta SELECT autenticado en %', item.relname;
     end if;
   end loop;
-  if (select count(*) from pg_policies where schemaname = 'accesshome' and cmd = 'SELECT') <> 12 then
+  if (select count(*) from pg_policies where schemaname = 'accesshome' and cmd = 'SELECT') <> 13 then
     raise exception 'Faltan políticas de lectura';
   end if;
   if exists (select 1 from pg_policies where schemaname in ('accesshome', 'accesshome_private') and cmd <> 'SELECT') then

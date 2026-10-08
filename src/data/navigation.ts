@@ -22,6 +22,7 @@ export const workspaces: Record<WorkspaceRole, WorkspaceConfig> = {
       { label: 'Condominio', path: '/admin' }, { label: 'Residencias', path: '/admin/residencias', end: false },
       { label: 'Control de acceso', path: '/admin/control-acceso' }, { label: 'Historial de accesos', path: '/admin/historial' },
       { label: 'Historial de servicios', path: '/admin/servicios' },
+      { label: 'Reportes de caseta', path: '/admin/reportes-caseta', end: false },
       { label: 'Reportes', path: '/admin/reportes', end: false }, { label: 'Mi perfil', path: '/admin/perfil' },
     ],
   },

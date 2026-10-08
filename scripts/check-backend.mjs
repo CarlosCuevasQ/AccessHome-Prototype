@@ -28,5 +28,8 @@ if(!url || !key?.startsWith('sb_publishable_')) {
   console.log(data.serviceAccessVersion===1
     ? 'Módulo de servicios detectado (serviceAccessVersion: 1). Falta comprobar roles y operación con cuentas reales.'
     : 'Módulo de servicios pendiente: revisar 20260919000100_service_access.sql.')
+  console.log(data.guardReportsVersion===1
+    ? 'Reportes de caseta detectados (guardReportsVersion: 1). Falta comprobar cierres y consulta con cuentas reales.'
+    : 'Reportes de caseta pendientes: revisar 20261007000100_guard_reports.sql.')
  } catch(error) { console.error(error.message); process.exitCode=1 }
 }

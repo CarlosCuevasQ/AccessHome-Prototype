@@ -42,7 +42,7 @@ export function GuardDashboardPage() {
         <Link className="secondary-button" to="/guardia/salidas">Registrar salida sin QR</Link>
         <Link className="secondary-button" to="/guardia/historial">Historial</Link>
         <Link className="secondary-button" to="/guardia/servicios">Registrar servicio</Link>
-        <Link className="secondary-button" to="/guardia/reportes">Reportes de turno <small>Próxima etapa</small></Link>
+        <Link className="secondary-button" to="/guardia/reportes">Reportes de turno</Link>
       </nav>
       <dl className="summary-strip guard-metrics">
         <div><dt>Accesos registrados hoy</dt><dd>{data.todayAccessCount}</dd></div>

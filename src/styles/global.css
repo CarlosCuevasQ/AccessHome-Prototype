@@ -8,6 +8,7 @@
 @import './dashboard.css';
 @import './guard.css';
 @import './services.css';
+@import './guard-reports.css';
 
 :root {
   font-family: 'Segoe UI', Arial, sans-serif;

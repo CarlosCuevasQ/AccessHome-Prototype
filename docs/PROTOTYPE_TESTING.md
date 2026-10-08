@@ -1,4 +1,22 @@
-## Prompt 13 · Servicios y repartidores
+## Prompt 14 · Reportes de caseta y cierre de turno
+
+Corrección previa a aplicar la migración 14: retirada de SELECT directo sobre guard_shift_reports, conservando RLS y proyección RPC. Validación nueva: **215/215** en npm test y **36/36** en test:concurrency; build:vercel y deployment:check aprobados. El catálogo verifica ausencia de privilegios SELECT tanto de tabla como de columnas. Guardia/admin autorizados reciben 42501 al seleccionar directamente `*`, `id`, `source_ids`, `request_id` o `command_input`; list/detail RPC continúan devolviendo el mismo snapshot sin los tres campos internos. La auditoría SQL exige expresamente este contrato RPC-only. Sin pruebas REST remotas ni aplicación de migraciones. Los resultados que siguen corresponden a la implementación inicial.
+
+Resultados finales ejecutados localmente:
+
+- `npm test`: **214/214**, incluyendo tipos de services, ocho escenarios SQL nuevos, CSV/zona, SDK/reintentos, auditoría de permisos y datos previos intactos. Regresiones de servicios/QR/salida manual aprobadas.
+- `npm run test:concurrency`: **36/36**, PostgreSQL 17.10 con conexiones TCP independientes. Cinco escenarios nuevos: mismo request_id, distinto ID/mismo periodo/guardia, rollback, periodos adyacentes y guardias distintos. Las colisiones se comprueban esperando bloqueos reales.
+- `npm run build:vercel`: aprobado, incluye `tsc --noEmit`. Chunk principal ~724 kB / ~203 kB gzip; continúa advertencia >500 kB. No hay scripts lint/typecheck separados.
+- `npm run deployment:check`: aprobado sobre dist; sin secretos privilegiados reconocibles ni archivos privados. No equivale a auditoría exhaustiva.
+- `git diff --check`: aprobado; solo avisos habituales LF/CRLF de Windows.
+
+Una ejecución intermedia de npm test terminó 213/214 por EBUSY al eliminar un directorio temporal en una prueba de configuración ya existente. Se repitió la suite completa y pasó 214/214, sin modificar esa prueba ni ocultar el fallo.
+
+SQL prueba totales desde movimientos reales, recalcular después del preview, snapshot guard/admin idéntico aun después de salidas nuevas, RLS/roles/condominios/perfil inactivo, campos de autoridad rechazados y función privada protegida. Cerrar conserva exactamente las fuentes; los pendientes vencidos/cancelados siguen abiertos. Llegadas/rechazos de servicio no cuentan como entrada. Periodo y filtros operan con zona explícita; pruebas de límites `[inicio,fin)` y DST. CSV neutraliza fórmulas y conserva comillas/saltos.
+
+**No se ejecutaron pruebas físicas ni remotas del módulo nuevo.** Responsive, interacción/doble clic del navegador y recorrido celular guardia/computadora admin están pendientes. Guía de migración 14, matriz del prompt y recorrido de aceptación: [GUARD_REPORTS.md](GUARD_REPORTS.md). No repetir semilla ni migraciones aplicadas. Tras aplicar manualmente solo `20261007000100_guard_reports.sql`, comprobar `guardReportsVersion: 1`, publicar por responsable y comparar el cierre con ambos historiales y pendientes abiertos.
+
+## Prompt 13 · Servicios y repartidores (registro histórico)
 
 Ejecutado localmente: `npm test` **203/203**, `npm run test:concurrency` **31/31**, `npm run build:vercel` aprobado (incluye revisión del artefacto sin secretos reconocibles). Persiste la advertencia de chunk principal >500 kB. Las doce migraciones anteriores no se modificaron; la prueba incremental verifica datos poblados intactos y dos tablas nuevas vacías antes de operar servicios.
 

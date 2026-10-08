@@ -31,7 +31,7 @@ globalThis.fetch=async (url,options={})=>{
  }
  if(path==='/auth/v1/logout') return new Response('{}',{status:200})
  if(path.endsWith('/session_profile')) return new Response(JSON.stringify(profile),{status:200})
- if((path.endsWith('/validate_access') || path.endsWith('/guard_register_exit') || path.endsWith('/service_command')) && lostAccessResponse) throw new TypeError('Fixture: response lost')
+ if((path.endsWith('/validate_access') || path.endsWith('/guard_register_exit') || path.endsWith('/service_command') || path.endsWith('/guard_reports')) && lostAccessResponse) throw new TypeError('Fixture: response lost')
  if(profile?.role==='guard' && path.endsWith('/manage_community')) return new Response(JSON.stringify({code:'42501',message:'Denied'}),{status:403})
  if(path.endsWith('/guard_dashboard')) return new Response(JSON.stringify({guardName:profile.name,condominiumName:'Condominio fixture',todayAccessCount:2}),{status:200})
  if(path.endsWith('/guard_history')) return new Response(JSON.stringify({records:[],hasMore:false}),{status:200})
@@ -50,11 +50,33 @@ const {accessHistoryService}=await import('../.test-build/services/accessHistory
 const {dashboardService}=await import('../.test-build/services/dashboardService.js')
 const {guardService}=await import('../.test-build/services/guardService.js')
 const {serviceAccessService}=await import('../.test-build/services/serviceAccessService.js')
+const {guardReportsService}=await import('../.test-build/services/guardReportsService.js')
 const {getRoleHome}=await import('../.test-build/utils/auth.js')
 const {demoService}=await import('../.test-build/services/demoService.js')
 const {readDemoData,writeDemoData}=await import('../.test-build/services/demoStorage.js')
 const {getClient}=await import('../.test-build/services/shared/client.js')
 after(()=>{ getClient().auth.stopAutoRefresh(); globalThis.fetch=originalFetch; hooks.deregister(); delete globalThis.window })
+
+test('cierres: el service omite totales/autoridad y conserva request_id ante respuesta perdida',async()=>{
+ const input={start:'2020-01-01T07:00',end:'2020-01-01T15:00',notes:'Observación',incidents:''}
+ const tampered={...input,guard_user_id:'intruso',condominium_id:'otro',metrics:{visitorEntries:25},generated_at:'falso'}
+ await guardReportsService.preview(tampered)
+ assert.deepEqual(requests.findLast(r=>r.path.endsWith('/guard_reports')).body,{operation:'preview',input:{start:input.start,end:input.end}})
+ lostAccessResponse=true
+ await assert.rejects(guardReportsService.generate(tampered))
+ const first=requests.findLast(r=>r.path.endsWith('/guard_reports')).body
+ assert.deepEqual(first.input,input)
+ assert.deepEqual(Object.keys(first).sort(),['input','operation','request_id'])
+ lostAccessResponse=false
+ await guardReportsService.generate(input)
+ assert.deepEqual(requests.findLast(r=>r.path.endsWith('/guard_reports')).body,first)
+ lostAccessResponse=true
+ await assert.rejects(guardReportsService.generate(input))
+ const pending=requests.findLast(r=>r.path.endsWith('/guard_reports')).body.request_id
+ await authService.logout();lostAccessResponse=false
+ await guardReportsService.generate(input)
+ assert.notEqual(requests.findLast(r=>r.path.endsWith('/guard_reports')).body.request_id,pending)
+})
 
 test('servicios: llegada no envía decisión, IDs de reintento independientes y sin campos de autoridad',async()=>{
  const input={category:'paqueteria',company:'Amazon',residenceId:randomUUID(),providerName:'',plates:'',notes:''}

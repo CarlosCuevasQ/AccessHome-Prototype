@@ -2,7 +2,7 @@
 
 Prototipo universitario en React, Vite y TypeScript. Conserva las pantallas de administración, residencia, contactos, invitaciones/QR, historial y reportes.
 
-El responsable confirmó Vercel, Supabase, las doce migraciones y el flujo QR/salida manual en dispositivos reales. El Prompt 13 añade **Servicios y repartidores**: caseta registra la llegada, confirma presencialmente la entrada o rechaza y registra la salida. No depende de una autorización residencial. Requiere únicamente la nueva migración `20260919000100_service_access.sql`, todavía pendiente de aplicación remota. Guía: [SERVICE_ACCESS.md](docs/SERVICE_ACCESS.md).
+El responsable confirmó Vercel, Supabase, las trece migraciones y los flujos de visitas/servicios en dispositivos reales. El Prompt 14 añade **Reportes de caseta**: preview SQL, cierre inmutable, consulta administrativa y CSV. Requiere únicamente `20261007000100_guard_reports.sql`, todavía pendiente de aplicación remota. Guía: [GUARD_REPORTS.md](docs/GUARD_REPORTS.md).
 
 ## Ejecutar
 
@@ -39,7 +39,7 @@ En modo compartido, cada persona usa su cuenta de Supabase Auth y una contraseñ
 | Administrador | Estructura y principales del propio condominio, consulta de habitantes/vehículos, control de acceso existente, historial y estados de reportes |
 | Residente principal | Habitantes/vehículos de su casa activa, agenda privada, creación/cancelación de invitaciones, reportes propios |
 | Residente adicional | Consulta de su casa, invitaciones e historial; reportes propios históricos |
-| Guardia | Panel `/guardia`, historial mínimo, escáner `/guardia/escanear`, salida sin QR `/guardia/salidas` y servicios `/guardia/servicios`; operaciones mediante RPC del propio condominio. Sin gestión administrativa ni escrituras directas |
+| Guardia | Panel `/guardia`, escáner, salida sin QR, servicios y cierres `/guardia/reportes`; operaciones mediante RPC del propio condominio. Consulta solo sus cierres. Sin gestión administrativa ni escrituras directas |
 | Visitante | Solo proyección de su invitación mediante token; sin acceso general a tablas |
 
 Las políticas RLS limitan lecturas; ningún cliente tiene INSERT/UPDATE/DELETE general. Los RPCs de escritura autorizan identidad y pertenencia, con transacciones. Un perfil inactivo o residente sin habitante activo queda bloqueado. La provisión inicial y vinculación de cuentas se ejecutan de forma controlada, fuera del frontend.
@@ -48,9 +48,9 @@ Los RPCs expuestos son SECURITY INVOKER. La lógica privilegiada está en access
 
 ## Configuración compartida
 
-La configuración existente de `.env.local`, las doce migraciones aplicadas y los datos se conservan. Esta etapa añade únicamente `20260919000100_service_access.sql`: registros y eventos de servicios, RPCs privados con interfaces mínimas, RLS y permisos específicos. El responsable debe revisar/aplicar solo esta versión nueva y publicar el frontend actualizado.
+La configuración existente de `.env.local`, las trece migraciones aplicadas y los datos se conservan. Esta etapa añade únicamente `20261007000100_guard_reports.sql`: snapshots de caseta, RPC privado con wrapper mínimo, RLS y permisos específicos. El responsable debe revisar/aplicar solo esta versión nueva y publicar el frontend actualizado.
 
-Seguir [SERVICE_ACCESS.md](docs/SERVICE_ACCESS.md) y [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. `npm run backend:check` debe indicar `serviceAccessVersion: 1` después de aplicar la nueva migración; conserva las capacidades anteriores. No prueba login, cámara ni despliegue. No se ejecutó contra el proyecto en esta entrega.
+Seguir [GUARD_REPORTS.md](docs/GUARD_REPORTS.md) y [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. `npm run backend:check` debe indicar `guardReportsVersion: 1` después de aplicar la nueva migración; conserva `schemaVersion: 9` y las capacidades anteriores. No prueba login, cámara ni despliegue. No se ejecutó contra el proyecto en esta entrega.
 
 Para instalaciones completamente nuevas, [SHARED_BACKEND_SETUP.md](docs/SHARED_BACKEND_SETUP.md) documenta la base inicial. Mantener expuesto `accesshome` y privado `accesshome_private`.
 
@@ -72,9 +72,11 @@ Las consultas refrescan al abrir la pantalla, recuperar foco o conexión y despu
 
 El control administrativo y el escáner de guardia reutilizan un único motor `validate_access`, con autorización SQL, bloqueo, secuencia entrada/salida e idempotencia. `/guardia/escanear` solicita cámara solo al pulsar **Activar cámara**; permite detenerla o pegar el enlace/token manualmente. Cada lectura detiene el stream y conserva el resultado hasta **Escanear siguiente**. Un fallo de red ofrece reintentar la misma operación; no anuncia autorización. Las lecturas de guardia de una misma visita deben separarse al menos 3 segundos, además de la protección transaccional contra solicitudes simultáneas.
 
-Los movimientos guardan la identidad del operador, snapshots del visitante/residencia/vehículo, fecha del servidor, método QR/MANUAL y resultado autorizado. Los rechazos no crean movimientos. Administración y residencia consultan el historial compartido existente. Caseta/historial de guardia refrescan cada 30 segundos visibles, al consultar o recuperar foco; historial de siete días y 50 registros por página. **Reportes de turno** permanece como próxima etapa.
+Los movimientos guardan la identidad del operador, snapshots del visitante/residencia/vehículo, fecha del servidor, método QR/MANUAL y resultado autorizado. Los rechazos no crean movimientos. Administración y residencia consultan el historial compartido existente. Caseta/historial de guardia refrescan cada 30 segundos visibles, al consultar o recuperar foco; historial de siete días y 50 registros por página.
 
 Servicios tiene estados Registrado, Rechazado, En sitio, Finalizado y Cancelado. Registrar llegada no produce entrada: requiere una segunda acción explícita con confirmación. La vigencia de 30 minutos limita nuevas entradas; una entrada abierta puede cerrarse después. Empresa sugerida no otorga permisos. `/admin/servicios` consulta por separado llegadas, decisiones, entrada/salida MANUAL y responsables. Ambas pantallas refrescan cada 15 segundos visibles. El módulo exige modo compartido; no escribe servicios en localStorage ni añade acciones al residente.
+
+`/guardia/reportes` calcula actividad del condominio en un periodo terminado de hasta siete días, con horas interpretadas por SQL en la zona del condominio. Generar recalcula y guarda el snapshot; no cierra visitas ni servicios. Los pendientes son los abiertos al generar, incluso vencidos/cancelados o de turnos anteriores. Los rechazos QR figuran como No disponible porque no hay bitácora verificable. `/admin/reportes-caseta` consulta el mismo snapshot, filtra fecha/guardia y exporta CSV. No hay edición, borrado ni cifras confiadas al navegador. Reportes residenciales permanecen separados.
 
 En la demo local, los identificadores se generan con Web Crypto comprobando disponibilidad; se eliminó el fallback de Math.random/timestamp. Los tokens locales históricos no se publican ni migran automáticamente.
 
@@ -95,6 +97,7 @@ Para Vercel, Build Command **`npm run build:vercel`**, Output Directory **`dist`
 
 - [Compartir invitaciones y desplegar el ensayo en Vercel](docs/DEPLOYMENT.md)
 - [Servicios y repartidores: estados, migración y prueba guardia/administrador](docs/SERVICE_ACCESS.md)
+- [Reportes de caseta: métricas, snapshots, migración y cierre de turno](docs/GUARD_REPORTS.md)
 - [Guardia: migración incremental y provisión segura](docs/GUARD_SETUP.md)
 - [Escáner QR, entradas/salidas y pruebas con dispositivos](docs/GUARD_SCANNING.md)
 - [Configuración base para instalaciones nuevas](docs/SHARED_BACKEND_SETUP.md)

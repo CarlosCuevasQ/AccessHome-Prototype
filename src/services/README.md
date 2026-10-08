@@ -23,6 +23,8 @@ Todos los RPCs expuestos son security invoker. Las operaciones privilegiadas lla
 | accessService | active_access_invitations, validate_access, list_access |
 | accessHistoryService | history_context, list_access |
 | reportsService | report_context, list_reports, report_details, create_report, advance_report |
+| guardReportsService | guard_reports(operation, input, request_id): context, preview, generate, list, detail; solo compartido, separado de reportes residenciales |
+| serviceAccessService | service_context, list_services, service_command; llegadas/decisiones/movimientos de caseta, sin aprobación residencial |
 | dashboardService | admin_dashboard, resident_dashboard |
 | guardService | guard_dashboard, guard_history y validate_access(token, request_id, scan_method); solo compartido, guard activo y condominio autorizado; sin escrituras directas |
 | demoService | profile_context; reset rechazado en compartido |
@@ -30,6 +32,10 @@ Todos los RPCs expuestos son security invoker. Las operaciones privilegiadas lla
 El dominio no cambia de proveedor durante una sesión. Una configuración parcial o caída de red falla explícitamente. El modo local conserva la simulación, pero la selección de cuenta por correo no representa autenticación real.
 
 La hora autoritativa compartida es la del servidor. Hoy/historial diario utilizan la zona del condominio; formularios personalizados y presentación de fechas usan la hora del dispositivo y envían ISO con zona. El token público se genera exclusivamente en servidor con 32 bytes CSPRNG. El UUID para request_id de acceso usa Web Crypto con disponibilidad comprobada. `validateSharedAccess` es el adaptador único para administrador y guardia. Un fallo ambiguo conserva token, método y request_id en memoria para reintentar; recuperar la misma sesión Auth no los borra, pero cambiar de cuenta/cerrar sesión sí. No se guarda historia local. Tras recargar completamente o cambiar de cuenta, revisar historial antes de iniciar otra operación.
+
+**Reportes de caseta:** sus campos datetime-local representan explícitamente la zona del condominio; envían `start`/`end` sin conversión del navegador y SQL convierte con AT TIME ZONE. `generate` envía solo esos dos campos y notes/incidents; `generateSharedShift` añade request_id criptográfico y conserva el ID en memoria ante errores. No acepta ni transmite totales/autor/condominio/hora de generación. SQL vuelve a calcular y guarda un snapshot finalizado con referencias fuente; misma solicitud recupera el mismo reporte. Nueva solicitud para mismo guardia/periodo se rechaza por unicidad. Ver reglas de fechas/ambigüedad, métricas y permisos en [GUARD_REPORTS.md](../../docs/GUARD_REPORTS.md).
+
+El guardia lista solo sus cierres; admin lista los del propio condominio con fecha de inicio/guardia y páginas de 50. Detalle y CSV usan el DTO ya autorizado. `shiftCsv` escapa fórmulas, comillas y saltos; no utiliza bibliotecas o endpoints externos. La UI muestra pendientes al generar, no pendientes históricos al fin; nunca cierra visitas ni servicios. No hay caché local ni fallback local para servicios/cierres.
 
 `guardScanSession` acepta tokens de 64 caracteres hexadecimales o enlaces `/invitacion/TOKEN`, sin navegar URLs ni registrar su contenido. Bloquea frames/solicitudes mientras valida, conserva el resultado hasta Siguiente y bloquea nuevas lecturas ante una respuesta incierta. `qrCamera` abre solo por gesto, carga `qr/decode.js` bajo demanda, procesa imágenes localmente y libera todos los tracks al detener, detectar, salir o esconder la página. Ninguno decide permisos o vigencia: esa autoridad permanece en SQL.
 
@@ -39,5 +45,5 @@ Los hooks refrescan al consultar, recuperar foco/conexión o tras mutación. El 
 
 PublicInvitation contiene exactamente token, visitorName, residenceName, condominiumName, startsAt, expiresAt y status. La vista pública no presenta datos de anfitrión, contacto o vehículo. El DTO nuevo requiere la incremental 20260917000700; no cambiar las migraciones aplicadas. La firma pública conserva su parámetro `vehicle` para compatibilidad, pero la incremental lo rechaza como escritura: no se ofrece `addVehicle` en el modo compartido y el residente define el vehículo al crear la invitación. El modo local de demostración mantiene su contrato separado y no mezcla datos con Supabase.
 
-Validación: regresión local, PostgreSQL/PGlite, PostgreSQL nativo concurrente y SDK con HTTP simulado. Base remota activa según el responsable; incremental de escaneo y cámaras físicas pendientes según [GUARD_SCANNING.md](../../docs/GUARD_SCANNING.md). No se reconfirmó la activación remota de Guardia ni del deployment.
+Validación: regresión local, PostgreSQL/PGlite, PostgreSQL nativo concurrente y SDK con HTTP simulado. Las trece migraciones previas y sus flujos remotos están confirmados por el responsable. La incremental 14 de cierres y su aceptación remota/física siguen pendientes; ver [GUARD_REPORTS.md](../../docs/GUARD_REPORTS.md). No se ejecutaron nuevas pruebas contra Supabase ni despliegues.
 

@@ -25,7 +25,7 @@ import { ResidentDashboardPage } from './pages/ResidentDashboardPage'
 import { WorkspaceLayout } from './layouts/WorkspaceLayout'
 import { GuardDashboardPage } from './pages/GuardDashboardPage'
 import { GuardHistoryPage } from './pages/GuardHistoryPage'
-import { GuardUpcomingPage } from './pages/GuardUpcomingPage'
+import { GuardReportPage, GuardReportsPage } from './pages/GuardReportsPage'
 import { GuardScanPage } from './pages/GuardScanPage'
 import { GuardExitPage } from './pages/GuardExitPage'
 import { ServiceAccessPage } from './pages/ServiceAccessPage'
@@ -39,7 +39,8 @@ export const router = createBrowserRouter([
       { path: 'escanear', element: <GuardScanPage /> },
       { path: 'salidas', element: <GuardExitPage /> },
       { path: 'servicios', element: <ServiceAccessPage /> },
-      { path: 'reportes', element: <GuardUpcomingPage stage="reports" /> },
+      { path: 'reportes', element: <GuardReportsPage /> },
+      { path: 'reportes/:reportId', element: <GuardReportPage /> },
       { path: '*', element: <NotFoundPage homePath="/guardia" /> },
     ] }],
   },
@@ -67,6 +68,8 @@ export const router = createBrowserRouter([
           { path: 'control-acceso', element: <AccessControlPage /> },
           { path: 'historial', element: <AccessHistoryPage /> },
           { path: 'servicios', element: <ServiceAccessPage administrative /> },
+          { path: 'reportes-caseta', element: <GuardReportsPage administrative /> },
+          { path: 'reportes-caseta/:reportId', element: <GuardReportPage administrative /> },
           { path: 'reportes', element: <ReportsPage /> },
           { path: 'reportes/:reportId', element: <ReportPage /> },
           { path: 'perfil', element: <WorkspacePage role="admin" /> },

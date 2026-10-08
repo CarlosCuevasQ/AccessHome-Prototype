@@ -106,7 +106,7 @@ async function race({second=input(10,20),rollback=false,isolation='READ COMMITTE
  }
 }
 
-test('PostgreSQL nativo: trece migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
+test('PostgreSQL nativo: catorce migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
  t.diagnostic('PostgreSQL '+version+'; tres conexiones TCP locales, Auth simulado.')
  assert.notEqual(a.processID,b.processID)
 })
@@ -407,3 +407,30 @@ test('servicio vence mientras espera residencia: no autoriza con el reloj previo
   assert.equal((await owner.query('select count(*)::int as n from accesshome.service_events where service_id=$1',[id])).rows[0].n,1)
  } finally {await a.query('rollback');if(pending) await pending;await b.query('rollback')}
 })
+
+let shiftDay=1
+const closeShift=(client,input,request)=>client.query('select accesshome.guard_reports($1,$2,$3) as data',['generate',JSON.stringify(input),request])
+for(const scenario of ['mismo request_id','distinto request_id mismo periodo','rollback','turnos adyacentes','otro guardia mismo periodo']) {
+ test('cierres concurrentes: '+scenario,async()=>{
+  const day=String(shiftDay++).padStart(2,'0')
+  const input={start:`2020-02-${day}T07:00`,end:`2020-02-${day}T15:00`,notes:'Cierre concurrente',incidents:''}
+  const request=randomUUID(),independent=scenario==='turnos adyacentes'||scenario==='otro guardia mismo periodo'
+  let pending
+  try {
+   await beginGuard(a);await beginGuard(b,scenario==='otro guardia mismo periodo'?1:0)
+   const first=(await closeShift(a,input,request)).rows[0].data
+   const secondInput=scenario==='turnos adyacentes'?{...input,start:input.end,end:`2020-02-${day}T23:00`}:input
+   pending=settled(closeShift(b,secondInput,scenario==='mismo request_id'?request:randomUUID()))
+   if(!independent) await waitBlocked(b,a)
+   else {const completed=await pending;assert.equal(completed.error,undefined)}
+   await a.query(scenario==='rollback'?'rollback':'commit')
+   const second=await pending
+   await b.query(second.error?'rollback':'commit')
+   if(scenario==='mismo request_id') assert.deepEqual(second.value.rows[0].data,{...first,replayed:true})
+   else if(scenario==='distinto request_id mismo periodo') assert.match(second.error?.message??'',/Ya cerraste/)
+   else assert.equal(second.error,undefined)
+   const count=(await owner.query('select count(*)::int as n from accesshome.guard_shift_reports where period_start >= $1::timestamptz and period_start < $1::timestamptz+interval \'1 day\'',[`2020-02-${day}T00:00Z`])).rows[0].n
+   assert.equal(count,independent?2:1)
+  } finally {await a.query('rollback');if(pending) await pending;await b.query('rollback')}
+ })
+}
