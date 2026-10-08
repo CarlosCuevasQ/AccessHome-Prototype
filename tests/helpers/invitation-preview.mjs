@@ -39,6 +39,7 @@ const queries={
  list_services:b=>['select accesshome.list_services($1,$2) as data',[b.status_filter??'todos',b.page??0]],
  service_command:b=>['select accesshome.service_command($1,$2,$3,$4) as data',[b.operation,b.target,JSON.stringify(b.input),b.request_id]],
  guard_reports:b=>['select accesshome.guard_reports($1,$2,$3) as data',[b.operation,JSON.stringify(b.input??{}),b.request_id??null]],
+ guard_report_log:b=>['select accesshome.guard_report_log($1,$2,$3,$4) as data',[b.report_id,b.kind??'all',b.page??0,b.newest_first??false]],
  session_profile:()=>['select accesshome.session_profile() as data',[]],
  resident_dashboard:()=>['select accesshome.resident_dashboard() as data',[]],
  admin_dashboard:()=>['select accesshome.admin_dashboard() as data',[]],

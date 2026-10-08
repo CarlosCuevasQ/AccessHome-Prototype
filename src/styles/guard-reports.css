@@ -5,4 +5,7 @@
 .shift-page .form-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0; }
 .shift-metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
 .shift-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.shift-log li { overflow-wrap: anywhere; }
+.shift-log-times { display: flex; flex-wrap: wrap; gap: 16px; }
+.shift-log-times dd { margin: 6px 0; }
 @media (max-width: 600px) { .shift-form .form-grid, .shift-filters, .shift-metrics { grid-template-columns: 1fr; } .shift-page .form-actions button { width: 100%; } }

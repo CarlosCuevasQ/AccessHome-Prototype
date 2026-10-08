@@ -1,3 +1,13 @@
+## Prompt 14.5 · Bitácora detallada y CSV tabular
+
+Local: **222/222** en npm test; **37/37** en test:concurrency sobre PostgreSQL 17.10; build:vercel con TypeScript aprobado, advertencia conocida >500 kB. El detalle verifica datos reales de varios visitantes/servicios, llegada distinta a entrada, QR/MANUAL, vehículo/placas/operador, salida con entrada de otro día, abiertos/cancelados/vencidos, rechazo/motivo, cancelación, orden/filtros y paginación. DTO exacto sin IDs internos ni campos sensibles; guard/admin permitido y otras cuentas/condominios/inactivo rechazados. Resumen y cierre anteriores siguen pasando sin cambios en cifras.
+
+`npm run deployment:check` y `git diff --check`: aprobados. Sin secretos privilegiados reconocibles ni archivos privados en dist; Git solo informa la normalización LF/CRLF habitual. Ninguna migración anterior ni `.env.local` aparece modificada.
+
+CSV validado con parser independiente: 20 columnas estables, una fila por evento, vacíos, acentos UTF-8, comas/comillas/saltos, protección de fórmulas y sin tokens/request_id/source_ids/command_input/UUID aun con propiedades extra en el objeto. SDK prueba carga por páginas, límite de 10 000, abort y error sin archivo parcial. Prueba nativa nueva: cierre mientras salida de servicio espera COMMIT; el detalle sigue pendiente y sin salida antes y después de confirmar esa transacción.
+
+Manual/remoto pendiente: aplicar nueva incremental después de verificar la 14 y ausencia de SELECT directo; comprobar guardReportLogVersion 1; publicar por responsable. Probar celular guardia/computadora admin, detalle completo y legado, filtros, pendientes sin salida inventada, CSV en Excel y móvil/tablet. Recorrido en [GUARD_REPORTS.md](GUARD_REPORTS.md). No se ejecutaron pruebas físicas ni REST remotas. Las secciones siguientes son registros históricos.
+
 ## Prompt 14 · Reportes de caseta y cierre de turno
 
 Corrección previa a aplicar la migración 14: retirada de SELECT directo sobre guard_shift_reports, conservando RLS y proyección RPC. Validación nueva: **215/215** en npm test y **36/36** en test:concurrency; build:vercel y deployment:check aprobados. El catálogo verifica ausencia de privilegios SELECT tanto de tabla como de columnas. Guardia/admin autorizados reciben 42501 al seleccionar directamente `*`, `id`, `source_ids`, `request_id` o `command_input`; list/detail RPC continúan devolviendo el mismo snapshot sin los tres campos internos. La auditoría SQL exige expresamente este contrato RPC-only. Sin pruebas REST remotas ni aplicación de migraciones. Los resultados que siguen corresponden a la implementación inicial.

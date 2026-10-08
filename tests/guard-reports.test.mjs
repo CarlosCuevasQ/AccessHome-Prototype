@@ -20,7 +20,7 @@ async function actor(user,fn,extra={}) {
 const call=(user,operation,input={},request=null)=>actor(user,async tx=>(await tx.query('select accesshome.guard_reports($1,$2,$3) as data',[operation,JSON.stringify(input),request])).rows[0].data)
 const rpc=(user,name,args)=>actor(user,async tx=>(await tx.query(`select accesshome.${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) as data`,args)).rows[0].data)
 async function visit(name,exit=false) {
- const id=await rpc('daniel','create_invitation',[JSON.stringify({source:'occasional',visitorName:name,phone:'',saveAsContact:false,validity:{kind:'24hours'}})])
+ const id=await rpc('daniel','create_invitation',[JSON.stringify({source:'occasional',visitorName:name,phone:'private-phone',vehicle:{plates:'VIS-24',brand:'Sedán',model:'Modelo',color:'Azul'},saveAsContact:false,validity:{kind:'24hours'}})])
  const details=await rpc('daniel','invitation_details',[id])
  await rpc('admin','validate_access',[details.token,randomUUID()])
  if(exit) await rpc('admin','validate_access',[details.token,randomUUID()])
@@ -171,4 +171,96 @@ test('health y snapshot no exponen tokens/datos privados ni cuentan rechazos QR 
  assert.equal(report.metrics.visitorRejections,null)
  const text=JSON.stringify(report)
  for(const name of ['visitor_name','phone','token_value','vehicle_plates','request_id','command_input']) assert.equal(text.includes(name),false)
+})
+
+const log=(who='guard',id=report.id,kind='all',page=0,newest=false)=>rpc(who,'guard_report_log',[id,kind,page,newest])
+const dtoKeys=['occurredAt','type','inPeriod','movement','name','company','category','residence','vehicle','plates','method','result','arrivalAt','entryAt','exitAt','pendingExit','guard','notes'].sort()
+
+test('bitácora: varios visitantes/servicios, entrada/salida, placas, método, autor y resumen intacto',async()=>{
+ const data=await log(),admin=await log('admin')
+ assert.deepEqual(data,admin);assert.equal(data.legacy,false)
+ assert.equal(data.total,12);assert.equal(data.records.length,12);assert.equal(data.hasMore,false)
+ const v=data.records.filter(r=>r.type==='visitor'),s=data.records.filter(r=>r.type==='service')
+ assert.equal(v.length,4);assert.equal(s.length,8)
+ assert.equal(v.filter(r=>r.movement==='Entrada').length,report.metrics.visitorEntries)
+ assert.equal(v.filter(r=>r.movement==='Salida').length,report.metrics.visitorExits)
+ for(const [movement,metric] of [['Llegada','serviceArrivals'],['Entrada','serviceEntries'],['Salida','serviceExits'],['Rechazo','serviceRejections']]) assert.equal(s.filter(r=>r.movement===movement).length,report.metrics[metric])
+ assert.equal(v.filter(r=>r.pendingExit).length,2)
+ const completed=v.find(r=>r.name==='Con salida')
+ assert.ok(completed.entryAt);assert.ok(completed.exitAt);assert.equal(completed.pendingExit,false)
+ assert.equal(completed.vehicle,'Sedán Modelo Azul');assert.equal(completed.plates,'VIS-24');assert.equal(completed.method,'QR');assert.ok(completed.guard)
+ assert.equal(s.find(r=>r.movement==='Salida').result,'Finalizado')
+ assert.equal(s.find(r=>r.movement==='Rechazo').result,'Rechazado')
+ for(const entry of s.filter(r=>r.movement==='Entrada')) assert.equal(entry.method,'MANUAL')
+ const pending=s.find(r=>r.movement==='Entrada'&&r.pendingExit)
+ assert.equal(pending.exitAt,null) // serviceOpen was closed AFTER this report.
+ for(const row of data.records) assert.deepEqual(Object.keys(row).sort(),dtoKeys)
+ const times=data.records.map(r=>Date.parse(r.occurredAt));assert.deepEqual(times,[...times].sort((a,b)=>a-b))
+ const newest=await log('guard',report.id,'all',0,true)
+ const reversed=newest.records.map(r=>Date.parse(r.occurredAt));assert.deepEqual(reversed,[...times].sort((a,b)=>b-a))
+ assert.equal((await log('guard',report.id,'visitor')).total,4)
+ assert.equal((await log('guard',report.id,'service')).total,8)
+ assert.deepEqual(await call('guard','detail',{id:report.id}),report)
+})
+
+test('bitácora protege acceso privado, otros condominios, otro guardia, residente/anon e inactivo',async()=>{
+ for(const who of ['other','otherAdmin','guard2','daniel',null]) await assert.rejects(log(who))
+ await assert.rejects(actor('daniel',tx=>tx.query('select accesshome_private.guard_report_log($1)',[report.id])))
+ await db.query('select accesshome_private.set_guard_active($1,$2,false)',[users.guard,seed.condominiumId])
+ try {await assert.rejects(log())} finally {await db.query('select accesshome_private.set_guard_active($1,$2,true)',[users.guard,seed.condominiumId])}
+ for(const args of [['bad',0,false],['all',-1,false],['all',10001,false],['all',0,null]]) await assert.rejects(log('guard',report.id,...args))
+ await assert.rejects(log('admin',randomUUID()))
+ const json=JSON.stringify(await log())
+ for(const value of ['source_ids','request_id','command_input','token','private-phone',...Object.values(users),seed.condominiumId,seed.residence24,closed]) assert.equal(json.includes(value),false)
+ for(const who of ['guard','admin']) await assert.rejects(actor(who,tx=>tx.query('select source_ids from accesshome.guard_shift_reports')),error=>error.code==='42501')
+})
+
+test('detalle ampliado: cancelación, motivo rechazo, pendiente anterior, salida MANUAL y snapshot estable',async()=>{
+ const old=await visit('José "López", antiguo')
+ await db.query("update accesshome.access_records set occurred_at='2019-12-31T15:00Z' where invitation_id=$1",[old])
+ const manual=await visit('Salida manual')
+ await db.query("update accesshome.access_records set occurred_at=now()-interval '4 seconds' where invitation_id=$1",[manual])
+ const en=(await db.query("select id from accesshome.access_records where invitation_id=$1 and direction='entrada'",[manual])).rows[0].id
+ await rpc('guard','guard_register_exit',[en,randomUUID()])
+ await db.query("update accesshome.access_records set occurred_at=case direction when 'entrada' then '2020-01-01T17:00Z'::timestamptz else '2020-01-02T18:00Z'::timestamptz end where invitation_id=$1",[manual])
+ const cancel=(await service('register')).record.id;await service('cancel',cancel)
+ const reject=(await rpc('guard','service_command',['register',null,JSON.stringify({category:'comida',company:'Uber Eats',providerName:'José Pérez',plates:'ABC-123',notes:'Entrega, "sin llamada"\nDos bolsas',residenceId:seed.residence24}),randomUUID()])).record.id
+ await rpc('guard','service_command',['reject',reject,JSON.stringify({reason:'Destino incorrecto'}),randomUUID()])
+ await db.query("update accesshome.service_events set occurred_at=case operation when 'register' then '2020-01-02T17:10Z'::timestamptz else '2020-01-02T17:20Z'::timestamptz end where service_id in ($1,$2)",[cancel,reject])
+ const r=(await call('guard','generate',{...input,start:'2020-01-02T06:00'},randomUUID())).report
+ const before=await log('guard',r.id)
+ const pending=before.records.find(r=>r.name.includes('antiguo'))
+ assert.equal(pending.inPeriod,false);assert.equal(pending.pendingExit,true);assert.equal(pending.exitAt,null);assert.ok(pending.entryAt)
+ const manualRow=before.records.find(r=>r.name==='Salida manual'&&r.movement==='Salida')
+ assert.equal(manualRow.method,'MANUAL');assert.equal(new Date(manualRow.entryAt).toISOString(),'2020-01-01T17:00:00.000Z')
+ assert.equal(before.records.filter(r=>r.name==='Salida manual').length,1) // entry outside period is context, not an extra movement
+ assert.equal(before.records.filter(r=>r.movement==='Cancelación').length,1)
+ const rejection=before.records.find(r=>r.company==='Uber Eats'&&r.movement==='Rechazo')
+ assert.equal(rejection.name,'José Pérez');assert.equal(rejection.plates,'ABC-123');assert.ok(rejection.notes.includes('Destino incorrecto'));assert.equal(rejection.entryAt,null)
+ // Later service decisions and profile renames must not change the projection.
+ const late=(await service('register')).record.id
+ await db.query("update accesshome.service_events set occurred_at='2020-01-02T18:01Z' where service_id=$1",[late])
+ await db.query("update accesshome.profiles set display_name='Nombre cambiado' where user_id=$1",[users.guard])
+ assert.deepEqual(await log('guard',r.id),before)
+})
+
+test('reportes previos conservan solo sus referencias: sin inventar contexto ni cancelaciones',async()=>{
+ const source=(await db.query('select source_ids from accesshome.guard_shift_reports where id=$1',[report.id])).rows[0].source_ids
+ try {
+  await db.query("update accesshome.guard_shift_reports set source_ids=source_ids-'detailVersion'-'visitorContext'-'serviceContext'-'serviceCancellations' where id=$1",[report.id])
+  const legacy=await log();assert.equal(legacy.legacy,true);assert.equal(legacy.total,12)
+  assert.equal(legacy.records.find(r=>r.type==='service'&&r.pendingExit&&r.movement==='Entrada').exitAt,null)
+ } finally {await db.query('update accesshome.guard_shift_reports set source_ids=$1 where id=$2',[JSON.stringify(source),report.id])}
+})
+
+test('bitácora paginada de 50 sin filas duplicadas y health conservado',async()=>{
+ for(let i=0;i<55;i++) {
+  const id=(await service('register')).record.id
+  await db.query("update accesshome.service_events set occurred_at='2020-03-01T15:00Z'::timestamptz+$1::int*interval '1 second' where service_id=$2",[i,id])
+ }
+ const r=(await call('guard','generate',{start:'2020-03-01T07:00',end:'2020-03-01T15:00'},randomUUID())).report
+ const first=await log('guard',r.id,'service'),second=await log('guard',r.id,'service',1)
+ assert.equal(first.records.length,50);assert.equal(first.hasMore,true);assert.equal(second.records.length,5);assert.equal(second.hasMore,false)
+ assert.equal(new Set([...first.records,...second.records].map(r=>r.occurredAt)).size,55)
+ assert.equal((await rpc(null,'backend_health',[])).guardReportLogVersion,1)
 })

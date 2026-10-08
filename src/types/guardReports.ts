@@ -19,3 +19,11 @@ export interface ShiftReport extends ShiftPreview {
 export interface ShiftContext { timeZone: string; condominiumName: string; guardName: string; start: string; end: string; guards: { id: string; name: string }[] }
 export interface ShiftFilters { from?: string; to?: string; guard?: string; page?: number }
 export interface ShiftResult { report: ShiftReport; replayed: boolean }
+export type ShiftLogKind = 'all' | 'visitor' | 'service'
+export interface ShiftLogItem {
+  occurredAt: string; type: 'visitor' | 'service'; inPeriod: boolean; movement: string
+  name: string; company: string; category: string; residence: string; vehicle: string; plates: string
+  method: string; result: string; arrivalAt: string | null; entryAt: string | null; exitAt: string | null
+  pendingExit: boolean; guard: string; notes: string
+}
+export interface ShiftLogPage { records: ShiftLogItem[]; total: number; hasMore: boolean; timeZone: string; legacy: boolean }

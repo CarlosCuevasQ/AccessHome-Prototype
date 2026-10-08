@@ -17,7 +17,7 @@ export async function installSharedSchema(db, { baseOnly = false } = {}) {
     grant execute on function auth.uid(),auth.jwt() to anon,authenticated;
   `)
   const files = (await readdir('supabase/migrations')).filter(file => file.endsWith('.sql')).sort()
-  if (files.length !== 14) throw new Error('Se esperan catorce migraciones, incluida reportes de caseta.')
+  if (files.length !== 15) throw new Error('Se esperan quince migraciones, incluida bitácora de caseta.')
   for (const file of baseOnly ? files.slice(0, 8) : files) {
     try { await db.exec(await readFile('supabase/migrations/' + file, 'utf8')) }
     catch (error) { throw new Error(file + ': ' + error.message, { cause: error }) }

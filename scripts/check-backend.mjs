@@ -31,5 +31,8 @@ if(!url || !key?.startsWith('sb_publishable_')) {
   console.log(data.guardReportsVersion===1
     ? 'Reportes de caseta detectados (guardReportsVersion: 1). Falta comprobar cierres y consulta con cuentas reales.'
     : 'Reportes de caseta pendientes: revisar 20261007000100_guard_reports.sql.')
+  console.log(data.guardReportLogVersion===1
+    ? 'Detalle de turno detectado (guardReportLogVersion: 1). Falta aceptación remota de bitácora y CSV.'
+    : 'Detalle de turno pendiente: revisar 20261007000200_guard_report_log.sql.')
  } catch(error) { console.error(error.message); process.exitCode=1 }
 }

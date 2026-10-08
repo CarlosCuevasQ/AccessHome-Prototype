@@ -2,7 +2,7 @@
 
 Prototipo universitario en React, Vite y TypeScript. Conserva las pantallas de administración, residencia, contactos, invitaciones/QR, historial y reportes.
 
-El responsable confirmó Vercel, Supabase, las trece migraciones y los flujos de visitas/servicios en dispositivos reales. El Prompt 14 añade **Reportes de caseta**: preview SQL, cierre inmutable, consulta administrativa y CSV. Requiere únicamente `20261007000100_guard_reports.sql`, todavía pendiente de aplicación remota. Guía: [GUARD_REPORTS.md](docs/GUARD_REPORTS.md).
+El Prompt 14.5 conserva el resumen de caseta y añade **Detalle del turno**: bitácora cronológica autorizada de visitantes/servicios, pendientes al cierre y CSV tabular de 20 columnas. La mejora requiere `20261007000200_guard_report_log.sql`, pendiente de aplicación remota por el responsable después de la versión de reportes. Guía: [GUARD_REPORTS.md](docs/GUARD_REPORTS.md).
 
 ## Ejecutar
 
@@ -48,9 +48,9 @@ Los RPCs expuestos son SECURITY INVOKER. La lógica privilegiada está en access
 
 ## Configuración compartida
 
-La configuración existente de `.env.local`, las trece migraciones aplicadas y los datos se conservan. Esta etapa añade únicamente `20261007000100_guard_reports.sql`: snapshots de caseta, RPC privado con wrapper mínimo, RLS y permisos específicos. El responsable debe revisar/aplicar solo esta versión nueva y publicar el frontend actualizado.
+La configuración existente de `.env.local`, las catorce migraciones anteriores y los datos se conservan. Esta mejora añade únicamente `20261007000200_guard_report_log.sql`: proyección de fuentes operativas mediante RPC autorizado y referencias de contexto privadas para cierres nuevos, sin tablas nuevas ni reescritura de reportes. El responsable debe revisar el historial real antes de aplicar solo la incremental faltante y publicar el frontend actualizado.
 
-Seguir [GUARD_REPORTS.md](docs/GUARD_REPORTS.md) y [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. `npm run backend:check` debe indicar `guardReportsVersion: 1` después de aplicar la nueva migración; conserva `schemaVersion: 9` y las capacidades anteriores. No prueba login, cámara ni despliegue. No se ejecutó contra el proyecto en esta entrega.
+Seguir [GUARD_REPORTS.md](docs/GUARD_REPORTS.md) y [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. `npm run backend:check` debe indicar `guardReportLogVersion: 1`; conserva `guardReportsVersion: 1`, `schemaVersion: 9` y las capacidades anteriores. No prueba login, cámara ni despliegue. No se ejecutó contra el proyecto en esta entrega.
 
 Para instalaciones completamente nuevas, [SHARED_BACKEND_SETUP.md](docs/SHARED_BACKEND_SETUP.md) documenta la base inicial. Mantener expuesto `accesshome` y privado `accesshome_private`.
 

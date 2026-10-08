@@ -1,4 +1,4 @@
--- Auditoría del catálogo después de las catorce migraciones. No crea datos.
+-- Auditoría del catálogo después de las quince migraciones. No crea datos.
 -- Ejecutar como el propietario de las migraciones en un proyecto de prueba.
 begin;
 set transaction read only;
@@ -32,7 +32,8 @@ declare
     'accesshome_private.service_context()',
     'accesshome_private.list_services(text,integer)',
     'accesshome_private.service_command(text,uuid,jsonb,uuid)',
-    'accesshome_private.guard_reports(text,jsonb,uuid)'
+    'accesshome_private.guard_reports(text,jsonb,uuid)',
+    'accesshome_private.guard_report_log(uuid,text,integer,boolean)'
   ];
 begin
   foreach permission in array array['anon','authenticated','service_role'] loop

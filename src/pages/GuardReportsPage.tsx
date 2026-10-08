@@ -6,14 +6,9 @@ import { guardReportsService } from '../services/guardReportsService'
 import { GuardReportForm } from '../components/GuardReportForm'
 import { GuardReportSummary } from '../components/GuardReportSummary'
 import { formatDate } from '../utils/dates'
-import { shiftCsv } from '../utils/shiftCsv'
-import type { ShiftContext, ShiftFilters, ShiftReport } from '../types/guardReports'
+import { GuardReportLog } from '../components/GuardReportLog'
+import type { ShiftContext, ShiftFilters } from '../types/guardReports'
 
-function exportCsv(report: ShiftReport) {
-  const url = URL.createObjectURL(new Blob([shiftCsv(report)], { type: 'text/csv;charset=utf-8' }))
-  const link = document.createElement('a'); link.href = url; link.download = `caseta-${report.id}.csv`; link.click()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
 export function GuardReportPage({ administrative = false }: { administrative?: boolean }) {
   usePageTitle('Detalle del reporte de caseta')
   const { reportId = '' } = useParams()
@@ -24,8 +19,8 @@ export function GuardReportPage({ administrative = false }: { administrative?: b
     {loading && <p role="status">Consultando…</p>}{error && <p className="form-error" role="alert">{error}</p>}
     {data && <><p>Finalizado · Snapshot guardado · Métricas v{data.metric_version}</p><GuardReportSummary report={data} />
       <h2>Observaciones</h2><p className="shift-text">{data.notes || 'Sin observaciones.'}</p><h2>Incidencias</h2><p className="shift-text">{data.incidents || 'Sin incidencias declaradas.'}</p>
-      <p className="form-help">Identificador: {data.id}. Los movimientos originales se conservan; este snapshot no cambia con las salidas posteriores.</p>
-      <button className="secondary-button" onClick={() => exportCsv(data)}>Exportar CSV</button></>}
+      <p className="form-help">Los movimientos originales se conservan; este snapshot no cambia con las salidas posteriores.</p>
+      <GuardReportLog key={data.id} report={data} /></>}
   </section>
 }
 export function GuardReportsPage({ administrative = false }: { administrative?: boolean }) {

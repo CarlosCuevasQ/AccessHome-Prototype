@@ -106,7 +106,7 @@ async function race({second=input(10,20),rollback=false,isolation='READ COMMITTE
  }
 }
 
-test('PostgreSQL nativo: catorce migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
+test('PostgreSQL nativo: quince migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
  t.diagnostic('PostgreSQL '+version+'; tres conexiones TCP locales, Auth simulado.')
  assert.notEqual(a.processID,b.processID)
 })
@@ -434,3 +434,23 @@ for(const scenario of ['mismo request_id','distinto request_id mismo periodo','r
   } finally {await a.query('rollback');if(pending) await pending;await b.query('rollback')}
  })
 }
+
+test('bitácora: salida concurrente sin COMMIT no cambia referencias ni pendientes del cierre',async()=>{
+ let id,report
+ try {
+  await beginGuard(a)
+  id=(await a.query('select accesshome.service_command($1,$2,$3,$4) as data',['register',null,JSON.stringify({residenceId:house,category:'paqueteria',company:'Contexto MVCC'}),randomUUID()])).rows[0].data.record.id
+  await serviceCommand(a,'allow',id);await a.query('commit')
+  await beginGuard(a);await serviceCommand(a,'exit',id) // uncommitted at report snapshot
+  await beginGuard(b)
+  report=(await closeShift(b,{start:'2020-04-01T07:00',end:'2020-04-01T15:00'},randomUUID())).rows[0].data.report
+  const before=(await b.query('select accesshome.guard_report_log($1) as data',[report.id])).rows[0].data
+  const pending=before.records.find(r=>r.company==='Contexto MVCC')
+  assert.equal(pending.pendingExit,true);assert.equal(pending.exitAt,null);assert.equal(pending.inPeriod,false)
+  await b.query('commit');await a.query('commit')
+  await beginGuard(b)
+  const after=(await b.query('select accesshome.guard_report_log($1) as data',[report.id])).rows[0].data
+  assert.deepEqual(after,before)
+  await b.query('commit')
+ } finally {await a.query('rollback');await b.query('rollback')}
+})

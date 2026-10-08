@@ -1,4 +1,12 @@
-## Estado actual · Prompt 14: reportes de caseta y cierre de turno
+## Estado actual · Prompt 14.5: bitácora y CSV tabular
+
+Resumen de turno conservado, seguido de incidencias/observaciones, detalle paginado y CSV. La bitácora usa referencias SQL y DTO mínimo del propio cierre; visitantes/servicios, filtros y orden cronológico, método, vehículo, placas y operador. Nuevas referencias de contexto preservan entrada/salida al cierre sin duplicar personas/vehículos. Cierres antiguos conservan su información y avisan contexto limitado. No se modificó ninguna de las catorce migraciones existentes ni el modelo de métricas.
+
+Incremental **`20261007000200_guard_report_log.sql` pendiente de aplicación remota**; no tablas nuevas ni SELECT cliente. CSV: 20 columnas, UTF-8/BOM, una fila por evento, escape/fórmulas y límite de 10 000 filas sin descarga parcial. Pendientes fuera del periodo marcados para no confundirlos con entradas del turno.
+
+Validación local: `npm test` **222/222**, concurrencia **37/37**, `build:vercel` aprobado con TypeScript; advertencia previa de chunk >500 kB (~730 kB). Revisión física móvil/tablet, Excel real y Auth/PostgREST remoto pendientes. Sin cambios remotos, `.env.local`, seed, commit, push ni despliegue. No se implementó Prompt 15. Guía y pasos de aceptación: [GUARD_REPORTS.md](GUARD_REPORTS.md).
+
+## Prompt 14: reportes de caseta y cierre de turno (registro histórico)
 
 El responsable confirmó las trece migraciones hasta `20260919000100_service_access.sql` y visitas/servicios con dispositivos reales. Esta entrega agrega **solo `20261007000100_guard_reports.sql`, pendiente de aplicación remota**. Las trece anteriores no se modificaron.
 

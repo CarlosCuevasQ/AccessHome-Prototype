@@ -1,5 +1,57 @@
 # Reportes de caseta y cierre de turno · Prompt 14
 
+## Mejora vigente · Prompt 14.5: detalle y CSV tabular
+
+El resumen y sus métricas se conservan primero, seguidos de observaciones/incidencias, **Detalle del turno** y Exportar CSV. No se hizo el rediseño del Prompt 15. El detalle nuevo está probado localmente; requiere aplicar por el responsable la incremental `20261007000200_guard_report_log.sql` después de la 14. No se modificó ninguna migración anterior ni se ejecutó SQL remoto.
+
+### Proyección autorizada y auditoría
+
+Se eligió reutilizar referencias a fuentes existentes, sin crear tablas ni copiar personas/vehículos. `access_records` contiene snapshots de identidad, casa, vehículo, método y operador. `service_events` conserva decisiones/movimientos con autor y motivo; los datos capturados en `service_visits` no se editan mediante RPC (solo cambia su estado). La proyección usa el resultado del **evento**, nunca el estado vivo del servicio.
+
+La incremental conserva el cálculo original como helper privado `shift_snapshot_v1` y amplía `shift_snapshot` con referencias auxiliares privadas de contexto y cancelaciones. Los totales no cambian. Una sola instantánea SQL captura las referencias de eventos y su contexto de llegada/entrada/salida. Así, un evento posterior o una transacción que confirme después no aparece retrospectivamente. No se reescriben reportes históricos ni se crean salidas al cerrar.
+
+`accesshome.guard_report_log(report_id, kind, page, newest_first)` es un wrapper invoker de una implementación privada con autorización SQL. El guardia activo lee únicamente sus reportes; el admin activo los de su condominio. Condominio y pertenencia se derivan del perfil, no de parámetros. Solo acepta ID de reporte, tipo all/visitor/service, página y orden. Devuelve **50 filas por página**, total, hasMore, zona y aviso legacy. No concede SELECT directo a guard_shift_reports ni a helpers; conserva RLS y el esquema privado fuera de Data API.
+
+La salida es un DTO explícito sin tokens, teléfonos, correos, IDs de usuarios/eventos, source_ids, request_id o command_input. Incluye fecha/hora del evento, tipo/movimiento, nombre, empresa/categoría si aplica, casa, vehículo/placas, método, resultado, horas relacionadas verificadas, operador y observación/motivo operativo. Si el snapshot antiguo no tiene nombre del operador, se indica no registrado; no se sustituye por el nombre actual del perfil.
+
+Por defecto se muestra todo, del más antiguo al más reciente; filtros Visitantes/Servicios y orden inverso no cambian el resumen. Una fila representa un evento, incluidos llegada, rechazo y cancelación de servicios (ninguno es entrada). Horas relacionadas describen la situación **al generar el cierre**, no necesariamente la situación al ocurrir esa fila. Ejemplo: la fila de entrada de un visitante que salió antes del cierre puede mostrar ambas horas.
+
+Las entradas pendientes al cierre que ocurrieron fuera del periodo también aparecen, rotuladas **Pendiente fuera del periodo**, sin duplicar las que ya pertenecen al turno. No deben contarse como entradas del periodo al sumar el CSV. La marca **Pendiente de salida al generar el reporte** corresponde al snapshot, incluso después de una salida posterior. Las horas inexistentes quedan vacías; no se calculan ni se inventan.
+
+**Reportes previos a esta incremental:** se conservan sin backfill y muestran solo lo verificable en sus referencias guardadas. Pueden faltar horas de entrada/salida fuera del periodo y cancelaciones, porque antes no se guardaban esas referencias. La UI avisa esta limitación. No se reconstruyen con estados actuales ni se declara una salida inexistente. Para detalle completo utilizar cierres generados tras la incremental. Las fuentes deben conservarse: las cuentas cliente no pueden editarlas/borrarlas; cambios manuales del propietario SQL podrían afectar una proyección basada en referencias.
+
+### CSV detallado
+
+Una sola tabla, UTF-8 con BOM, comas como separador y CRLF. Todas las celdas van entre comillas, se duplican las comillas internas y se preservan saltos/acentos; los prefijos de fórmulas se neutralizan. No hay JSON, métricas intercaladas, IDs ni encabezados narrativos. El resumen sigue disponible en la interfaz.
+
+Columnas, en orden: **Fecha, Hora, Tipo, Movimiento, Nombre, Empresa, Categoría, Residencia, Vehículo, Placas, Método, Resultado, Hora llegada, Hora entrada, Hora salida, Guardia, Observaciones, Pendiente de salida, Ámbito, Zona horaria**. Las tres horas relacionadas incluyen fecha `YYYY-MM-DD HH:mm:ss` para turnos que cruzan medianoche. Todo usa la zona guardada del condominio, no la del equipo. Resultado es el del evento; Pendiente de salida indica su condición al cierre. Campos no aplicables quedan vacíos.
+
+Nombre: `accesshome-reporte-caseta-YYYY-MM-DD.csv`, según fecha local de inicio. Exporta todos los tipos y páginas en orden antiguo→reciente, independientemente del filtro visual. Se descarga solo después de completar y verificar el número de filas. Límite explícito de **10 000 filas**; errores, desconexión o exceso no generan CSV parcial. Al salir de la pantalla se cancela la exportación restante. Sin dependencias nuevas.
+
+### Aplicación y aceptación manual pendientes
+
+1. Revisar el historial real del proyecto de ensayo: debe existir `20261007000100_guard_reports.sql` con la corrección sin SELECT directo. No editar/repetir migraciones aplicadas. Si falta esa versión, revisar y resolver ese requisito antes de esta mejora.
+2. El responsable ejecuta únicamente `supabase/migrations/20261007000200_guard_report_log.sql` completo como propietario controlado. Registrar su versión según el procedimiento SQL Editor/CLI del proyecto. Sin seed_demo ni reset. Esta tarea no ejecutó db push.
+3. Ejecutar auditoría `supabase/tests/security_baseline.sql` (solo lectura). Ejecutar manualmente `npm run backend:check`: esperar `guardReportLogVersion: 1`, junto a guardReportsVersion 1 y schemaVersion 9. Mantener accesshome_private fuera de Data API. Publicar el frontend solo mediante autorización/proceso del responsable.
+4. Celular guardia: crear varios movimientos de prueba, visita con QR entrada/salida, salida manual, visita abierta vencida/cancelada, servicio finalizado, rechazado con motivo y servicio abierto. Incluir vehículo/placas cuando existan. Registrar otra llegada sin entrada y una cancelación de servicio.
+5. Seleccionar periodo terminado que incluya esas fechas (fin exclusivo), revisar preview y generar. Comprobar que el resumen original sigue primero y sus cifras coinciden con los eventos reales; llegada/rechazo/cancelación no suman entradas.
+6. Abrir detalle como guardia y como admin en computadora. Esperar mismas filas, orden cronológico, identidad/casa/vehículo, QR/MANUAL y responsable. Comprobar filtros y paginación. Revisar una salida cuya entrada fue anterior al periodo: solo la salida cuenta como movimiento del turno, con hora de entrada contextual.
+7. Registrar después la salida de un pendiente: la bitácora del cierre sigue marcándolo pendiente al generar; el historial vivo muestra la salida nueva. Abrir también un cierre antiguo: aviso de contexto limitado, sin inventar datos.
+8. Exportar CSV y abrir en Excel. Esperar 20 columnas y una fila por evento, con acentos, comas/comillas y notas multilínea intactas, sin secretos/IDs. En configuraciones regionales que no separen comas automáticamente, importar mediante Datos → Desde texto/CSV, UTF-8 y delimitador coma. La apertura física en Excel queda pendiente.
+9. Verificar que otra cuenta guardia, otro condominio, residente, visitante público e inactivo no acceden a un reporte no autorizado ni por RPC. SELECT directo debe fallar aun para guard/admin autorizado. Probar móvil/tablet a 390/768 px: campos/listado/botones legibles, sin desbordamiento ni edición histórica.
+
+### Pruebas locales y archivos
+
+Pruebas del detalle cubren múltiples visitantes/servicios, horarios/contexto, snapshots de vehículo y guardia, pendientes antiguos, filtros/orden, paginación, cancelaciones/motivo de rechazo, autorización y DTO sin campos internos. CSV se analiza con un parser independiente para comprobar filas/columnas, celdas multilínea, UTF-8 y ausencia de secretos incluso si un objeto extra los contiene. SDK prueba exportación completa, límite, error sin descarga parcial y cancelación. PostgreSQL nativo comprueba salida concurrente no confirmada frente al snapshot. Las regresiones anteriores de servicios/QR/salida manual y cierres siguen incluidas.
+
+Archivos de esta mejora: nueva migración; `src/components/GuardReportLog.tsx`; página `GuardReportsPage.tsx`; service `guardReportsService.ts`; tipos `guardReports.ts`; `utils/shiftCsv.ts`; `styles/guard-reports.css`; `scripts/check-backend.mjs`; auditoría SQL; pruebas guard-reports/guard-report-csv/shared-client/guard-backend/concurrency y fixtures shared-sql/invitation-preview; README, estado, pruebas, guía SQL y contrato de services.
+
+Resultados: `npm test` **222/222**, `test:concurrency` **37/37**, `build:vercel` aprobado con TypeScript (chunk ~730 kB / 204 kB gzip, advertencia previa >500 kB). Pruebas visuales, Excel real, Supabase Auth/PostgREST y dispositivos físicos quedan pendientes. No hubo cambios remotos, `.env.local`, commits, push ni despliegue.
+
+`deployment:check` y `git diff --check` también aprobados; la revisión de secretos reconocibles del artefacto no equivale a una auditoría exhaustiva.
+
+## Implementación original del Prompt 14 (registro histórico)
+
 Las trece migraciones anteriores y los flujos de visitas/servicios están confirmados en producción de ensayo por el responsable. Esta entrega implementa el módulo **localmente**; la migración 14, publicación y aceptación con cuentas/dispositivos reales están pendientes. No se cambió ninguna migración aplicada, `.env.local`, datos remotos ni cuentas. No se ejecutó `db push`, `db reset`, semilla remota, commit, push ni despliegue.
 
 ## Modelo y alcance

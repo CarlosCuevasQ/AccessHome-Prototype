@@ -50,12 +50,32 @@ const {accessHistoryService}=await import('../.test-build/services/accessHistory
 const {dashboardService}=await import('../.test-build/services/dashboardService.js')
 const {guardService}=await import('../.test-build/services/guardService.js')
 const {serviceAccessService}=await import('../.test-build/services/serviceAccessService.js')
-const {guardReportsService}=await import('../.test-build/services/guardReportsService.js')
+const {guardReportsService,loadShiftExport}=await import('../.test-build/services/guardReportsService.js')
 const {getRoleHome}=await import('../.test-build/utils/auth.js')
 const {demoService}=await import('../.test-build/services/demoService.js')
 const {readDemoData,writeDemoData}=await import('../.test-build/services/demoStorage.js')
 const {getClient}=await import('../.test-build/services/shared/client.js')
 after(()=>{ getClient().auth.stopAutoRefresh(); globalThis.fetch=originalFetch; hooks.deregister(); delete globalThis.window })
+
+test('bitácora: RPC solo recibe reporte/filtro/página/orden; export completo, acotado y cancelable',async()=>{
+ const id=randomUUID()
+ await guardReportsService.log(id,'service',2,true)
+ assert.deepEqual(requests.findLast(r=>r.path.endsWith('/guard_report_log')).body,{report_id:id,kind:'service',page:2,newest_first:true})
+ const original=guardReportsService.log,calls=[]
+ try {
+  guardReportsService.log=async(id,kind,page,order)=>{calls.push([id,kind,page,order]);return {records:page===0?Array.from({length:50},(_,n)=>({name:'fila '+n})):[{name:'última'}],total:51,hasMore:page===0}}
+  assert.equal((await loadShiftExport(id)).length,51)
+  assert.deepEqual(calls,[[id,'all',0,false],[id,'all',1,false]])
+  guardReportsService.log=async()=>({total:10001,records:[],hasMore:true})
+  await assert.rejects(loadShiftExport(id),/10 000/)
+  guardReportsService.log=async()=>({total:2,records:[{}],hasMore:false})
+  await assert.rejects(loadShiftExport(id),/cambió/)
+  guardReportsService.log=async()=>{throw new Error('Red no disponible')}
+  await assert.rejects(loadShiftExport(id),/Red no disponible/)
+  const controller=new AbortController();controller.abort()
+  await assert.rejects(loadShiftExport(id,controller.signal),error=>error.name==='AbortError')
+ } finally {guardReportsService.log=original}
+})
 
 test('cierres: el service omite totales/autoridad y conserva request_id ante respuesta perdida',async()=>{
  const input={start:'2020-01-01T07:00',end:'2020-01-01T15:00',notes:'Observación',incidents:''}
