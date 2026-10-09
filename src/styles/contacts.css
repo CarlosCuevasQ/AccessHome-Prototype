@@ -16,7 +16,7 @@
 .contacts-page button:disabled { opacity: 0.6; cursor: not-allowed; }
 .contacts-page .form-grid { grid-template-columns: minmax(0, 1fr); }
 .contacts-page .editor-form { max-width: 600px; }
-.contacts-page textarea { width: 100%; min-height: 100px; padding: 12px; resize: vertical; font: inherit; color: #17212b; border: 1px solid #9caab7; border-radius: 4px; }
+.contacts-page textarea { width: 100%; min-height: 100px; padding: 12px; resize: vertical; font: inherit; color: var(--color-text); border: 1px solid var(--color-control-border); border-radius: 4px; }
 .contact-notes { grid-column: 1 / -1; }
 .contact-notes dd { white-space: pre-wrap; }
 @media (max-width: 600px) {

@@ -1,3 +1,159 @@
+## Prompt 15.3 · Experiencia residente: validación local
+
+Resultados reales de esta etapa (2026-10-08):
+
+| Verificación | Resultado |
+| --- | --- |
+| `npm test` | 224/224, sin fallos ni omitidas; incluye SQL/RLS, services, QR/cámara simulada, reportes, CSV y contraste |
+| `npm run test:concurrency` | 37/37 sobre PostgreSQL temporal local, Auth simulado |
+| `npm run build:vercel` | Aprobado, incluye TypeScript; advertencia conocida de chunk >500 kB |
+| `npm run deployment:check` | Aprobado sobre dist local; no constituye un despliegue |
+| `git diff --check` | Aprobado; avisos de normalización LF/CRLF |
+| Lint/typecheck | Sin scripts independientes; `tsc --noEmit` también ejecutado y aprobado |
+
+Bundle antes → después: JS principal **747.72 → 755.17 kB** (gzip **208.84 → 210.39**); CSS **61.40 → 80.99 kB** (gzip **11.46 → 13.93**). Decoder QR intacto: 34.83 / 14.29 gzip. Transferencia comprimida JS+CSS +4.02 kB; ninguna dependencia nueva.
+
+### Revisión local realizada
+
+Se utilizó el servidor Vite del fixture `node tests/helpers/invitation-preview.mjs --open-exits` en `127.0.0.1:5176`: PGlite desechable con las migraciones existentes y Auth simulado. No es el proyecto remoto ni se modifica `.env.local`. Se amplió únicamente el adaptador HTTP **de prueba** para invocar los RPC ya existentes de residencia, reportes y contactos. No cambia ningún service o RPC de producción.
+
+- Inicio residente, Mi residencia, listado de invitaciones, detalle, Mis reportes y detalle de reporte: mediciones en **375, 390, 430, 768, 1024, 1280 y 1440 px**, sin desbordamiento horizontal de documento en los casos probados. Capturas inspeccionadas en móvil y escritorio; se corrigió una cabecera móvil comprimida detectada durante la revisión.
+- Creación local de invitación con nombre, vigencia y vehículo; vista de datos, placas, QR y enlace público. Copiar enlace mostró «Enlace copiado». No se enviaron mensajes por WhatsApp.
+- Filtro de texto sin resultados y filtro por estado; estados vacíos de próximas visitas y reportes. Se observaron skeletons durante cargas iniciales.
+- Ruta local de invitación inexistente: título «Invitación no disponible», alerta y retorno a la lista mediante Enter. No se oculta el error con un estado vacío.
+- Habitante y vehículo: apertura/cierre del detalle con los mismos datos y acciones. El cierre devuelve el foco al botón que lo abrió.
+- Creación local de reporte con categoría y texto en párrafos; navegación al detalle y regreso al listado.
+- Cancelación local: confirmación enfocó «Mantener invitación»; mantener devolvió el foco. Al confirmar, residente y vista pública mostraron Cancelada y no presentaron QR utilizable para esa visita sin entrada.
+- Teclado: Enter en detalle/menú, Space en botones, Tab y Shift+Tab entre detalles, Escape en drawer y Disclosure. Foco visible comprobado y retorno al menú. Controles visibles de residencia medidos con altura mínima de 44 px.
+- La suite de contraste AA existente pasó. La reducción de movimiento conserva el mecanismo ya revisado de FadeContent/CSS; no se simuló ni cambió la preferencia del sistema.
+- Hashes respecto al inicio de 15.3: sin cambios en `supabase/`, services, tipos, hooks, utils, layouts, navegación, `InvitationQr`, package.json o lockfile. El árbol ya contenía cambios anteriores; no se revirtieron.
+
+Capturas locales en `.test-build/visual-15.3/`, fuera de Git/bundle. No son una certificación WCAG ni cubren todos los datos y navegadores.
+
+### Recorrido manual pendiente con `npm run dev`
+
+Usar la configuración compartida ya existente y una cuenta real del residente; no volver a sembrar la base ni ejecutar migraciones.
+
+1. Abrir Inicio: casa como contexto principal, Nueva invitación destacada, próximos accesos y actividad real; contactos como acción secundaria. Verificar que las cifras coinciden con sus pantallas de origen.
+2. En Mi residencia, abrir un habitante y un vehículo. Esperado: nombre, relación, estado, principal/propietario y placas correctos; Ver detalle y Cerrar detalle accesibles con teclado. Probar los formularios ya existentes sin cambios en autorización.
+3. Crear una invitación de ensayo autorizada. Esperado: datos guardados por el backend, detalle agrupado, vehículo solo cuando exista, QR generado por el componente previo.
+4. Pulsar Compartir invitación, Copiar enlace y Enviar por WhatsApp desde el teléfono. Confirmar personalmente cualquier envío. Abrir el enlace en otro navegador: conserva vista pública y validación de caseta.
+5. Cancelar esa invitación de ensayo y refrescar su vista pública: debe reflejar el estado real. No probar con una invitación real en uso. Las salidas y QR de visitas con entrada abierta conservan las reglas anteriores.
+6. Abrir Mis reportes, un detalle y Volver; crear un reporte de ensayo solo cuando proceda. Esperado: estado/categoría visibles, descripción legible, metadata correcta, ninguna edición de estados para el residente.
+7. Repetir a los siete anchos indicados, con nombres largos y sin datos. Verificar foco, labels, Tab/Shift+Tab, Enter/Space, Escape, zoom real al 200 %, lector de pantalla y `prefers-reduced-motion` del sistema.
+8. Como regresión remota pendiente, comprobar login/logout, roles, cámara física, entrada/salida, salida manual, servicios, reportes de caseta y CSV. Esta etapa no declara esas pruebas físicas aprobadas.
+
+Pendientes explícitos: cuentas/servicios Supabase reales en esta revisión, dispositivos físicos, compartir nativo/WhatsApp, lector de pantalla, zoom 200 %, preferencia del sistema y combinaciones extensas de datos. Las pruebas SQL y de concurrencia aprobadas fueron exclusivamente locales.
+
+## Prompt 15.2 · Refinamiento visual: validación local (registro histórico)
+
+Ejecutado después de los ajustes frontend:
+
+| Comando | Resultado real |
+| --- | --- |
+| `npm test` | 224/224, incluidos SQL/RLS, services, QR/cámara simulada, servicios, reportes, CSV y contraste |
+| `npm run test:concurrency` | 37/37, PostgreSQL temporal local, conexiones independientes |
+| `npm run build:vercel` | Aprobado; incluye `tsc --noEmit`; aviso conocido de bundle >500 kB |
+| `npm run deployment:check` | Aprobado; inspección de dist local, no despliegue ni auditoría exhaustiva |
+| `git diff --check` | Aprobado; avisos habituales LF/CRLF de Windows |
+
+Sin script lint/typecheck independiente ni nuevas dependencias npm. Bundle antes → después: JS 738.04 → 747.72 kB (gzip 206.68 → 208.84); CSS 43.45 → 61.40 kB (gzip 8.57 → 11.46). Decoder QR sin cambios: 34.83 / 14.29 gzip. JS+CSS comprimidos aumentan 5.05 kB.
+
+### Navegador y entorno utilizado
+
+- Login real de la aplicación local abierto en `http://127.0.0.1:5173/login`, con configuración compartida existente, sin leer/mostrar credenciales ni modificar `.env.local`. No se recibió una sesión real para revisar los roles remotos.
+- Roles y operaciones probados mediante el helper existente `node tests/helpers/invitation-preview.mjs --open-exits` en `http://127.0.0.1:5176`: PGlite desechable con las migraciones existentes y Auth simulado. Las cuentas `resident@fixture.invalid`, `guard@fixture.invalid` y `admin@fixture.invalid` solo existen en ese proceso; el campo contraseña acepta texto efímero no vacío. No son cuentas Supabase ni credenciales de producción. El helper no modifica datos remotos y fue detenido al terminar.
+- La semilla de ese fixture es exclusivamente local y efímera. No se ejecutó seed_demo contra Supabase ni `db push`/`db reset`.
+
+Medición DOM de ancho de viewport frente a ancho de documento, tras renderizar, en **375, 390, 430, 768, 1024, 1280 y 1440 px**:
+
+| Vista | Resultado |
+| --- | --- |
+| Login | Sin overflow horizontal; móvil apilado y formulario prioritario |
+| Inicio residente | Sin overflow; próxima invitación, estado de casa y actividad |
+| Panel guardia | Sin overflow; acción de escaneo dominante y pendientes |
+| Panel administrador | Sin overflow; métricas y timeline de movimientos |
+| Servicios / formulario | Sin overflow; radios táctiles y campos progresivos |
+| Reporte detallado | Sin overflow; resumen y movimientos con expansión |
+| Invitación pública activa / QR | Sin overflow; QR renderizado sin sesión |
+
+Las capturas inspeccionadas incluyen login móvil/escritorio, dashboards de escritorio, formulario móvil y reporte de escritorio. La medición dimensional no equivale a inspeccionar visualmente cada combinación posible de datos/estado/ancho. Evidencia conservada fuera de Git en `.test-build/visual-15.2/`: login-desktop.jpg, login-mobile.jpg y residente-desktop.jpg.
+
+### Recorridos y accesibilidad ejecutados en fixture local
+
+1. Login/logout de residente, guardia y administrador; rutas correctas.
+2. Residente crea invitación de 24 horas; se muestra en Próximas visitas y su detalle conserva QR y compartir. Tras logout, consulta pública activa con QR y sin sesión. No se envió WhatsApp.
+3. Guardia registra Amazon para Casa 24 con placas. Resultado: registrado, sin entrada. Confirmación explícita posterior produce entrada y el contador de servicios dentro cambia a uno.
+4. Formulario de servicio: categorías con flechas del teclado, radios nativos con etiquetas de 48 px, campos opcionales con Enter. No cambia la autorización.
+5. Vista previa y cierre SQL local: 2 entradas de visitantes, 0 salidas, 1 servicio registrado/con entrada, 2 visitas y 1 servicio pendientes. Bitácora con cuatro eventos; filtro Servicios muestra dos; se expanden horarios, placas y responsable.
+6. Se registra una salida manual de invitación cancelada en el fixture, con trazabilidad. El administrador observa el nuevo movimiento MANUAL; el reporte anterior conserva sus pendientes y el mismo snapshot.
+7. Escáner abre con cámara detenida y entrada manual. Código inválido presenta feedback y Escanear siguiente. No se solicitó cámara física.
+8. Drawer móvil: Enter/Space abre, Escape cierra y devuelve el foco al botón Menú (outline computado 3 px). `Disclosure` del reporte abre con Enter y cierra con Escape. En login, Tab pasa de correo a contraseña y Shift+Tab vuelve al correo, ambos con foco de 3 px. Labels y jerarquía comprobados en el árbol accesible. Pruebas automatizadas de contraste aprobadas.
+
+La generación/estructura/autorización del CSV pasa las pruebas existentes. Se intentó la descarga desde el navegador integrado, pero no se obtuvo confirmación de finalización antes del tiempo límite; no se declara descarga/Excel aprobados. Los atajos de zoom no cambiaron el zoom medido del navegador integrado; **200 % sigue pendiente**. Movimiento reducido tiene guardas en código, pero falta verificar el cambio real de preferencia del sistema. No se certifica WCAG 2.2 AA mediante estas comprobaciones parciales.
+
+### Aceptación manual pendiente con Supabase compartido
+
+1. Ejecutar `npm run dev` con la configuración compartida existente. Iniciar sesión con cada cuenta real, sin introducir credenciales en archivos del proyecto. Confirmar rol, condominio, navegación y logout.
+2. Residente: comparar Casa 24, próxima visita/placas, invitaciones y actividad con sus registros. Probar estados sin invitaciones y carga/error de red. Ver todas debe abrir la lista existente.
+3. Guardia: comprobar Escanear como acción principal, hasta tres pendientes y enlace a la lista completa. En entorno de ensayo autorizado, repetir llegada → confirmación → entrada → salida de servicio, rechazo y salida manual de visitante. La llegada sola no permite entrada.
+4. Reporte: comparar resumen y snapshot con el historial; filtrar/ordenar bitácora, expandir vehículo/horas y exportar CSV completo. Abrir en Excel y revisar caracteres, columnas y filas. Comprobar el mismo cierre como administrador.
+5. Teléfono/tablet físicos: abrir invitación compartida, escanear QR desde otro dispositivo y comprobar parada de cámara/resultado/siguiente; permiso denegado debe conservar alternativa manual.
+6. Revisar los siete anchos y zoom real al 200 %, Tab/Shift+Tab, Enter/Space, Escape y foco. Activar movimiento reducido del sistema: el mockup/cabecera deben aparecer inmediatamente, sin movimiento. Revisar lector de pantalla, estados vacíos/errores/carga y textos extensos.
+
+No se modificaron datos remotos, SQL, services, `.env.local`, Auth, QR/cámara o CSV. Sin commit, push o despliegue. Las siguientes secciones conservan resultados históricos; sus pendientes corresponden a cada etapa anterior.
+
+## Prompt 15 · Rediseño visual (registro histórico)
+
+Ejecutado localmente:
+
+- npm test: **224/224**. Incluye 222 regresiones existentes de servicios/dominio, seguridad SQL/RLS, idempotencia, QR/ciclo de cámara simulado, compartir, salida manual, reportes y CSV; dos pruebas nuevas de contraste sobre tokens (texto >=4.5:1, controles/foco >=3:1).
+- npm run test:concurrency: **37/37**, PostgreSQL local desechable con conexiones independientes. No usa Supabase remoto.
+- npm run build:vercel: aprobado; incluye tsc --noEmit. Sin script separado de lint/typecheck. JS principal 738.04 kB / 206.68 gzip; decoder QR 34.83 / 14.29; CSS 43.45 / 8.57. Persiste aviso >500 kB. No dependencias nuevas.
+- npm run deployment:check: aprobado. Es una inspección del artefacto local, no una publicación ni auditoría exhaustiva de secretos.
+- git diff --check: aprobado. Advertencias de normalización LF/CRLF habituales en Windows no son errores de whitespace.
+
+Incidencias corregidas durante la validación: el sandbox bloqueó procesos Node/Vite con EPERM; se repitieron con permiso de ejecución local. La primera compilación detectó una sustitución CSS de white-space inválida, corregida. La prueba de contraste detectó un borde de control de 2.85:1 sobre el fondo; se oscureció y pasó. Los resultados finales anteriores corresponden a las correcciones.
+
+**No ejecutado:** recorridos visuales del rediseño, teclado, responsive medido, zoom, lector de pantalla ni cámaras físicas. La herramienta de control de Windows detuvo Computer Use al no poder verificar la URL del navegador con suficiente confianza. Se observó una ventana de la versión publicada anterior, que NO sirve como prueba del código nuevo. No se eludió ese bloqueo. WCAG 2.2 AA es el objetivo, no una certificación obtenida mediante las dos pruebas de contraste.
+
+### Matriz manual de aceptación (todo pendiente)
+
+Repetir cada área a **375, 390, 430, 768, 1024, 1280 y 1440 px**, y comprobar zoom al 200 %. Anotar página/ancho/navegador y cualquier fallo; no dar por validado un tamaño por haber probado otro.
+
+| Área | Vistas | Resultado esperado |
+| --- | --- | --- |
+| Login | Inicial, enviando, credenciales incorrectas | Identidad azul/amarilla, campos etiquetados, error anunciado y foco visible, sin salto ni overflow. |
+| Administrador | Dashboard, residencias/detalle, historial, servicios, reportes/lista/detalle | Supervisión primero; navegación activa; filtros conservan datos; tablas legibles y reportes completos. |
+| Residente | Inicio, habitantes, vehículos, contactos, invitaciones/lista/detalle | Nueva invitación destaca; Gestionar mi residencia revela acciones; editar/cancelar conserva flujo existente. |
+| Guardia | Caseta, escáner, salida sin QR, servicios, historial, reportes | Escanear dominante; salidas visibles; no inicio automático de cámara ni operación al abrir una sección. |
+| Público | Activa, expirada, cancelada, completada, salida pendiente | QR solo cuando corresponde al estado real. Cancelada/vencida con entrada abierta muestra código únicamente para salida. Sin datos privados añadidos. |
+| Reportes | Resumen, observaciones/incidencias, bitácora y CSV | Todas las métricas anteriores; pendientes separados; detalle expandible completo; exportación mantiene filas/columnas y no depende de qué filas estén abiertas. |
+
+En cada vista revisar:
+
+1. Red lenta: skeleton con estructura semejante al contenido, mensaje accesible, sin spinner global. Refresh automático con datos no los reemplaza por skeleton.
+2. Sin datos/filtro sin resultados: estado vacío útil, sin botones inoperantes. Desconexión: error legible; no mostrar QR antiguo como autorización confirmada.
+3. Tab y Shift+Tab: orden lógico, foco visible y todos los controles alcanzables. Enter/Space activan botones/summary; Escape cierra menú móvil o disclosure y devuelve foco. Navegar desde el menú lleva el foco al contenido.
+4. Drawer móvil: foco contenido mientras abierto; fondo sin interacción; cerrar, navegar, logout y ampliar a escritorio no dejan foco perdido ni overlay residual.
+5. Lector de pantalla: nombres de campos/errores, títulos, status/alert, encabezados de tablas (especialmente Safari/VoiceOver con filas adaptadas), texto de estados además de color.
+6. Reduced motion del sistema: sin pulso/giros/transiciones; mensajes y acciones siguen funcionando. No modificar permisos de cámara para esta prueba.
+7. Zoom 200 %, etiquetas largas, nombres y placas: sin recortes, scroll horizontal accidental ni botones fuera del viewport. QR completo con margen blanco; al abrir detalles no desaparece contenido.
+
+### Recorrido funcional posterior (responsable)
+
+Usar el proyecto de ensayo y datos creados deliberadamente por el responsable. Esta entrega no crea movimientos remotos. Para revisión sin remoto: npm run dev:local permite admin/residente; el fixture SQL documentado en DESIGN_SYSTEM sirve para caseta y reportes con Auth simulado.
+
+1. Iniciar sesión/cerrar sesión con cada rol, recargar rutas y probar un acceso no autorizado: debe redirigir igual que antes.
+2. Residente: crear invitación, copiar/compartir manualmente, abrir enlace público sin sesión y revisar QR. No se envía WhatsApp automáticamente.
+3. Guardia: activar cámara solo con el botón; denegar permiso y usar código manual; registrar entrada, Escanear siguiente, salida y rechazo del tercer intento. Salir de la ruta debe detener cámara.
+4. Con otra visita abierta: cancelar/vencer después de entrar, verificar QR solo para salida y salida manual sin QR. Confirmación identifica a la visita correcta.
+5. Servicio: registrar llegada no genera entrada; confirmar permite entrada; registrar salida. Otra llegada rechazada/cancelada no puede entrar. Abrir Otras acciones no registra nada.
+6. Generar preview/cierre de turno; comprobar métricas con historial, pendientes abiertos, detalle expandible, filtros y CSV. Administrador debe ver el mismo cierre, vehículo/método/guardia y servicios separados de visitas.
+7. Repetir el recorrido celular guardia/visitante y computadora administrador. Confirmar que no se requiere aprobación residencial para servicios.
+
+Sin nueva migración en Prompt 15. No ejecutar db push/reset/seed para aplicar este rediseño. La publicación la realiza el responsable después de aceptar los cambios.
+
 ## Prompt 14.5 · Bitácora detallada y CSV tabular
 
 Local: **222/222** en npm test; **37/37** en test:concurrency sobre PostgreSQL 17.10; build:vercel con TypeScript aprobado, advertencia conocida >500 kB. El detalle verifica datos reales de varios visitantes/servicios, llegada distinta a entrada, QR/MANUAL, vehículo/placas/operador, salida con entrada de otro día, abiertos/cancelados/vencidos, rechazo/motivo, cancelación, orden/filtros y paginación. DTO exacto sin IDs internos ni campos sensibles; guard/admin permitido y otras cuentas/condominios/inactivo rechazados. Resumen y cierre anteriores siguen pasando sin cambios en cifras.

@@ -1,3 +1,5 @@
+import { Brand } from '../components/Brand'
+import { LoginPhone } from '../components/LoginPhone'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
@@ -34,32 +36,33 @@ export function LoginPage() {
   return (
     <section className="login-page" aria-labelledby="login-title">
       <div className="login-introduction">
-        <p className="eyebrow">Gestión de acceso residencial</p>
-        <h1 id="login-title">Un punto de acceso.<br />Una comunidad conectada.</h1>
-        <p className="lead">Bienvenido a AccessHome, un espacio para organizar el acceso y la vida de tu comunidad.</p>
-        <div className="project-note">
-          <span className="status-badge">Prototipo en desarrollo</span>
-          <p>{sharedMode ? 'Ingresa con la cuenta asignada a tu función en el condominio.' : 'Explora AccessHome con una cuenta de demostración de administrador o residente.'}</p>
+        <Brand />
+        <div className="login-message"><p className="eyebrow">Tu comunidad, conectada</p>
+          <h1 id="login-title">Un punto de acceso.<br />Una comunidad conectada.</h1>
+          <p className="lead">Invita, comparte y recibe. Todo empieza en casa.</p>
         </div>
+        <LoginPhone />
       </div>
       <div className="login-access">
-        <p className="eyebrow">Acceso a tu comunidad</p>
-        <h2>Iniciar sesión</h2>
-        <p>{sharedMode ? 'Ingresa con tu correo y contraseña individual.' : 'Escribe el correo de una cuenta local para explorar la demostración.'}</p>
+        <div className="login-form-content"><p className="eyebrow">Acceso a tu comunidad</p>
+        <h2>Bienvenido</h2>
+        <p>{sharedMode ? 'Ingresa para continuar en tu comunidad.' : 'Explora la demostración local con tu correo.'}</p>
         <form className="login-form" onSubmit={(event) => { void submit(event) }} aria-busy={submitting || loading}>
           <div className="form-field">
             <label htmlFor="email">Correo electrónico</label>
-            <input id="email" name="email" type="email" autoComplete="username" autoCapitalize="none" spellCheck={false} required value={email} onChange={(event) => { setEmail(event.target.value); setError('') }} />
+            <input aria-describedby={(error || sessionError) ? "login-error" : undefined} id="email" name="email" type="email" autoComplete="username" autoCapitalize="none" spellCheck={false} required value={email} onChange={(event) => { setEmail(event.target.value); setError('') }} />
           </div>
           {sharedMode && <div className="form-field">
             <label htmlFor="password">Contraseña</label>
-            <input id="password" name="password" type="password" autoComplete="current-password" required value={password} onChange={(event) => { setPassword(event.target.value); setError('') }} />
+            <input aria-describedby={(error || sessionError) ? "login-error" : undefined} id="password" name="password" type="password" autoComplete="current-password" required value={password} onChange={(event) => { setPassword(event.target.value); setError('') }} />
           </div>}
-          {(error || sessionError) && <p className="form-error" role="alert">{error || sessionError}</p>}
+          {(error || sessionError) && <p id="login-error" className="form-error" role="alert">{error || sessionError}</p>}
           <button className="button-link" type="submit" disabled={submitting || loading}>{loading ? 'Recuperando sesión…' : submitting ? 'Entrando…' : 'Iniciar sesión'}</button>
         </form>
-        <p className="access-note">{sharedMode ? 'Modo compartido · Autenticación con Supabase.' : 'Modo local · Sin autenticación real. Los datos solo existen en este navegador.'}</p>
-        <DemoTools />
+        <p className="access-note">{sharedMode ? 'Usa la cuenta que te asignó la administración.' : 'Modo local · Sin autenticación real. Los datos solo existen en este navegador.'}</p>
+        {!sharedMode && <DemoTools />}
+        </div>
+        <p className="login-signoff">AccessHome · Gestión residencial</p>
       </div>
     </section>
   )

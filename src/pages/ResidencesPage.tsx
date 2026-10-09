@@ -1,3 +1,4 @@
+import { Skeleton } from '../components/Skeleton'
 import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { communityService } from '../services/communityService'
@@ -20,7 +21,7 @@ export function ResidencesPage() {
       {creating && <ResidenceForm onCancel={() => setCreating(false)} onSaved={() => { setCreating(false); setSearch(''); setMessage('Residencia creada. Abre su detalle para asignar al residente principal.') }} />}
       <label className="form-field search-field">Buscar por número de casa<input type="search" placeholder="Ej. 24" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
       {error && <p className="form-error" role="alert">{error}</p>}
-      {loading && <p role="status">Cargando residencias…</p>}
+      {loading && <Skeleton variant="list" label="Cargando residencias…" />}
       {data && <>
         <p className="result-count" role="status">{data.length} {data.length === 1 ? 'residencia encontrada' : 'residencias encontradas'}</p>
         {data.length ? <table className="data-table">

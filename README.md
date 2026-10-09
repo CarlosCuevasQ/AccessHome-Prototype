@@ -2,7 +2,11 @@
 
 Prototipo universitario en React, Vite y TypeScript. Conserva las pantallas de administración, residencia, contactos, invitaciones/QR, historial y reportes.
 
-El Prompt 14.5 conserva el resumen de caseta y añade **Detalle del turno**: bitácora cronológica autorizada de visitantes/servicios, pendientes al cierre y CSV tabular de 20 columnas. La mejora requiere `20261007000200_guard_report_log.sql`, pendiente de aplicación remota por el responsable después de la versión de reportes. Guía: [GUARD_REPORTS.md](docs/GUARD_REPORTS.md).
+El **Prompt 15.3** refina la experiencia del residente: inicio centrado en la casa y próxima visita, residencia con habitantes y fichas de vehículos, invitaciones con acciones de compartir reconocibles, QR agrupado y reportes con descripción y seguimiento. Conserva el sidebar, los services, permisos y reglas existentes. **Sin cambios de backend, migraciones ni dependencias.** Inventario y decisiones en [DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md#prompt-153--experiencia-residente); pruebas locales y recorrido manual en [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md).
+
+El Prompt 15.2 refina el sistema visual: conserva el sidebar y añade dashboards con módulos asimétricos, timeline operativo, categorías táctiles para servicios, resumen ejecutivo y bitácora expandible. Login de altura completa con smartphone original en HTML/CSS y una adaptación ligera de React Bits FadeContent (licencia incluida). Conserva services, permisos, QR, servicios, snapshots y CSV. **No requiere nueva migración ni dependencias npm.** Guía e inventario: [DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md). Resultados locales y aceptación pendiente: [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md).
+
+El Prompt 14.5 conserva el resumen de caseta y la bitácora cronológica de visitantes/servicios, pendientes al cierre y CSV tabular. Su documentación técnica e incrementales previas están en [GUARD_REPORTS.md](docs/GUARD_REPORTS.md); esta etapa no cambia SQL.
 
 ## Ejecutar
 

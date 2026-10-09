@@ -1,3 +1,4 @@
+import { Skeleton } from '../components/Skeleton'
 import { useCallback, useState } from 'react'
 import { Link, useLocation, useNavigate, useOutletContext } from 'react-router-dom'
 import type { ContactAccess } from '../types/contacts'
@@ -25,7 +26,7 @@ export function ContactsPage() {
     {creating && canManage && <ContactForm onSaved={(id) => navigate(`/residente/contactos/${id}`)} onCancel={() => setCreating(false)} />}
     <label className="form-field contact-search">Buscar contacto<input type="search" placeholder="Nombre, teléfono, correo o placas" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
     {error && <p className="form-error" role="alert">{error}</p>}
-    {loading && <p role="status">Cargando contactos…</p>}
+    {loading && <Skeleton variant="list" label="Cargando contactos…" />}
     {data && <><p className="result-count" role="status">{data.length} {data.length === 1 ? 'contacto encontrado' : 'contactos encontrados'}</p>
       {data.length ? <ul className="contact-list">{data.map((contact) => <li key={contact.id} className="contact-row">
         <div className="contact-summary"><h2>{contact.name} {!contact.active && <span className="vehicle-status">Inactivo</span>}</h2>

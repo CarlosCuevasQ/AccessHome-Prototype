@@ -1,3 +1,5 @@
+import { Disclosure } from '../components/Disclosure'
+import { Skeleton } from '../components/Skeleton'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useCommunityQuery } from '../hooks/useCommunityQuery'
 import { usePageTitle } from '../hooks/usePageTitle'
@@ -27,7 +29,7 @@ export function ServiceAccessPage({ administrative = false }: { administrative?:
     if (administrative) return null
     const options: Decision[] = visit.status === 'registrado' ? ['allow', 'reject', 'cancel'] : visit.status === 'en_sitio' ? ['exit'] : []
     const labels = { allow: 'Permitir entrada', reject: 'Rechazar acceso', cancel: 'Cancelar registro', exit: 'Registrar salida' }
-    return <div className="form-actions">{options.map(operation => <button key={operation} className={operation === 'allow' || operation === 'exit' ? 'button-link' : 'secondary-button'} disabled={operation === 'allow' && visit.expired} onClick={() => { setReceipt(null); setSelection({ visit, operation }) }}>{labels[operation]}</button>)}</div>
+    return <div className="form-actions">{options.filter(operation => operation !== 'cancel').map(operation => <button key={operation} className={operation === 'allow' || operation === 'exit' ? 'button-link' : 'secondary-button'} disabled={operation === 'allow' && visit.expired} onClick={() => { setReceipt(null); setSelection({ visit, operation }) }}>{labels[operation]}</button>)}{options.includes('cancel') && <Disclosure title="Otras acciones"><button className="secondary-button" onClick={() => { setReceipt(null); setSelection({ visit, operation: 'cancel' }) }}>Cancelar registro</button></Disclosure>}</div>
   }
   return <section className="community-page guard-page service-page">
     <p className="eyebrow">{administrative ? 'Administrador / Servicios' : 'Guardia / Servicios'}</p>
@@ -40,13 +42,13 @@ export function ServiceAccessPage({ administrative = false }: { administrative?:
         <button className="secondary-button" onClick={() => setReceipt(null)}>Cerrar resultado</button>
       </section>}
       {!administrative && !receipt && <ServiceArrivalForm onRegistered={result => { chooseFilter('registrado'); done(result) }} />}
-      {!administrative && <nav className="scanner-actions" aria-label="Colas de servicios"><button className="secondary-button" onClick={() => chooseFilter('registrado')}>Pendientes de decisión{data && ` (${data.registeredCount})`}</button><button className="secondary-button" onClick={() => chooseFilter('en_sitio')}>Servicios dentro del condominio{data && ` (${data.insideCount})`}</button></nav>}
+      {!administrative && <nav className="quick-filters" aria-label="Colas de servicios"><button className="secondary-button" aria-pressed={filter === 'registrado'} onClick={() => chooseFilter('registrado')}>Pendientes de decisión{data && ` (${data.registeredCount})`}</button><button className="secondary-button" aria-pressed={filter === 'en_sitio'} onClick={() => chooseFilter('en_sitio')}>Servicios dentro del condominio{data && ` (${data.insideCount})`}</button></nav>}
       <div className="guard-updates"><label>Estado del servicio<select value={filter} onChange={e => chooseFilter(e.target.value as ServiceState | 'todos')}><option value="todos">Todos</option>{Object.entries(serviceStates).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><button className="secondary-button" disabled={loading} onClick={() => setRevision(value => value + 1)}>Actualizar servicios</button></div>
       <h2>{filter === 'en_sitio' ? 'Servicios dentro del condominio' : filter === 'registrado' ? 'Llegadas pendientes de decisión' : 'Registros de servicios'}</h2>
       <p className="form-help">Actualización cada 15 segundos mientras esta pantalla esté visible.{data && ` Horarios: ${data.timeZone}.`}</p>
-      {loading && <p role="status">Consultando servicios…</p>}{error && <p className="form-error" role="alert">{error}</p>}
+      {loading && <Skeleton variant="list" label="Consultando servicios…" />}{error && <p className="form-error" role="alert">{error}</p>}
       {data && <>
-        {!data.records.length && <p>No hay servicios en esta página.</p>}
+        {!data.records.length && <p className="empty-list">No hay servicios en esta página.</p>}
         <ul className="service-list">{data.records.map(visit => <li key={visit.id}>
           <h3>{visit.company || serviceCategories[visit.category]} · {visit.residenceName}</h3>
           <p>{serviceCategories[visit.category]} · <span className={`service-state service-${visit.status}`}>{serviceStates[visit.status]}</span>{visit.expired && visit.status === 'registrado' && ' · Vigencia vencida, sin entrada'}</p>

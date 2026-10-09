@@ -1,8 +1,14 @@
 import type { Inhabitant, Vehicle } from '../../types/demo'
 import { inhabitantName } from '../../utils/people'
+import { Icon } from '../Icon'
 
-export function InhabitantsTable({ inhabitants, principalUserId, onView }: { inhabitants: Inhabitant[]; principalUserId: string | null; onView: (person: Inhabitant) => void }) {
+export function InhabitantsTable({ inhabitants, principalUserId, onView, presentation = 'table' }: { inhabitants: Inhabitant[]; principalUserId: string | null; onView: (person: Inhabitant) => void; presentation?: 'table' | 'rows' }) {
   if (!inhabitants.length) return <p className="empty-list">Esta residencia aún no tiene habitantes registrados.</p>
+  if (presentation === 'rows') return <ul className="household-list" aria-label="Habitantes de la casa">{inhabitants.map(person => <li key={person.id}>
+    <div className="entity-symbol"><Icon name="user" /></div><div className="household-person"><h3>{inhabitantName(person)}</h3><p>{person.relationship || 'Relación sin especificar'}</p>{person.userId !== null && person.userId === principalUserId && <span className="principal-badge">Principal</span>}</div>
+    <span className={`vehicle-status ${person.active ? 'is-active' : ''}`}>{person.active ? 'Activo' : 'Inactivo'}</span>
+    <button type="button" className="secondary-button detail-button" onClick={() => onView(person)} aria-label={`Ver a ${inhabitantName(person)}`}>Ver detalle<Icon name="chevron" /></button>
+  </li>)}</ul>
   return (
     <table className="data-table">
       <caption className="sr-only">Habitantes de la casa</caption>
@@ -19,8 +25,14 @@ export function InhabitantsTable({ inhabitants, principalUserId, onView }: { inh
   )
 }
 
-export function VehiclesTable({ vehicles, inhabitants, onView }: { vehicles: Vehicle[]; inhabitants: Inhabitant[]; onView: (vehicle: Vehicle) => void }) {
+export function VehiclesTable({ vehicles, inhabitants, onView, presentation = 'table' }: { vehicles: Vehicle[]; inhabitants: Inhabitant[]; onView: (vehicle: Vehicle) => void; presentation?: 'table' | 'rows' }) {
   if (!vehicles.length) return <p className="empty-list">Esta residencia aún no tiene vehículos registrados.</p>
+  if (presentation === 'rows') return <ul className="vehicle-collection" aria-label="Vehículos permanentes de la casa">{vehicles.map(vehicle => <li key={vehicle.id}>
+    <header><div className="entity-symbol"><Icon name="car" /></div><span className={`vehicle-status ${vehicle.active ? 'is-active' : ''}`}>{vehicle.active ? 'Activo' : 'Inactivo'}</span></header>
+    <h3>{[vehicle.brand, vehicle.model].filter(Boolean).join(' ') || 'Vehículo registrado'}</h3><strong className="license-plate">{vehicle.plates}</strong>
+    <dl><div><dt>Color</dt><dd>{vehicle.color || 'No registrado'}</dd></div><div><dt>Propietario</dt><dd>{ownerName(inhabitants, vehicle.ownerId)}</dd></div></dl>
+    <button type="button" className="secondary-button detail-button" onClick={() => onView(vehicle)} aria-label={`Ver vehículo ${vehicle.plates}`}>Ver detalle<Icon name="chevron" /></button>
+  </li>)}</ul>
   return (
     <table className="data-table vehicles-table">
       <caption className="sr-only">Vehículos permanentes de la casa</caption>

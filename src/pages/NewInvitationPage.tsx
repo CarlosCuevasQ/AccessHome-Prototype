@@ -1,5 +1,7 @@
+import { Skeleton } from '../components/Skeleton'
 import { useCallback } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { ActionLink } from '../components/ActionLink'
 import { useCommunityQuery } from '../hooks/useCommunityQuery'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { invitationsService } from '../services/invitationsService'
@@ -19,11 +21,11 @@ export function NewInvitationPage() {
   const { data, error, loading } = useCommunityQuery(load)
   usePageTitle('Nueva invitación')
   const backPath = contactId ? '/residente/contactos' : '/residente/invitaciones'
-  return <section className="community-page invitations-page">
+  return <section className="community-page invitations-page resident-experience">
     <p className="eyebrow">Residente / Invitaciones</p>
-    <Link className="back-link" to={backPath}>{contactId ? 'Volver a contactos' : 'Volver a invitaciones'}</Link>
+    <ActionLink variant="back" to={backPath}>{contactId ? 'Volver a contactos' : 'Volver a invitaciones'}</ActionLink>
     <h1>{contactId ? 'Invitar a un contacto' : 'Nuevo visitante'}</h1>
-    {loading && <p role="status">Cargando datos…</p>}
+    {loading && <Skeleton variant="form" label="Cargando datos…" />}
     {error && <p className="form-error" role="alert">{error}</p>}
     {data && <><p className="invitation-destination">Destino: <strong>{data.context.residenceName}</strong></p>
       <InvitationForm key={contactId ?? 'occasional'} contact={data.contact} onCancel={() => navigate(backPath)} onSaved={(id) => navigate(`/residente/invitaciones/${id}`, { replace: true, state: { created: true } })} />

@@ -11,14 +11,14 @@
 .history-filters input, .history-filters select, .history-filters button { min-height: 48px; min-width: 0; }
 .reports-page { max-width: 800px; }
 .reports-page .form-grid { grid-template-columns: 1fr; }
-.reports-page textarea { width: 100%; min-width: 0; padding: 12px; resize: vertical; font: inherit; color: #17212b; border: 1px solid #9caab7; border-radius: 4px; }
+.reports-page textarea { width: 100%; min-width: 0; padding: 12px; resize: vertical; font: inherit; color: var(--color-text); border: 1px solid var(--color-control-border); border-radius: 4px; }
 .reports-page .form-actions, .dashboard-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .dashboard-actions .secondary-button, .reports-page .secondary-button { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .report-description { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 16px; }
 .report-status { display: inline-block; justify-self: start; border-radius: 4px; padding: 5px 9px; font-size: 0.8rem; color: var(--primary); }
 .report-pendiente { background: var(--light-yellow); }
 .report-en_proceso { background: var(--light-blue); }
-.report-completado { background: #eef0f2; color: #44515c; }
+.report-completado { background: var(--color-neutral-surface); color: var(--color-muted); }
 @media (max-width: 1100px) {
   .resident-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .history-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }

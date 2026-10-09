@@ -1,6 +1,11 @@
+import { Skeleton } from '../components/Skeleton'
 import { sharedMode } from '../services/shared/provider'
 import { useCallback } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
+import { ActionLink } from '../components/ActionLink'
+import { Icon } from '../components/Icon'
+import { Disclosure } from '../components/Disclosure'
+import { FadeContent } from '../components/react-bits/FadeContent'
 import { invitationsService } from '../services/invitationsService'
 import { useCommunityQuery } from '../hooks/useCommunityQuery'
 import { usePageTitle } from '../hooks/usePageTitle'
@@ -18,36 +23,38 @@ export function InvitationPage() {
   const { data, loading, error } = useCommunityQuery(load, 1000)
   const invitation = data?.invitation
   usePageTitle(invitation ? `Invitación · ${invitation.visitorName}` : 'Invitación')
-  return <section className="community-page invitations-page">
-    <p className="eyebrow">Residente / Invitaciones</p>
-    <Link className="back-link" to="/residente/invitaciones">Volver a invitaciones</Link>
-    <h1>Detalle de invitación</h1>
-    {loading && <p role="status">Cargando invitación…</p>}
-    {error && <p className="form-error" role="alert">{error}</p>}
+  return <section className="community-page invitations-page resident-experience resident-invitation-detail">
+    <ActionLink variant="back" to="/residente/invitaciones">Volver a invitaciones</ActionLink>
+    {loading && <Skeleton variant="invitation-detail" label="Cargando invitación…" />}
+    {error && <><h1>Invitación no disponible</h1><p className="form-error" role="alert">{error}</p></>}
     {invitation && <>
       {location.state?.created === true && <p className="form-success" role="status">Invitación creada correctamente para {invitation.residenceName}.</p>}
-      <div className="section-heading"><h2>{invitation.visitorName}</h2><InvitationStatusLabel status={invitation.status} /></div>
+      <FadeContent className="resident-title"><header><div><h1>{invitation.visitorName}</h1><p className="lead"><Icon name="home" />{invitation.residenceName}</p></div><InvitationStatusLabel status={invitation.status} /></header></FadeContent>
       {invitation.status === 'activa' && Date.parse(invitation.startsAt) > Date.now() && <p className="agenda-notice">Visita programada. Su vigencia comenzará el {formatDate(invitation.startsAt)}</p>}
-      <dl className="detail-fields">
-        <div><dt>Residencia destino</dt><dd>{invitation.residenceName}</dd></div><div><dt>Invita</dt><dd>{invitation.inviterName}</dd></div>
-        <div><dt>Teléfono</dt><dd>{invitation.phone || 'No registrado'}</dd></div><div><dt>Usos utilizados</dt><dd>{invitation.usedUses} de {invitation.maxUses}</dd></div>
-        <div><dt>Inicio</dt><dd>{formatDate(invitation.startsAt)}</dd></div><div><dt>Expiración</dt><dd>{formatDate(invitation.expiresAt)}</dd></div>
-        <div><dt>Creada el</dt><dd>{formatDate(invitation.createdAt)}</dd></div><div><dt>Identificador interno</dt><dd>{invitation.id}</dd></div>
-      </dl>
-      <section className="community-section"><h2>Vehículo para esta visita</h2>
-        {invitation.vehicle ? <dl className="detail-fields"><div><dt>Placas</dt><dd>{invitation.vehicle.plates}</dd></div><div><dt>Marca y modelo</dt><dd>{[invitation.vehicle.brand, invitation.vehicle.model].filter(Boolean).join(' ') || 'No registrados'}</dd></div><div><dt>Color</dt><dd>{invitation.vehicle.color || 'No registrado'}</dd></div></dl> : <p className="muted">Sin vehículo</p>}
+      <div className="invitation-detail-grid">
+      <div className="invitation-share-slot"><InvitationShare key={`share-${invitation.id}`} token={invitation.token} /></div>
+      <section className="invitation-facts" aria-labelledby="invitation-summary-title">
+        <h2 id="invitation-summary-title"><Icon name="clock" />Vigencia y visita</h2>
+        <dl className="detail-fields period-fields"><div><dt>Inicio</dt><dd>{formatDate(invitation.startsAt)}</dd></div><div><dt>Expiración</dt><dd>{formatDate(invitation.expiresAt)}</dd></div></dl>
+        <dl className="detail-fields"><div><dt>Residencia destino</dt><dd>{invitation.residenceName}</dd></div><div><dt>Invita</dt><dd>{invitation.inviterName}</dd></div>
+          <div><dt>Usos utilizados</dt><dd>{invitation.usedUses} de {invitation.maxUses}</dd></div>{invitation.phone && <div><dt>Teléfono</dt><dd>{invitation.phone}</dd></div>}
+        </dl>
+        {invitation.vehicle && <section className="visit-vehicle" aria-label="Vehículo para esta visita"><div className="entity-symbol"><Icon name="car" /></div><div><h3>Vehículo de la visita</h3><strong className="license-plate">{invitation.vehicle.plates}</strong><p>{[invitation.vehicle.brand, invitation.vehicle.model].filter(Boolean).join(' ') || 'Marca y modelo no registrados'}{invitation.vehicle.color && ` · ${invitation.vehicle.color}`}</p></div></section>}
+        <Disclosure title="Información de la invitación"><p>Creada el {formatDate(invitation.createdAt)}.</p><p>Los datos del contacto se conservan en esta invitación. Para corregirlos, cancela la invitación activa y crea una nueva.</p></Disclosure>
       </section>
-      <p className="form-help">Los datos del contacto se conservan en esta invitación. La vista del visitante muestra solo los datos necesarios para presentar su acceso. Para corregir datos, cancela la invitación activa y crea una nueva.</p>
-      <InvitationShare key={`share-${invitation.id}`} token={invitation.token} />
-      <section className="invitation-qr-section" aria-label="Código y enlace del visitante">
-        <h2>Código de acceso QR</h2>
+      <section className="invitation-qr-section resident-pass" aria-label="Código y enlace del visitante">
+        <div className="pass-heading"><Icon name="scan" /><h2>Código de acceso</h2></div>
+        <p className="pass-subtitle">{invitation.visitorName}</p>
         <InvitationQr token={invitation.token} visitorName={invitation.visitorName} status={invitation.status} />
-        <Link className="secondary-button" to={invitationPath(invitation.token)}>Abrir vista del visitante</Link>
+        <p className="pass-validity">Hasta {formatDate(invitation.expiresAt)}</p>
+        <ActionLink variant="detail" to={invitationPath(invitation.token)}>Abrir vista del visitante</ActionLink>
         <p className="visitor-help">{sharedMode ? 'El enlace no requiere sesión y consulta el estado compartido de la invitación.' : 'Modo local: el enlace solo consulta datos de este navegador y origen.'}</p>
       </section>
-      {data.context.canManage && invitation.status === 'activa' && <CancelInvitation key={invitation.id} id={invitation.id} visitorName={invitation.visitorName} />}
+      </div>
       {invitation.status === 'cancelada' && <p role="status" className="agenda-notice">Invitación cancelada. Sus datos permanecen en el historial.</p>}
-      {data.context.canManage && <Link className="secondary-button" to="/residente/invitaciones/nueva">Invitar a otro visitante</Link>}
+      {data.context.canManage && <footer className="invitation-secondary-actions"><ActionLink icon="plus" to="/residente/invitaciones/nueva">Invitar a otro visitante</ActionLink>
+        {invitation.status === 'activa' && <CancelInvitation key={invitation.id} id={invitation.id} visitorName={invitation.visitorName} />}
+      </footer>}
     </>}
   </section>
 }

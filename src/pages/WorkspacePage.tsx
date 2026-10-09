@@ -1,3 +1,4 @@
+import { Skeleton } from '../components/Skeleton'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { workspaces } from '../data/navigation'
@@ -37,18 +38,19 @@ export function WorkspacePage({ role }: { role: WorkspaceRole }) {
       <p>Bienvenido, <strong>{user?.name}</strong>.</p>
       <p className="lead">{workspace.description}</p>
       <div className="stage-banner">
-        <span className="status-badge">Etapa 3</span>
-        <p>Sesión de demostración activa</p>
+        <span className="status-badge">Sesión activa</span>
+        <p>Tu cuenta y tu comunidad</p>
       </div>
       <section className="scope-section" aria-labelledby="scope-title">
         <h2 id="scope-title">Tu perfil</h2>
         {error && <p className="form-error" role="alert">{error}</p>}
-        <dl className="feature-list">
+        {!profile && !error && <Skeleton variant="detail" label="Cargando perfil…" />}
+        {profile && <dl className="feature-list">
           <div><dt>Correo</dt><dd>{user?.email}</dd></div>
           <div><dt>Rol</dt><dd>{workspace.label}</dd></div>
           <div><dt>Condominio</dt><dd>{profile?.condominium.name ?? 'Cargando…'}</dd></div>
           {role === 'resident' && <div><dt>Residencia</dt><dd>{profile?.residence?.name ?? 'Cargando…'}</dd></div>}
-        </dl>
+        </dl>}
       </section>
       <p className="muted">Tu sesión se conserva al recargar. Para probar el otro perfil, cierra sesión desde el menú e ingresa con su cuenta.</p>
     </section>

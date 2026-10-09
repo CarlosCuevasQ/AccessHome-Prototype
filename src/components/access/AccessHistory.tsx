@@ -12,7 +12,7 @@ export function AccessHistory({ records, filtered = false, timeZone, operational
     <div className="section-heading"><h2 id={titleId}>Movimientos autorizados</h2><span className="count-label" role="status">{records.length} {records.length === 1 ? 'registro' : 'registros'}</span></div>
     {records.length ? <table className="data-table">
       <caption className="sr-only">Historial de entradas y salidas</caption>
-      <thead><tr><th>Fecha y hora</th><th>{operational ? 'Visita / Casa' : 'Visita / Casa / Anfitrión'}</th><th>Movimiento</th><th>Vehículo</th><th>Método</th><th>Estado</th></tr></thead>
+      <thead><tr><th scope="col">Fecha y hora</th><th scope="col">{operational ? 'Visita / Casa' : 'Visita / Casa / Anfitrión'}</th><th scope="col">Movimiento</th><th scope="col">Vehículo</th><th scope="col">Método</th><th scope="col">Estado</th></tr></thead>
       <tbody>{records.map((record) => <tr key={record.id}>
         <td data-label="Fecha y hora">{formatDate(record.occurredAt, timeZone)}</td>
         <td data-label="Visita">{record.visitorName}<span className="cell-secondary">{record.residenceName}{'inviterName' in record && ` · Anfitrión: ${record.inviterName}`}</span></td>

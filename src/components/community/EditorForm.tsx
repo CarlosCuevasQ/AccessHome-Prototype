@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode, FormEvent } from 'react'
 
 interface EditorFormProps {
@@ -13,8 +13,9 @@ interface EditorFormProps {
 export function EditorForm({ title, children, save, onSaved, onCancel, submitLabel = 'Guardar' }: EditorFormProps) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const errorId = useId()
   const formRef = useRef<HTMLFormElement>(null)
-  useEffect(() => { formRef.current?.querySelector('input')?.focus() }, [])
+  useEffect(() => { formRef.current?.querySelector<HTMLElement>('input:not(:disabled), select:not(:disabled), textarea:not(:disabled)')?.focus() }, [])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -28,10 +29,10 @@ export function EditorForm({ title, children, save, onSaved, onCancel, submitLab
   return (
     <form ref={formRef} className="editor-form" onSubmit={(event) => { void submit(event) }} aria-label={title} aria-busy={saving}>
       <h3>{title}</h3>
-      <fieldset disabled={saving}>
+      <fieldset disabled={saving} aria-describedby={error ? errorId : undefined}>
         <legend className="sr-only">{title}</legend>
         <div className="form-grid">{children}</div>
-        {error && <p className="form-error" role="alert">{error}</p>}
+        {error && <p id={errorId} className="form-error" role="alert">{error}</p>}
         <div className="form-actions">
           <button className="button-link" type="submit">{saving ? 'Guardando…' : submitLabel}</button>
           <button className="secondary-button" type="button" onClick={onCancel}>Cancelar</button>

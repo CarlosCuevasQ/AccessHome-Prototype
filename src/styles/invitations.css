@@ -8,7 +8,7 @@
 .invitation-visitor p { margin: 8px 0 0; }
 .editor-form .invitation-fieldset { padding-top: 12px; }
 .invitation-fieldset legend { color: var(--primary); font-weight: 600; }
-.choice-label { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 12px; border: 1px solid var(--border); border-radius: 4px; background: white; cursor: pointer; overflow-wrap: anywhere; }
+.choice-label { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 12px; border: 1px solid var(--border); border-radius: 4px; background: var(--color-surface); cursor: pointer; overflow-wrap: anywhere; }
 .choice-label:has(input:checked) { border-color: var(--action); background: var(--light-blue); }
 .choice-label input { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--action); margin: 0; }
 .vehicle-options, .visit-vehicle-fields, .custom-validity { display: grid; gap: 12px; }
@@ -22,7 +22,7 @@
 .invitation-summary { min-width: 0; overflow-wrap: anywhere; }
 .invitation-summary h2 { font-size: 1.05rem; margin-bottom: 8px; }
 .invitation-summary p { color: var(--muted); font-size: 0.9rem; margin: 8px 0 0; }
-.invitation-status { display: inline-block; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; color: var(--muted); background: #eef0f2; }
+.invitation-status { display: inline-block; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; color: var(--muted); background: var(--color-neutral-surface); }
 .invitation-status-activa { color: var(--primary); background: var(--light-blue); }
 .invitation-status-completada { color: var(--primary); background: var(--light-yellow); }
 .cancel-invitation { margin-bottom: 20px; }

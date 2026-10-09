@@ -1,3 +1,4 @@
+import { Skeleton } from '../components/Skeleton'
 import { useCallback } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { communityService } from '../services/communityService'
@@ -18,13 +19,13 @@ export function ResidencePage({ administrative = false }: { administrative?: boo
   const { data, error, loading } = useCommunityQuery(load)
   usePageTitle(data?.residence.name ?? 'Residencia')
   return (
-    <section className="community-page">
+    <section className={`community-page ${administrative ? '' : 'resident-experience resident-residence'}`}>
       <p className="eyebrow">{administrative ? 'Administración / Residencias' : 'Residente / Mi residencia'}</p>
       <AccessNotice />
       {administrative && <Link className="back-link" to="/admin/residencias">Volver a residencias</Link>}
-      {loading && <p role="status">Cargando residencia…</p>}
+      {loading && <Skeleton variant={administrative ? 'detail' : 'residence'} label="Cargando residencia…" />}
       {error && <><h1>Residencia no disponible</h1><p className="form-error" role="alert">{error}</p></>}
-      {data && <ResidenceContent key={`${data.residence.id}:${user?.id}:${initialAction}`} data={data} initialAction={initialAction} />}
+      {data && <ResidenceContent key={`${data.residence.id}:${user?.id}:${initialAction}`} data={data} initialAction={initialAction} residentView={!administrative} />}
     </section>
   )
 }

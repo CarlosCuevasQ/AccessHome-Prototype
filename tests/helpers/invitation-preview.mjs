@@ -35,6 +35,15 @@ if(process.argv.includes('--open-exits')) {
 const accounts={'resident@fixture.invalid':users.daniel,'guard@fixture.invalid':users.guard,'admin@fixture.invalid':users.admin}
 const sessions=new Map()
 const queries={
+ residence_details:b=>['select accesshome.residence_details($1) as data',[b.target??null]],
+ report_context:()=>['select accesshome.report_context() as data',[]],
+ list_reports:()=>['select accesshome.list_reports() as data',[]],
+ report_details:b=>['select accesshome.report_details($1) as data',[b.target]],
+ create_report:b=>['select accesshome.create_report($1) as data',[JSON.stringify(b.input)]],
+ advance_report:b=>['select accesshome.advance_report($1,$2) as data',[b.target,b.next_status]],
+ list_contacts:b=>['select accesshome.list_contacts($1) as data',[b.search??'']],
+ contact_details:b=>['select accesshome.contact_details($1) as data',[b.target]],
+ manage_household:b=>['select accesshome.manage_household($1,$2,$3,$4) as data',[b.operation,b.residence_id,b.target??null,JSON.stringify(b.input)]],
  service_context:()=>['select accesshome.service_context() as data',[]],
  list_services:b=>['select accesshome.list_services($1,$2) as data',[b.status_filter??'todos',b.page??0]],
  service_command:b=>['select accesshome.service_command($1,$2,$3,$4) as data',[b.operation,b.target,JSON.stringify(b.input),b.request_id]],

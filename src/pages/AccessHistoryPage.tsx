@@ -1,3 +1,4 @@
+import { Skeleton } from '../components/Skeleton'
 import { useCallback, useState } from 'react'
 import type { AccessHistoryFilters } from '../types/access'
 import { accessHistoryService } from '../services/accessHistoryService'
@@ -25,7 +26,7 @@ export function AccessHistoryPage() {
     </div>
     <p className="form-help">Fechas en la hora local del dispositivo; ambos días incluidos. Los intentos rechazados no generan movimientos.</p>
     {(error || context.error) && <p className="form-error" role="alert">{error || context.error}</p>}
-    {loading && <p role="status">Cargando historial…</p>}
+    {loading && <Skeleton variant="list" label="Cargando historial…" />}
     {data && <AccessHistory records={data} filtered={Object.values(filters).some(Boolean)} />}
   </section>
 }

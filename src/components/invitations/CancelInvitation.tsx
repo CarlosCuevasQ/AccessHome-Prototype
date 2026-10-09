@@ -18,11 +18,11 @@ export function CancelInvitation({ id, visitorName }: { id: string; visitorName:
   }
 
   return <div className="cancel-invitation">
-    <button ref={openButton} className="secondary-button" onClick={() => setConfirming(true)} aria-expanded={confirming}>Cancelar invitación</button>
+    <button ref={openButton} className="secondary-button destructive-outline" onClick={() => setConfirming(true)} aria-expanded={confirming}>Cancelar invitación</button>
     {confirming && <section className="delete-confirmation" aria-label="Confirmar cancelación" aria-busy={pending}>
       <h2>Cancelar la visita de {visitorName}</h2><p>La invitación dejará de estar activa. Conservarás sus datos en el historial y podrás generar otra.</p>
       {error && <p className="form-error" role="alert">{error}</p>}
-      <div className="form-actions"><button ref={keepButton} className="secondary-button" disabled={pending} onClick={() => { setConfirming(false); openButton.current?.focus() }}>Mantener invitación</button><button className="button-link" disabled={pending} onClick={() => { void cancel() }}>{pending ? 'Cancelando…' : 'Confirmar cancelación'}</button></div>
+      <div className="form-actions"><button ref={keepButton} className="secondary-button" disabled={pending} onClick={() => { setConfirming(false); openButton.current?.focus() }}>Mantener invitación</button><button className="button-link danger-button" disabled={pending} onClick={() => { void cancel() }}>{pending ? 'Cancelando…' : 'Confirmar cancelación'}</button></div>
     </section>}
   </div>
 }

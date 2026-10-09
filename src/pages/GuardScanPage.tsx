@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { guardService } from '../services/guardService'
@@ -78,21 +79,22 @@ export function GuardScanPage() {
     <p>Enfoca el QR que presenta el visitante. La primera lectura registra entrada y la siguiente, salida.</p>
     <div className="scanner-camera" aria-label="Cámara para escanear QR" hidden={phase !== 'ready'}>
       <video ref={video} muted playsInline aria-label="Vista de la cámara" hidden={cameraState === 'idle'} />
-      {cameraState !== 'active' && <p>{cameraState === 'starting' ? 'Esperando permiso de cámara…' : 'Cámara detenida'}</p>}
+      {cameraState === 'active' && <><span className="scanner-frame" aria-hidden="true" /><span className="scanner-state" role="status">Escaneando · Centra el QR</span></>}
+      {cameraState !== 'active' && <p role="status"><Icon name="scan" />{cameraState === 'starting' ? 'Esperando permiso de cámara…' : 'Cámara detenida'}</p>}
     </div>
     {phase === 'ready' && <>
       <div className="scanner-actions">
-        <button type="button" className="button-link" disabled={cameraState !== 'idle' || Boolean(profileError)} onClick={() => { void activate() }}>Activar cámara</button>
+        <button type="button" className="button-link" disabled={cameraState !== 'idle' || Boolean(profileError)} onClick={() => { void activate() }}><Icon name="scan" />Activar cámara</button>
         <button type="button" className="secondary-button" disabled={cameraState === 'idle'} onClick={stopCamera}>Detener cámara</button>
       </div>
       {cameraMessage && <p className="agenda-notice" role="status">{cameraMessage}</p>}
       <form className="access-validation-form" onSubmit={event => { event.preventDefault(); scan(manual, 'MANUAL') }}>
         <label className="form-field">Enlace o código de invitación<input value={manual} onChange={event => setManual(event.target.value)} required maxLength={2048} autoComplete="off" autoCapitalize="none" spellCheck={false} /></label>
-        <p className="form-help">Alternativa sin cámara: pega el enlace completo o el token de la invitación. No se abrirá ninguna página externa.</p>
+        <p className="form-help">Alternativa sin cámara: pega el enlace completo o el código de la invitación. No se abrirá ninguna página externa.</p>
         <button type="submit" className="secondary-button" disabled={Boolean(profileError)}>Validar código manual</button>
       </form>
     </>}
-    {phase === 'pending' && <p className="agenda-notice" role="status">Consultando Supabase y registrando el movimiento… No autorices el paso hasta ver el resultado.</p>}
+    {phase === 'pending' && <p className="agenda-notice" role="status">Código detectado. Validando el acceso… No autorices el paso hasta ver el resultado.</p>}
     {result && <AccessFeedback result={result} operational />}
     {error && <div className={phase === 'uncertain' ? 'agenda-notice' : 'form-error'} role="alert">{error}</div>}
     {phase === 'uncertain' && <button type="button" className="button-link" onClick={() => { void run(() => session.current.retry()) }}>Reintentar misma operación</button>}

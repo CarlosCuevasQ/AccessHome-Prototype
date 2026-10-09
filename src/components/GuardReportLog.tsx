@@ -1,3 +1,6 @@
+import { OperationalTimeline } from './OperationalTimeline'
+import type { TimelineItem } from './OperationalTimeline'
+import { Skeleton } from './Skeleton'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { guardReportsService, loadShiftExport } from '../services/guardReportsService'
 import { useCommunityQuery } from '../hooks/useCommunityQuery'
@@ -34,35 +37,39 @@ export function GuardReportLog({ report }: { report: ShiftReport }) {
       if (!controller.signal.aborted) setExporting(false)
     }
   }
-  return <section aria-label="Detalle del turno">
+  return <section aria-label="Detalle del turno" className="shift-log-section">
     <h2>Detalle del turno</h2>
     <p>Movimientos incluidos en el cierre y entradas pendientes al generarlo. Las pendientes fuera del periodo están identificadas y no suman como entradas del turno. Horas en {report.time_zone}.</p>
     <div className="shift-filters"><label>Tipo<select value={kind} onChange={e => { setKind(e.target.value as ShiftLogKind); setPage(0) }}><option value="all">Todos</option><option value="visitor">Visitantes</option><option value="service">Servicios</option></select></label>
       <label>Orden<select value={newest ? 'desc' : 'asc'} onChange={e => { setNewest(e.target.value === 'desc'); setPage(0) }}><option value="asc">Más antiguo primero</option><option value="desc">Más reciente primero</option></select></label></div>
-    {loading && <p role="status">Consultando bitácora…</p>}
+    {loading && <Skeleton variant="list" label="Consultando bitácora…" />}
     {error && <div role="alert"><p className="form-error">{error}</p><button className="secondary-button" onClick={() => setRevision(v => v + 1)}>Reintentar detalle</button></div>}
     {data && <>
       {data.legacy && <p className="access-notice">Cierre anterior a la bitácora ampliada: solo se muestran referencias guardadas. Algunas horas relacionadas o cancelaciones pueden no estar disponibles; no se reconstruyen con el estado actual.</p>}
       <p>{data.total} registros · Página {page + 1}</p>
-      {!data.records.length && <p>No hay movimientos de este tipo en esta página.</p>}
-      <ol className="service-list shift-log">{data.records.map((item, index) => <li key={`${page}:${index}`}>
-        <h3>{date(item.occurredAt)} · {item.type === 'visitor' ? 'Visitante' : 'Servicio'} · {item.movement}</h3>
-        <p><strong>{item.name || item.company || 'Nombre no registrado'}</strong> · {item.residence}</p>
+      <OperationalTimeline timeZone={report.time_zone} empty="No hay movimientos de este tipo en esta página." items={data.records.map<TimelineItem>((item, index) => ({
+        key: `${page}:${index}`, occurredAt: item.occurredAt,
+        kind: /rechaz/i.test(item.movement) ? 'rejected' : item.type === 'service' ? 'service' : item.movement === 'Entrada' ? 'entry' : 'exit',
+        label: `${item.type === 'visitor' ? 'Visitante' : 'Servicio'} · ${item.movement}`,
+        name: item.name || item.company || 'Nombre no registrado',
+        context: [item.residence, item.plates].filter(Boolean).join(' · '),
+        secondary: [item.result, item.method, item.guard].filter(Boolean).join(' · '),
+        notice: item.pendingExit ? 'Pendiente de salida al generar el reporte' : undefined,
+        detail: <>
         {!item.inPeriod && <p className="access-notice">Pendiente fuera del periodo</p>}
         {item.type === 'service' && <p>{[item.company, shiftCategory(item.category)].filter(Boolean).join(' · ')}</p>}
-        <p>Resultado del movimiento: {item.result}{item.method && ` · Método: ${item.method}`}</p>
-        {item.pendingExit && <p className="access-notice"><strong>Pendiente de salida al generar el reporte</strong></p>}
         {(item.vehicle || item.plates) && <p>Vehículo: {item.vehicle || 'No especificado'}{item.plates && ` · Placas: ${item.plates}`}</p>}
         <dl className="shift-log-times">
           {item.type === 'service' && <div><dt>Llegada</dt><dd>{date(item.arrivalAt)}</dd></div>}
           <div><dt>Entrada</dt><dd>{date(item.entryAt)}</dd></div><div><dt>Salida al cierre</dt><dd>{date(item.exitAt)}</dd></div>
         </dl><p>Operador del movimiento: {item.guard || 'No registrado en el snapshot original'}</p>
         {item.notes && <p className="shift-text">Observaciones / motivo de rechazo: {item.notes}</p>}
-      </li>)}</ol>
+        </>,
+      }))} />
       <nav className="guard-pagination" aria-label="Páginas de bitácora"><button className="secondary-button" disabled={page === 0} onClick={() => setPage(v => v - 1)}>Anterior</button><span>Página {page + 1}</span><button className="secondary-button" disabled={!data.hasMore} onClick={() => setPage(v => v + 1)}>Siguiente</button></nav>
     </>}
-    <h2>Exportar bitácora</h2><p className="form-help">CSV completo de visitantes y servicios, en orden cronológico, independiente del filtro visible. Máximo 10 000 filas; una fila por evento, sin totales ni identificadores internos.</p>
-    <button className="secondary-button" disabled={exporting || !data} onClick={() => { void exportCsv() }}>{exporting ? 'Preparando CSV completo…' : 'Exportar CSV'}</button>
+    <div className="shift-export"><div><h2>Exportar bitácora</h2><p className="form-help">CSV completo de visitantes y servicios, en orden cronológico, independiente del filtro visible. Máximo 10 000 filas; una fila por evento, sin totales ni identificadores internos.</p></div>
+    <button className="secondary-button" aria-busy={exporting} disabled={exporting || !data} onClick={() => { void exportCsv() }}>{exporting ? 'Preparando CSV completo…' : 'Exportar CSV'}</button></div>
     {exportError && <p className="form-error" role="alert">{exportError}</p>}
   </section>
 }

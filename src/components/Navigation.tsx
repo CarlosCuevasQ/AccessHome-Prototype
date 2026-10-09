@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { Icon, navigationIcon } from './Icon'
 import type { NavigationItem } from '../types/navigation'
 
 interface NavigationProps {
@@ -13,7 +14,7 @@ export function Navigation({ items, onNavigate }: NavigationProps) {
         {items.map((item) => (
           <li key={item.path}>
             <NavLink end={item.end ?? true} to={item.path} onClick={onNavigate} className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              {item.label}
+              <Icon name={navigationIcon(item.path)} /><span>{item.label}</span>
             </NavLink>
           </li>
         ))}

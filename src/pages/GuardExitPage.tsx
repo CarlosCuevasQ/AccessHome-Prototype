@@ -1,3 +1,4 @@
+import { Skeleton } from '../components/Skeleton'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { guardService } from '../services/guardService'
@@ -55,11 +56,11 @@ export function GuardExitPage() {
     {result && <div ref={feedback} tabIndex={-1}><AccessFeedback result={result} operational /><button className="secondary-button" onClick={() => { setResult(null); setRevision(value => value + 1) }}>Consultar pendientes</button></div>}
     {!selection && !result && <>
       <div className="guard-updates"><p className="form-help">Actualización cada 30 segundos. La salida se vuelve a comprobar al confirmar.</p><button className="secondary-button" disabled={loading} onClick={() => setRevision(value => value + 1)}>Actualizar visitas</button></div>
-      {loading && <p role="status">Consultando entradas abiertas…</p>}
+      {loading && <Skeleton variant="list" label="Consultando entradas abiertas…" />}
       {error && <p className="form-error" role="alert">{error}</p>}
       {data && <>
         <p className="form-help">Horarios del condominio · {data.timeZone}</p>
-        {data.records.length === 0 && <p>No hay visitas pendientes en esta página.</p>}
+        {data.records.length === 0 && <p className="empty-list">No hay visitas pendientes en esta página.</p>}
         <ul className="guard-open-visits">{data.records.map(entry => <li key={entry.id}>
           <div><strong>{entry.visitorName}</strong><p>{entry.residenceName} · {entry.vehicle ? `Placas: ${entry.vehicle.plates}` : 'Sin vehículo'}</p><p>Entrada: {formatDate(entry.occurredAt, data.timeZone)}</p></div>
           <button className="secondary-button" aria-label={`Registrar salida de ${entry.visitorName}, ${entry.residenceName}`} onClick={event => { selectedButton.current = event.currentTarget; setSelection({ entry, zone: data.timeZone }); setOperationError('') }}>Registrar salida</button>

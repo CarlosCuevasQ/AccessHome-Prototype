@@ -1,3 +1,4 @@
+import { Skeleton } from '../components/Skeleton'
 import { useCallback, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { publicInvitationService } from '../services/publicInvitationService'
@@ -17,7 +18,7 @@ export function PublicInvitationPage() {
 
   return <section className="community-page invitations-page visitor-page">
     <p className="eyebrow">Invitación de visita</p>
-    {loading && <p role="status">Cargando invitación…</p>}
+    {loading && <Skeleton variant="qr" label="Cargando invitación…" />}
     {error && <><h1>Invitación no disponible</h1><p className="form-error" role="alert">{error}</p><p className="visitor-help">Comprueba tu conexión y solicita el enlace correcto a tu anfitrión.</p></>}
     {data && <>
       <h1>{data.visitorName}</h1>

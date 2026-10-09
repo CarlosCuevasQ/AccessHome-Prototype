@@ -1,3 +1,4 @@
+import { Skeleton } from '../components/Skeleton'
 import { useCallback, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { AccessResult } from '../types/access'
@@ -40,7 +41,7 @@ export function AccessControlPage() {
     <p className="eyebrow">Administrador / Seguridad</p>
     <h1>Control de acceso</h1>
     <p className="lead">Simula la lectura de un QR con su token. La primera validación registra entrada y la segunda, salida.</p>
-    {loading && <p role="status">Cargando control de acceso…</p>}
+    {loading && <Skeleton variant="list" label="Cargando control de acceso…" />}
     {error && <p className="form-error" role="alert">{error}</p>}
     {data && <>
       <form className="access-validation-form" onSubmit={(event) => { void validate(event) }} aria-label="Validar acceso" aria-busy={validating}>

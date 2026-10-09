@@ -1,4 +1,34 @@
-## Estado actual · Prompt 14.5: bitácora y CSV tabular
+## Estado actual · Prompt 15.3: experiencia residente
+
+Implementado el refinamiento exclusivamente visual del inicio, residencia, habitantes/vehículos, invitaciones, detalle/compartir y reportes del residente. Volver y Ver detalle tienen un patrón de botón con icono; compartir tiene jerarquía y confirmación al copiar; se separa la cancelación. Skeletons específicos de detalle, residencia y reporte; FadeContent existente reutilizado en cabeceras. Sidebar intacto.
+
+**224/224 pruebas**, **37/37 concurrencia**, build compartido con TypeScript, inspección de dist y diff check aprobados. JS principal 755.17 kB / 210.39 gzip; CSS 80.99 / 13.93 gzip. JS+CSS comprimidos: +4.02 kB respecto al inicio de 15.3. Persiste la advertencia conocida de chunk >500 kB. Cero dependencias nuevas.
+
+Se revisaron seis vistas del residente en navegador local a 375/390/430/768/1024/1280/1440 px, con SQL temporal y Auth simulado. Copiar, filtros, detalles, creación de invitación/reporte, cancelación y su reflejo público comprobados en ese entorno. No equivale a pruebas remotas o físicas. Pendientes: Auth real, WhatsApp/Web Share nativo, cámara, teléfonos físicos, lector de pantalla, zoom 200 % y preferencia de movimiento del sistema.
+
+No se modificó lógica de negocio, backend, contratos, QR, permisos ni migraciones. No se tocó `.env.local`, no hubo cambios remotos, commit, push ni despliegue. Inventario y decisiones: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#prompt-153--experiencia-residente). Recorrido: [PROTOTYPE_TESTING.md](PROTOTYPE_TESTING.md).
+
+## Prompt 15.2: composición visual y QoL (registro histórico)
+
+Refinamiento frontend implementado: login full-height 48/52 con teléfono conceptual propio, dashboards diferenciados por rol, métricas agrupadas, timeline operativo reutilizable, categorías de servicio con radios táctiles y reportes con resumen ejecutivo/bitácora expandible. Sidebar de escritorio intacto. React Bits FadeContent adaptado a dos usos, sin GSAP/Tailwind ni dependencias npm nuevas; licencia y atribución incluidas en fuente y distribución.
+
+Validación final: **224/224** pruebas, **37/37** concurrencia, `build:vercel` (incluye TypeScript), `deployment:check` y `git diff --check` aprobados. JS principal 747.72 kB / 208.84 gzip; CSS 61.40 / 11.46 gzip. Incremento JS+CSS comprimidos de 5.05 kB sobre el inicio de 15.2; persiste la advertencia >500 kB.
+
+Revisión en navegador local: login, tres roles, invitación/QR, caseta, servicios, reporte y bitácora. Mediciones a 375/390/430/768/1024/1280/1440 px sin overflow horizontal en las vistas documentadas. Flujos operativos revisados en fixture SQL desechable con Auth simulado, sin datos remotos. Quedan pendientes Auth real de los tres roles, cámara/dispositivos físicos, zoom 200 %, lector de pantalla, preferencia del sistema para movimiento reducido y apertura del CSV en Excel. No se declara certificación WCAG ni regresión remota aprobada.
+
+No cambios en Supabase, migraciones, services, lógica de negocio, `.env.local` ni dependencias. Sin commit, push o despliegue. Inventario, licencia y decisiones: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md). Recorrido y resultados: [PROTOTYPE_TESTING.md](PROTOTYPE_TESTING.md).
+
+## Prompt 15: sistema visual y UX (registro histórico)
+
+Implementado el rediseño compartido de login, navegación admin/residente/guardia, dashboards, listas/tablas, formularios, invitaciones públicas, escáner, servicios y reportes. Skeletons por estructura; prioridad de acciones por rol; tokens azul/amarillo; agrupación y detalles desplegables. Se conservan services/RPC, autorización, cámara, QR, snapshot y CSV. Sin nueva migración ni dependencias.
+
+Validación local: **224/224** pruebas (222 regresiones y 2 de contraste), **37/37** concurrencia, build:vercel/TypeScript y deployment:check aprobados. JS principal 738.04 kB / 206.68 gzip; CSS 43.45 / 8.57 gzip; persiste advertencia >500 kB. Sin lint separado.
+
+**Pendiente de aceptación visual y accesible en navegador.** La herramienta de Windows detuvo Computer Use al no poder verificar la URL activa; no se completaron recorridos del rediseño ni mediciones responsive, teclado, lector de pantalla o cámara física. No se declara cumplimiento WCAG completo ni regresión remota aprobada. Matriz en [PROTOTYPE_TESTING.md](PROTOTYPE_TESTING.md); decisiones y componentes en [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
+
+No se modificaron datos remotos, .env.local, migraciones ni dependencias; sin commit, push o despliegue. Las secciones siguientes son registros de entregas anteriores; sus pendientes no equivalen al estado remoto actual comunicado por el responsable.
+
+## Prompt 14.5: bitácora y CSV tabular (registro histórico)
 
 Resumen de turno conservado, seguido de incidencias/observaciones, detalle paginado y CSV. La bitácora usa referencias SQL y DTO mínimo del propio cierre; visitantes/servicios, filtros y orden cronológico, método, vehículo, placas y operador. Nuevas referencias de contexto preservan entrada/salida al cierre sin duplicar personas/vehículos. Cierres antiguos conservan su información y avisan contexto limitado. No se modificó ninguna de las catorce migraciones existentes ni el modelo de métricas.
 

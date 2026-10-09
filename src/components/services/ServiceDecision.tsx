@@ -27,6 +27,6 @@ export function ServiceDecision({ visit, operation, zone, close, done }: { visit
     {operation === 'reject' && <label>Motivo de rechazo (opcional)<textarea maxLength={240} value={reason} disabled={pending || Boolean(error)} onChange={e => setReason(e.target.value)} /></label>}
     {operation === 'cancel' && <p>Se conservará la llegada, sin registrar entrada. Una nueva llegada requiere otro registro.</p>}
     {error && <div role="alert"><p className="form-error">{error}</p><p>Reintentar conserva la misma operación. Si ya cambió el estado, vuelve a la lista para consultarlo.</p></div>}
-    <div className="form-actions"><button className="secondary-button" disabled={pending} onClick={close}>Volver a la lista</button><button className="button-link" disabled={pending || (operation === 'allow' && !confirmed)} onClick={() => { void submit() }}>{pending ? 'Registrando…' : error ? 'Reintentar misma operación' : labels[operation]}</button></div>
+    <div className="form-actions"><button className="secondary-button" disabled={pending} onClick={close}>Volver a la lista</button><button className={`button-link${operation === 'reject' || operation === 'cancel' ? ' danger-button' : ''}`} aria-busy={pending} disabled={pending || (operation === 'allow' && !confirmed)} onClick={() => { void submit() }}>{pending ? 'Registrando…' : error ? 'Reintentar misma operación' : labels[operation]}</button></div>
   </section>
 }

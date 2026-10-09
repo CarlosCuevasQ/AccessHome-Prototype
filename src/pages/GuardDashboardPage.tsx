@@ -1,3 +1,6 @@
+import { FadeContent } from '../components/react-bits/FadeContent'
+import { Icon } from '../components/Icon'
+import { Skeleton } from '../components/Skeleton'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { guardService } from '../services/guardService'
@@ -27,36 +30,29 @@ export function GuardDashboardPage() {
   const [revision, setRevision] = useState(0)
   const load = useCallback(() => guardService.getDashboard(), [revision])
   const { data, error, loading } = useCommunityQuery(load, 30000)
-  return <section className="community-page guard-page">
-    <p className="eyebrow">Guardia / Caseta</p><AccessNotice />
-    <h1>Panel de caseta</h1>
-    {loading && <p role="status">Cargando actividad de caseta…</p>}
+  return <section className="community-page guard-page editorial-dashboard guard-home">
+    <AccessNotice />
+    <FadeContent className="editorial-header"><header><div><p className="eyebrow">Guardia / Caseta</p><h1>{data?.guardName ?? 'Panel de caseta'}</h1><p className="lead">{data?.condominiumName ?? 'Tu punto de control'}</p></div>{data && <GuardClock serverTime={data.serverTime} timeZone={data.timeZone} />}</header></FadeContent>
+    {loading && <Skeleton variant="dashboard" label="Cargando actividad de caseta…" />}
     {error && <p className="form-error" role="alert">{error}</p>}
     {data && <>
-      <div className="guard-introduction">
-        <div><h2>{data.condominiumName}</h2><p>Guardia: <strong>{data.guardName}</strong></p></div>
-        <GuardClock serverTime={data.serverTime} timeZone={data.timeZone} />
+      <div className="editorial-grid">
+        <div className="editorial-main"><section className="scan-launch"><Icon name="scan" /><p className="eyebrow">Control de acceso</p><h2>Recibe la próxima visita</h2><p>Verifica el código del visitante y registra su entrada o salida.</p><Link className="button-link" to="/guardia/escanear"><Icon name="scan" />Escanear acceso</Link></section>
+          <section className="open-module"><div className="section-heading"><h2>Visitantes dentro</h2><span className="status-badge">{data.pendingExitCount} pendientes</span></div>
+            <RecentAccess records={data.pendingExits.slice(0, 3)} compactHeading title="Pendientes de salida" timeZone={data.timeZone} empty="No hay visitantes con salida pendiente." />
+            {data.pendingExitCount > 3 && <p className="form-help">Las 3 entradas pendientes más antiguas de {data.pendingExitCount}. Consulta las demás en Salida sin QR.</p>}
+            <Link className="text-button" to="/guardia/salidas"><Icon name="exit" />Registrar salida sin QR</Link>
+          </section>
+        </div>
+        <aside className="editorial-aside" aria-label="Estado de caseta">
+          <section className="now-module"><p className="eyebrow">Actividad de hoy</p><div className="hero-number"><strong>{data.todayAccessCount}</strong><span>movimientos</span></div><p>Entradas y salidas en la zona horaria del condominio.</p><Link to="/guardia/historial">Consultar historial<Icon name="arrow" /></Link></section>
+          <ServiceSummary />
+          <Link className="utility-link" to="/guardia/servicios"><Icon name="package" /><span><strong>Registrar servicio</strong><small>Captura la llegada y decide en caseta.</small></span><Icon name="arrow" /></Link>
+          <Link className="utility-link" to="/guardia/reportes"><Icon name="report" /><span><strong>Reportes de turno</strong><small>Revisa y genera el cierre.</small></span><Icon name="arrow" /></Link>
+        </aside>
       </div>
-      <nav className="dashboard-actions guard-actions" aria-label="Acciones de caseta">
-        <Link className="button-link guard-scan" to="/guardia/escanear">Escanear acceso</Link>
-        <Link className="secondary-button" to="/guardia/salidas">Registrar salida sin QR</Link>
-        <Link className="secondary-button" to="/guardia/historial">Historial</Link>
-        <Link className="secondary-button" to="/guardia/servicios">Registrar servicio</Link>
-        <Link className="secondary-button" to="/guardia/reportes">Reportes de turno</Link>
-      </nav>
-      <dl className="summary-strip guard-metrics">
-        <div><dt>Accesos registrados hoy</dt><dd>{data.todayAccessCount}</dd></div>
-        <div><dt>Visitas pendientes de salida</dt><dd>{data.pendingExitCount}</dd></div>
-      </dl>
-      <p className="form-help">Hoy incluye entradas y salidas en la zona horaria del condominio. Pendientes: entradas sin una salida registrada, incluso de días anteriores.</p>
-      <div className="guard-updates"><p className="form-help">Actualización cada 30 segundos mientras esta pantalla esté visible.</p><button type="button" className="secondary-button" onClick={() => setRevision(value => value + 1)}>Actualizar</button></div>
-      <div className="guard-recent">
-        <RecentAccess records={data.recentEntries} title="Entradas recientes" timeZone={data.timeZone} empty="Todavía no hay entradas registradas." />
-        <RecentAccess records={data.recentExits} title="Salidas recientes" timeZone={data.timeZone} empty="Todavía no hay salidas registradas." />
-      </div>
-      <RecentAccess records={data.pendingExits} title="Pendientes de salida" timeZone={data.timeZone} empty="No hay visitas con salida pendiente." />
-      {data.pendingExitCount > data.pendingExits.length && <p className="form-help">Se muestran las 10 entradas pendientes más antiguas de {data.pendingExitCount}.</p>}
-      <ServiceSummary />
+      <div className="guard-activity"><RecentAccess records={data.recentEntries} title="Entradas recientes" timeZone={data.timeZone} empty="Todavía no hay entradas registradas." /><RecentAccess records={data.recentExits} title="Salidas recientes" timeZone={data.timeZone} empty="Todavía no hay salidas registradas." /></div>
+      <div className="guard-updates"><p className="form-help">Actualización cada 30 segundos. Los pendientes incluyen visitas de días anteriores.</p><button type="button" className="secondary-button" onClick={() => setRevision(value => value + 1)}>Actualizar</button></div>
     </>}
     {error && <button type="button" className="secondary-button" onClick={() => setRevision(value => value + 1)}>Volver a consultar</button>}
   </section>

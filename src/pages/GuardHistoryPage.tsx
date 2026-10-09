@@ -1,3 +1,4 @@
+import { Skeleton } from '../components/Skeleton'
 import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { AccessHistoryFilters } from '../types/access'
@@ -18,7 +19,7 @@ export function GuardHistoryPage() {
     <label className="form-field guard-filter">Movimiento<select value={movement} onChange={event => { setMovement(event.target.value as AccessHistoryFilters['type']); setPage(0) }}>
       <option value="">Entradas y salidas</option><option value="entrada">Entradas</option><option value="salida">Salidas</option>
     </select></label>
-    {loading && <p role="status">Cargando historial…</p>}{error && <p className="form-error" role="alert">{error}</p>}
+    {loading && <Skeleton variant="list" label="Cargando historial…" />}{error && <p className="form-error" role="alert">{error}</p>}
     {data && <><p className="form-help">Fechas en la zona horaria del condominio: {data.timeZone}.</p>
       <AccessHistory records={data.records} filtered={Boolean(movement) || page > 0} timeZone={data.timeZone} operational />
       <nav className="guard-pagination" aria-label="Páginas del historial">
