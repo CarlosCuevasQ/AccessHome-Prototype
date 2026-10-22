@@ -52,9 +52,9 @@ Los RPCs expuestos son SECURITY INVOKER. La lógica privilegiada está en access
 
 ## Configuración compartida
 
-La configuración existente de `.env.local`, las catorce migraciones anteriores y los datos se conservan. Esta mejora añade únicamente `20261007000200_guard_report_log.sql`: proyección de fuentes operativas mediante RPC autorizado y referencias de contexto privadas para cierres nuevos, sin tablas nuevas ni reescritura de reportes. El responsable debe revisar el historial real antes de aplicar solo la incremental faltante y publicar el frontend actualizado.
+La configuración existente de `.env.local`, las quince migraciones anteriores y los datos se conservan. El 2026-10-21 `npm run backend:check` (solo lectura) detectó en remoto hasta `guardReportLogVersion: 1`. La corrección más reciente añade únicamente `20261021000100_inactive_residence_exit.sql`: un guardia puede registrar la salida de una visita abierta aunque el administrador haya desactivado la casa; las entradas a casas inactivas siguen rechazadas. No crea tablas ni cambia filas y no requiere publicar frontend. El responsable debe revisar el historial real y aplicar solo esa incremental.
 
-Seguir [GUARD_REPORTS.md](docs/GUARD_REPORTS.md) y [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. `npm run backend:check` debe indicar `guardReportLogVersion: 1`; conserva `guardReportsVersion: 1`, `schemaVersion: 9` y las capacidades anteriores. No prueba login, cámara ni despliegue. No se ejecutó contra el proyecto en esta entrega.
+Seguir [OPEN_VISIT_EXITS.md](docs/OPEN_VISIT_EXITS.md) y [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. Tras aplicarla, `npm run backend:check` debe indicar `inactiveResidenceExitVersion: 1`; conserva `guardReportLogVersion: 1`, `schemaVersion: 9` y las capacidades anteriores. No prueba login, cámara ni despliegue. La migración no se aplicó al proyecto remoto en esta entrega.
 
 Para instalaciones completamente nuevas, [SHARED_BACKEND_SETUP.md](docs/SHARED_BACKEND_SETUP.md) documenta la base inicial. Mantener expuesto `accesshome` y privado `accesshome_private`.
 

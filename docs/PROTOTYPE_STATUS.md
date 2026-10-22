@@ -1,4 +1,12 @@
-## Estado actual · Prompt 15.3: experiencia residente
+## Estado actual · Corrección 2026-10-21: salida con casa desactivada
+
+Defecto reproducido con prueba de regresión: con una visita dentro y la casa desactivada por el administrador, la salida por QR y la salida sin QR respondían `inactive_residence` y la visita quedaba abierta. Servicios ya permitía esa salida. Se añadió la incremental **`20261021000100_inactive_residence_exit.sql`, pendiente de aplicación remota**: un guardia activo del mismo condominio puede cerrar la visita (`entries=1`, `exits=0`, `used_uses=1`, contados en el historial); las entradas a casas inactivas y el administrador siguen rechazados. Ninguna migración anterior se editó.
+
+Validación local: `npm test` **233/233** (224 previas + 9 nuevas), `npm run test:concurrency` **45/45** (37 previas + 8 nuevas), `tsc --noEmit`, `build`, `build:vercel`, `deployment:check` y `git diff --check` aprobados. La incremental sobre una base poblada no cambia filas y pasa `security_baseline.sql`. `backend:check` (solo lectura) confirmó en remoto hasta `guardReportLogVersion: 1` y la nueva como pendiente. Detalle en [OPEN_VISIT_EXITS.md](OPEN_VISIT_EXITS.md) y [PROTOTYPE_TESTING.md](PROTOTYPE_TESTING.md).
+
+Sin cambios de frontend, `.env.local`, SQL remoto, commit, push ni despliegue.
+
+## Prompt 15.3: experiencia residente (registro histórico)
 
 Implementado el refinamiento exclusivamente visual del inicio, residencia, habitantes/vehículos, invitaciones, detalle/compartir y reportes del residente. Volver y Ver detalle tienen un patrón de botón con icono; compartir tiene jerarquía y confirmación al copiar; se separa la cancelación. Skeletons específicos de detalle, residencia y reporte; FadeContent existente reutilizado en cabeceras. Sidebar intacto.
 

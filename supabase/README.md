@@ -1,8 +1,10 @@
 # Base SQL del prototipo integrado
 
-## Estado vigente: mejora de bitácora pendiente (versión 15)
+## Estado vigente: salida con casa inactiva pendiente (versión 16)
 
-El módulo de reportes del Prompt 14 funciona según el responsable. **Esta entrega añade únicamente `20261007000200_guard_report_log.sql`, pendiente de aplicar remotamente.** Las quince se probaron localmente; ninguna de las catorce anteriores se editó. Antes de aplicar, verificar historial remoto y que `20261007000100` exista con su corrección sin SELECT directo. Guía: [GUARD_REPORTS.md](../docs/GUARD_REPORTS.md). Sin `.env.local`, cuentas nuevas ni SQL remoto.
+El 2026-10-21 `npm run backend:check` (solo lectura) detectó en remoto hasta `guardReportLogVersion: 1`, es decir, las quince versiones hasta `20261007000200`. **Esta entrega añade únicamente `20261021000100_inactive_residence_exit.sql`, pendiente de aplicar remotamente.** Redefine `validate_access` para que un guardia cierre una visita abierta aunque la casa esté desactivada, sin permitir entradas. Las dieciséis se probaron localmente; ninguna de las quince anteriores se editó. Guía: [OPEN_VISIT_EXITS.md](../docs/OPEN_VISIT_EXITS.md). Sin `.env.local`, cuentas nuevas ni SQL remoto.
+
+Etapa anterior: `20261007000200_guard_report_log.sql` (bitácora de caseta); guía en [GUARD_REPORTS.md](../docs/GUARD_REPORTS.md).
 
 Para escaneo sigue [GUARD_SCANNING.md](../docs/GUARD_SCANNING.md); para compartir/publicar, [DEPLOYMENT.md](../docs/DEPLOYMENT.md); para provisionar Guardia, [GUARD_SETUP.md](../docs/GUARD_SETUP.md). No repetir `seed_demo` ni las versiones ya aplicadas. Las instrucciones de instalación base que siguen son solo para proyectos nuevos; no corresponden al proyecto existente.
 
@@ -28,6 +30,7 @@ Diseño completo, matriz de permisos y orden de adaptación: [SHARED_BACKEND_PLA
 | 20260919000100 | `migrations/20260919000100_service_access.sql` | service_visits/service_events, RLS admin propio condominio, context/list/command privados con wrappers mínimos. Llegada, decisión y movimientos MANUAL con guardia activo, concurrencia e idempotencia. Salud: serviceAccessVersion 1. No cambia filas anteriores. |
 | 20261007000100 | `migrations/20261007000100_guard_reports.sql` | guard_shift_reports con snapshot/IDs fuente, métricas calculadas desde access_records/service_events, RLS propio guardia/admin del condominio y RPC guard_reports privado con wrapper mínimo. Unicidad, locks e idempotencia; guardReportsVersion 1, schemaVersion 9 sin cambios. No altera fuentes. |
 | 20261007000200 | `migrations/20261007000200_guard_report_log.sql` | guard_report_log paginado y autorizado, proyección explícita de fuentes inmutables; shift_snapshot amplía referencias de contexto/cancelación manteniendo métricas. Sin tablas/grants de lectura directa/backfill. guardReportLogVersion 1. |
+| 20261021000100 | `migrations/20261021000100_inactive_residence_exit.sql` | `validate_access` permite a un guardia activo del condominio cerrar una visita abierta (`entries=1`, `exits=0`, `used_uses=1`) con la casa inactiva; entradas siguen rechazadas. Resto del motor literal. Sin tablas, grants ni cambios de filas. inactiveResidenceExitVersion 1. |
 
 Requieren un proyecto Supabase con `auth.users`, `auth.uid()`, `auth.jwt()` y roles PostgreSQL `anon`/`authenticated`. Se aplican como propietario de migraciones controlado (por ejemplo, `postgres` del proyecto). Los IDs de dominio usan `gen_random_uuid()` del PostgreSQL de Supabase. No necesitan Docker ni una base PostgreSQL instalada en este equipo.
 
@@ -36,8 +39,8 @@ En una instalación inicial los esquemas `accesshome` y `accesshome_private` deb
 ## Instalación inicial manual sin CLI (solo proyecto nuevo)
 
 1. Seleccionar el proyecto **de ensayo** correcto en el Dashboard y verificar si tiene datos/esquemas existentes. Conservar respaldo si corresponde.
-2. En SQL Editor, ejecutar los ocho archivos base en el orden indicado en [SHARED_BACKEND_SETUP.md](../docs/SHARED_BACKEND_SETUP.md) y después las siete incrementales de la tabla en orden hasta bitácora `20261007000200`. Cada archivo tiene `begin/commit`: si falla, corregir la causa y reintentar solo la versión que no se confirmó.
-3. Registrar las quince versiones aplicadas y el proyecto, sin guardar contraseñas ni claves en Git. No editar y repetir una migración ya aplicada: las correcciones posteriores requieren una nueva versión.
+2. En SQL Editor, ejecutar los ocho archivos base en el orden indicado en [SHARED_BACKEND_SETUP.md](../docs/SHARED_BACKEND_SETUP.md) y después las ocho incrementales de la tabla en orden hasta `20261021000100`. Cada archivo tiene `begin/commit`: si falla, corregir la causa y reintentar solo la versión que no se confirmó.
+3. Registrar las dieciséis versiones aplicadas y el proyecto, sin guardar contraseñas ni claves en Git. No editar y repetir una migración ya aplicada: las correcciones posteriores requieren una nueva versión.
 4. Ejecutar `tests/security_baseline.sql` completo. Debe finalizar sin excepciones; usa transacción de solo lectura y termina con `rollback`.
 5. Revisar tablas/políticas en Dashboard. Exponer `accesshome` para la aplicación y mantener `accesshome_private` y `auth` fuera de los esquemas expuestos. No añadir `accesshome_private` a Extra search path. El cliente selecciona `accesshome` dentro de `services`.
 6. Probar RLS con JWTs de cuentas de ensayo y la clave publishable según la matriz del plan. SQL Editor como propietario atraviesa RLS y no prueba aislamiento por usuario.
@@ -50,7 +53,7 @@ No se ha instalado ni ejecutado la CLI. Cuando esté disponible, elegir **una so
 
 1. Inicializar la configuración CLI con `supabase init`, conservando estos archivos; autenticar la CLI manualmente.
 2. Vincular el proyecto real con `supabase link --project-ref` seguido de su referencia real. No escribir credenciales en scripts o historial de comandos.
-3. Revisar `supabase migration list` y `supabase db push --dry-run`. En un proyecto nuevo verificar las quince versiones; en el proyecto existente con Prompt 14 aplicado debe faltar únicamente `20261007000200`.
+3. Revisar `supabase migration list` y `supabase db push --dry-run`. En un proyecto nuevo verificar las dieciséis versiones; en el proyecto existente debe faltar únicamente `20261021000100`.
 4. Solo después de la revisión y con el proyecto autorizado, `supabase db push` aplica las versiones pendientes. No se ejecutó desde esta tarea.
 5. Si se aplicó SQL Editor antes, la CLI no conocerá ese historial automáticamente: reconciliar versiones verificadas mediante `supabase migration repair` conforme a la documentación antes de usar `db push`. Nunca marcar una versión como aplicada si su esquema no coincide.
 

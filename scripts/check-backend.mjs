@@ -34,5 +34,8 @@ if(!url || !key?.startsWith('sb_publishable_')) {
   console.log(data.guardReportLogVersion===1
     ? 'Detalle de turno detectado (guardReportLogVersion: 1). Falta aceptación remota de bitácora y CSV.'
     : 'Detalle de turno pendiente: revisar 20261007000200_guard_report_log.sql.')
+  console.log(data.inactiveResidenceExitVersion===1
+    ? 'Salida con casa inactiva detectada (inactiveResidenceExitVersion: 1). Falta probarla con cuentas reales.'
+    : 'Salida con casa inactiva pendiente: revisar 20261021000100_inactive_residence_exit.sql.')
  } catch(error) { console.error(error.message); process.exitCode=1 }
 }

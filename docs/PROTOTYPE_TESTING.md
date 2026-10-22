@@ -1,4 +1,20 @@
-## Prompt 15.3 · Experiencia residente: validación local
+## Corrección 2026-10-21 · Salida con casa desactivada
+
+Resultados reales (2026-10-21, Node 24.11.0, base `66fdcaf` con cambios locales sin commit):
+
+| Comando | Resultado |
+| --- | --- |
+| `node --test tests/inactive-residence-exit.test.mjs` antes de la migración | 2/5 aprobadas, 3 fallidas con `inactive_residence` en salida QR, salida sin QR y salida con invitación vencida (reproducción del defecto) |
+| `npm test` | **233/233**: las 224 previas + 9 de `tests/inactive-residence-exit.test.mjs` |
+| `npm run test:concurrency` | **45/45**: las 37 previas + 8 nuevas en PostgreSQL temporal local |
+| `npx tsc --noEmit`, `npm run build`, `npm run build:vercel`, `npm run deployment:check`, `git diff --check` | Aprobados; advertencia conocida de chunk >500 kB y avisos LF/CRLF |
+| `npm run backend:check` | Solo lectura. Remoto con `guardReportLogVersion: 1`; `inactiveResidenceExitVersion` pendiente |
+
+Escenarios cubiertos con casa inactiva: salida por QR, salida sin QR, invitación vencida o cancelada con visita abierta; entrada por QR o token manual rechazada; sin vía para pedir otra entrada (sin parámetro de dirección, método inválido, admin rechazado, INSERT directo sin privilegio, unicidad `invitation_id + direction`); contador alterado en ambos sentidos y visita completada con contador reabierto → `invalid_sequence`; guardia ajeno, residente y admin no cierran la visita; reintento con el mismo `request_id`; salidas concurrentes QR/QR, manual/manual, manual/QR, QR/manual, reintento y rollback con una sola salida; desactivación concurrente frente a una entrada en espera (rechazada) y entrada en curso frente a una desactivación (después solo salida). `guard-backend` aplica la incremental sobre datos poblados y compara todas las filas.
+
+Pendiente: aplicar la incremental en el proyecto de ensayo y ejecutar S-16 de [OPEN_VISIT_EXITS.md](OPEN_VISIT_EXITS.md) con cuentas reales. Estas pruebas usan Auth simulado y bases locales desechables.
+
+## Prompt 15.3 · Experiencia residente: validación local (registro histórico)
 
 Resultados reales de esta etapa (2026-10-08):
 

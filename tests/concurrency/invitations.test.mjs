@@ -106,7 +106,7 @@ async function race({second=input(10,20),rollback=false,isolation='READ COMMITTE
  }
 }
 
-test('PostgreSQL nativo: quince migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
+test('PostgreSQL nativo: dieciséis migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
  t.diagnostic('PostgreSQL '+version+'; tres conexiones TCP locales, Auth simulado.')
  assert.notEqual(a.processID,b.processID)
 })
@@ -453,4 +453,78 @@ test('bitácora: salida concurrente sin COMMIT no cambia referencias ni pendient
   assert.deepEqual(after,before)
   await b.query('commit')
  } finally {await a.query('rollback');await b.query('rollback')}
+})
+
+// Casa inactiva con conexiones independientes: una sola salida y ninguna entrada nueva.
+const setHouse=active=>owner.query('update accesshome.residences set active=$2 where id=$1',[house,active])
+const adminClaims=client=>client.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:users.admin,is_anonymous:false})])
+async function deactivate(client) {
+ const {number,street}=(await owner.query('select number,street from accesshome.residences where id=$1',[house])).rows[0]
+ return client.query('select accesshome.manage_community($1,$2,$3::jsonb)',['update_residence',house,JSON.stringify({number:String(number),street,active:false})])
+}
+for(const scenario of ['QR/QR','manual/manual','manual/QR','QR/manual','replay','rollback']) {
+ test('casa inactiva, salida concurrente: '+scenario,async()=>{
+  const i=await scanFixture(),request=randomUUID()
+  await beginGuard(a)
+  const entry=(await validate(a,i.token)).rows[0].data.record
+  await a.query('commit')
+  await owner.query("update accesshome.access_records set occurred_at=clock_timestamp()-interval '4 seconds' where invitation_id=$1",[i.id])
+  await setHouse(false)
+  const manual=(client,id)=>client.query('select accesshome.guard_register_exit($1,$2) as data',[entry.id,id])
+  const qr=(client,id)=>validate(client,i.token,id)
+  const firstOp=scenario.startsWith('QR')?qr:manual
+  const secondOp=scenario==='replay'?manual:scenario.endsWith('QR')?qr:manual
+  let pending
+  try {
+   await beginGuard(a);await beginGuard(b,scenario==='replay'?0:1)
+   const first=(await firstOp(a,request)).rows[0].data
+   assert.equal(first.authorized,true); assert.equal(first.record.type,'salida')
+   pending=settled(secondOp(b,scenario==='replay'?request:randomUUID()))
+   await waitBlocked(b,a)
+   await a.query(scenario==='rollback'?'rollback':'commit')
+   const second=await pending
+   assert.equal(second.error,undefined)
+   await b.query('commit')
+   if(scenario==='replay') assert.deepEqual(second.value.rows[0].data,{...first,replayed:true})
+   else assert.equal(second.value.rows[0].data.authorized,scenario==='rollback')
+   const records=(await owner.query('select direction from accesshome.access_records where invitation_id=$1 order by occurred_at',[i.id])).rows
+   assert.deepEqual(records,[{direction:'entrada'},{direction:'salida'}])
+   assert.equal((await owner.query('select used_uses from accesshome.invitations where id=$1',[i.id])).rows[0].used_uses,2)
+  } finally {await a.query('rollback');if(pending) await pending;await b.query('rollback');await setHouse(true)}
+ })
+}
+
+test('desactivación concurrente vence a una entrada en espera: sin movimiento',async()=>{
+ const i=await scanFixture()
+ let pending
+ try {
+  await begin(a);await adminClaims(a);await deactivate(a)
+  await beginGuard(b,1);pending=settled(validate(b,i.token))
+  await waitBlocked(b,a);await a.query('commit')
+  const result=await pending
+  assert.equal(result.error,undefined)
+  assert.equal(result.value.rows[0].data.reason,'inactive_residence')
+  await b.query('commit')
+  assert.equal((await owner.query('select count(*)::int as n from accesshome.access_records where invitation_id=$1',[i.id])).rows[0].n,0)
+ } finally {await a.query('rollback');if(pending) await pending;await b.query('rollback');await setHouse(true)}
+})
+
+test('entrada en curso vence a una desactivación en espera; después solo puede salir',async()=>{
+ const i=await scanFixture()
+ let pending
+ try {
+  await beginGuard(a)
+  assert.equal((await validate(a,i.token)).rows[0].data.record.type,'entrada')
+  await begin(b);await adminClaims(b);pending=settled(deactivate(b))
+  await waitBlocked(b,a);await a.query('commit')
+  assert.equal((await pending).error,undefined);await b.query('commit')
+  assert.equal((await owner.query('select active from accesshome.residences where id=$1',[house])).rows[0].active,false)
+  await owner.query("update accesshome.access_records set occurred_at=clock_timestamp()-interval '4 seconds' where invitation_id=$1",[i.id])
+  await beginGuard(a)
+  const exit=(await validate(a,i.token)).rows[0].data
+  await a.query('commit')
+  assert.equal(exit.authorized,true,JSON.stringify(exit)); assert.equal(exit.record.type,'salida')
+  const records=(await owner.query('select direction from accesshome.access_records where invitation_id=$1 order by occurred_at',[i.id])).rows
+  assert.deepEqual(records,[{direction:'entrada'},{direction:'salida'}])
+ } finally {await a.query('rollback');if(pending) await pending;await b.query('rollback');await setHouse(true)}
 })
