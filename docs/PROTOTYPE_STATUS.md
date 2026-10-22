@@ -1,6 +1,19 @@
-## Estado actual · Corrección 2026-10-21: salida con casa desactivada
+## Estado actual · Auditoría previa a la segunda entrega (2026-10-21, trabajo local)
 
-Defecto reproducido con prueba de regresión: con una visita dentro y la casa desactivada por el administrador, la salida por QR y la salida sin QR respondían `inactive_residence` y la visita quedaba abierta. Servicios ya permitía esa salida. Se añadió la incremental **`20261021000100_inactive_residence_exit.sql`, pendiente de aplicación remota**: un guardia activo del mismo condominio puede cerrar la visita (`entries=1`, `exits=0`, `used_uses=1`, contados en el historial); las entradas a casas inactivas y el administrador siguen rechazados. Ninguna migración anterior se editó.
+Cambios locales posteriores a `e73a86c`, sin desplegar:
+
+- Control de acceso del administrador: registra el método `MANUAL` (no `QR`) mediante `validate_access` de tres argumentos; el escaneo del guardia no cambia.
+- Errores del backend: solo los mensajes propios de AccessHome (P0001) llegan a la interfaz; errores SQL, PostgREST, de red o desconocidos se muestran con mensajes seguros.
+- Pruebas nuevas: aislamiento entre condominios con datos en ambos, contrato de residentes con casa inactiva (consulta sí, escritura no, reactivación) y mapeo de errores.
+- Incremental **`20261021000200_public_invitation_residence_state.sql`, pendiente de aplicación remota**: `public_invitation` añade `residenceActive` (`publicInvitationVersion: 4`). La vista pública y el detalle del residente (este último con `residence_details`, ya desplegado) dejan de presentar como disponible para entrar una invitación de una casa inactiva.
+
+Validación local del 2026-10-21: `npm test` **267/267**, `npm run test:concurrency` **45/45** (diecisiete migraciones y `security_baseline.sql`), `tsc --noEmit`, build de Vite aislado con revisión de secretos y `git diff --check` aprobados. Pruebas SQL en PGlite/PostgreSQL temporal con Auth simulado.
+
+Estado remoto conocido: dieciséis migraciones aplicadas hasta `20261021000100` (`backend:check` de solo lectura reconoce `inactiveResidenceExitVersion: 1`). Pendiente: aplicar `20261021000200`, verificar `publicInvitationVersion: 4`, publicar el frontend y aceptar con cuentas reales (incluido S-16 de [OPEN_VISIT_EXITS.md](OPEN_VISIT_EXITS.md)) y revisión visual. Producción no se declara corregida hasta entonces. Limitación conocida: el detalle del residente no muestra QR de salida para una visita abierta en casa inactiva; la vista pública y la salida sin QR de caseta sí la cubren.
+
+## Corrección 2026-10-21: salida con casa desactivada (registro histórico)
+
+Defecto reproducido con prueba de regresión: con una visita dentro y la casa desactivada por el administrador, la salida por QR y la salida sin QR respondían `inactive_residence` y la visita quedaba abierta. Servicios ya permitía esa salida. Se añadió la incremental **`20261021000100_inactive_residence_exit.sql`** (pendiente en esa entrega; aplicada después en remoto): un guardia activo del mismo condominio puede cerrar la visita (`entries=1`, `exits=0`, `used_uses=1`, contados en el historial); las entradas a casas inactivas y el administrador siguen rechazados. Ninguna migración anterior se editó.
 
 Validación local: `npm test` **233/233** (224 previas + 9 nuevas), `npm run test:concurrency` **45/45** (37 previas + 8 nuevas), `tsc --noEmit`, `build`, `build:vercel`, `deployment:check` y `git diff --check` aprobados. La incremental sobre una base poblada no cambia filas y pasa `security_baseline.sql`. `backend:check` (solo lectura) confirmó en remoto hasta `guardReportLogVersion: 1` y la nueva como pendiente. Detalle en [OPEN_VISIT_EXITS.md](OPEN_VISIT_EXITS.md) y [PROTOTYPE_TESTING.md](PROTOTYPE_TESTING.md).
 

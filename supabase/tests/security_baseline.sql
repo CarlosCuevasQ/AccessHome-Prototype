@@ -1,4 +1,4 @@
--- Auditoría del catálogo después de las quince migraciones. No crea datos.
+-- Auditoría del catálogo después de las diecisiete migraciones. No crea datos.
 -- Ejecutar como el propietario de las migraciones en un proyecto de prueba.
 begin;
 set transaction read only;

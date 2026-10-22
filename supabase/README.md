@@ -1,8 +1,12 @@
 # Base SQL del prototipo integrado
 
-## Estado vigente: salida con casa inactiva pendiente (versión 16)
+## Estado vigente: disponibilidad pública por casa pendiente (versión 17)
 
-El 2026-10-21 `npm run backend:check` (solo lectura) detectó en remoto hasta `guardReportLogVersion: 1`, es decir, las quince versiones hasta `20261007000200`. **Esta entrega añade únicamente `20261021000100_inactive_residence_exit.sql`, pendiente de aplicar remotamente.** Redefine `validate_access` para que un guardia cierre una visita abierta aunque la casa esté desactivada, sin permitir entradas. Las dieciséis se probaron localmente; ninguna de las quince anteriores se editó. Guía: [OPEN_VISIT_EXITS.md](../docs/OPEN_VISIT_EXITS.md). Sin `.env.local`, cuentas nuevas ni SQL remoto.
+**Esta entrega añade únicamente `20261021000200_public_invitation_residence_state.sql`, pendiente de aplicar remotamente.** `public_invitation` conserva firma, campos, límite y no-store, y añade `residenceActive` (estado de la casa leído en SQL). La vista del visitante deja de presentar como utilizable para entrar una invitación de una casa inactiva; si hay visita abierta muestra QR solo de salida. `backend_health` sube `publicInvitationVersion` a 4. Sin tablas, grants ni cambios de filas. Orden obligatorio: aplicar `20261021000200`, ejecutar `security_baseline.sql`, comprobar con `npm run backend:check` que informa `publicInvitationVersion: 4` y solo después publicar el frontend. Si el frontend llegara antes, la vista pública conservaría el comportamiento anterior (QR visible) hasta aplicar la migración; caseta sigue rechazando esas entradas.
+
+Estado conocido: el repositorio contiene diecisiete migraciones; en remoto están aplicadas las dieciséis hasta `20261021000100` (confirmado por el responsable y por `npm run backend:check` de solo lectura del 2026-10-21, que reconoce `inactiveResidenceExitVersion: 1`). `20261021000200` sigue pendiente; no se afirma que producción esté corregida hasta aplicarla y publicar el frontend.
+
+Etapa anterior (16): el 2026-10-21 `npm run backend:check` (solo lectura) detectó en remoto hasta `guardReportLogVersion: 1`, es decir, las quince versiones hasta `20261007000200`. **Esa entrega añadió únicamente `20261021000100_inactive_residence_exit.sql`, aplicada después en remoto (ver estado conocido).** Redefine `validate_access` para que un guardia cierre una visita abierta aunque la casa esté desactivada, sin permitir entradas. Las dieciséis se probaron localmente; ninguna de las quince anteriores se editó. Guía: [OPEN_VISIT_EXITS.md](../docs/OPEN_VISIT_EXITS.md). Sin `.env.local`, cuentas nuevas ni SQL remoto.
 
 Etapa anterior: `20261007000200_guard_report_log.sql` (bitácora de caseta); guía en [GUARD_REPORTS.md](../docs/GUARD_REPORTS.md).
 
@@ -31,6 +35,7 @@ Diseño completo, matriz de permisos y orden de adaptación: [SHARED_BACKEND_PLA
 | 20261007000100 | `migrations/20261007000100_guard_reports.sql` | guard_shift_reports con snapshot/IDs fuente, métricas calculadas desde access_records/service_events, RLS propio guardia/admin del condominio y RPC guard_reports privado con wrapper mínimo. Unicidad, locks e idempotencia; guardReportsVersion 1, schemaVersion 9 sin cambios. No altera fuentes. |
 | 20261007000200 | `migrations/20261007000200_guard_report_log.sql` | guard_report_log paginado y autorizado, proyección explícita de fuentes inmutables; shift_snapshot amplía referencias de contexto/cancelación manteniendo métricas. Sin tablas/grants de lectura directa/backfill. guardReportLogVersion 1. |
 | 20261021000100 | `migrations/20261021000100_inactive_residence_exit.sql` | `validate_access` permite a un guardia activo del condominio cerrar una visita abierta (`entries=1`, `exits=0`, `used_uses=1`) con la casa inactiva; entradas siguen rechazadas. Resto del motor literal. Sin tablas, grants ni cambios de filas. inactiveResidenceExitVersion 1. |
+| 20261021000200 | `migrations/20261021000200_public_invitation_residence_state.sql` | `public_invitation` añade `residenceActive` (join a la casa de la invitación) sin cambiar firma, demás campos, límite, no-store ni rechazo de `vehicle`. publicInvitationVersion 4. Sin tablas, grants ni cambios de filas. |
 
 Requieren un proyecto Supabase con `auth.users`, `auth.uid()`, `auth.jwt()` y roles PostgreSQL `anon`/`authenticated`. Se aplican como propietario de migraciones controlado (por ejemplo, `postgres` del proyecto). Los IDs de dominio usan `gen_random_uuid()` del PostgreSQL de Supabase. No necesitan Docker ni una base PostgreSQL instalada en este equipo.
 
@@ -39,8 +44,8 @@ En una instalación inicial los esquemas `accesshome` y `accesshome_private` deb
 ## Instalación inicial manual sin CLI (solo proyecto nuevo)
 
 1. Seleccionar el proyecto **de ensayo** correcto en el Dashboard y verificar si tiene datos/esquemas existentes. Conservar respaldo si corresponde.
-2. En SQL Editor, ejecutar los ocho archivos base en el orden indicado en [SHARED_BACKEND_SETUP.md](../docs/SHARED_BACKEND_SETUP.md) y después las ocho incrementales de la tabla en orden hasta `20261021000100`. Cada archivo tiene `begin/commit`: si falla, corregir la causa y reintentar solo la versión que no se confirmó.
-3. Registrar las dieciséis versiones aplicadas y el proyecto, sin guardar contraseñas ni claves en Git. No editar y repetir una migración ya aplicada: las correcciones posteriores requieren una nueva versión.
+2. En SQL Editor, ejecutar los ocho archivos base en el orden indicado en [SHARED_BACKEND_SETUP.md](../docs/SHARED_BACKEND_SETUP.md) y después las nueve incrementales de la tabla en orden hasta `20261021000200`. Cada archivo tiene `begin/commit`: si falla, corregir la causa y reintentar solo la versión que no se confirmó.
+3. Registrar las diecisiete versiones aplicadas y el proyecto, sin guardar contraseñas ni claves en Git. No editar y repetir una migración ya aplicada: las correcciones posteriores requieren una nueva versión.
 4. Ejecutar `tests/security_baseline.sql` completo. Debe finalizar sin excepciones; usa transacción de solo lectura y termina con `rollback`.
 5. Revisar tablas/políticas en Dashboard. Exponer `accesshome` para la aplicación y mantener `accesshome_private` y `auth` fuera de los esquemas expuestos. No añadir `accesshome_private` a Extra search path. El cliente selecciona `accesshome` dentro de `services`.
 6. Probar RLS con JWTs de cuentas de ensayo y la clave publishable según la matriz del plan. SQL Editor como propietario atraviesa RLS y no prueba aislamiento por usuario.
@@ -53,7 +58,7 @@ No se ha instalado ni ejecutado la CLI. Cuando esté disponible, elegir **una so
 
 1. Inicializar la configuración CLI con `supabase init`, conservando estos archivos; autenticar la CLI manualmente.
 2. Vincular el proyecto real con `supabase link --project-ref` seguido de su referencia real. No escribir credenciales en scripts o historial de comandos.
-3. Revisar `supabase migration list` y `supabase db push --dry-run`. En un proyecto nuevo verificar las dieciséis versiones; en el proyecto existente debe faltar únicamente `20261021000100`.
+3. Revisar `supabase migration list` y `supabase db push --dry-run`. En un proyecto nuevo verificar las diecisiete versiones; en el proyecto existente debe faltar únicamente `20261021000200`.
 4. Solo después de la revisión y con el proyecto autorizado, `supabase db push` aplica las versiones pendientes. No se ejecutó desde esta tarea.
 5. Si se aplicó SQL Editor antes, la CLI no conocerá ese historial automáticamente: reconciliar versiones verificadas mediante `supabase migration repair` conforme a la documentación antes de usar `db push`. Nunca marcar una versión como aplicada si su esquema no coincide.
 

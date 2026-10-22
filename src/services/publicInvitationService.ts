@@ -27,6 +27,8 @@ const localService = {
       condominiumName: data.condominiums.find(condo => data.residences.some(house => house.id === invitation.residenceId && house.condominiumId === condo.id))?.name ?? '',
       startsAt: invitation.startsAt, expiresAt: invitation.expiresAt,
       status: invitationStatus(invitation),
+      // Same rule as the local access validation: an inactive house admits no entry.
+      residenceActive: data.residences.some((house) => house.id === invitation.residenceId && house.active),
     }
   },
 

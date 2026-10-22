@@ -1,6 +1,18 @@
 # Compartir invitaciones y desplegar el ensayo en Vercel
 
-## Estado de esta entrega
+## Despliegue vigente (2026-10-21)
+
+El repositorio contiene diecisiete migraciones; en remoto están aplicadas las dieciséis hasta `20261021000100`. Para publicar los cambios actuales:
+
+1. Revisar el historial remoto (`supabase migration list` / `db push --dry-run`): debe faltar únicamente `20261021000200_public_invitation_residence_state.sql`.
+2. Aplicar solo esa incremental como propietario y ejecutar [security_baseline.sql](../supabase/tests/security_baseline.sql) sin excepciones.
+3. Ejecutar `npm run backend:check` y confirmar **`publicInvitationVersion: 4`** («Disponibilidad pública por casa detectada»).
+4. Solo después publicar el frontend con `npm run build:vercel` y `npm run deployment:check`.
+5. Aceptar con cuentas reales: invitación de casa activa con QR normal; casa inactiva «No disponible» sin QR en la vista pública y en el detalle del residente; visita abierta con QR de salida o salida sin QR en caseta; control de acceso del administrador registrado como `MANUAL`.
+
+Si el frontend se publica antes del paso 3, la vista pública conserva el comportamiento anterior hasta aplicar la migración. No declarar producción corregida sin completar estos pasos.
+
+## Estado de la etapa 12 (registro histórico)
 
 El responsable confirmó el deployment de Vercel y las once migraciones aplicadas. **Esta mejora requiere únicamente `20260918000200_open_visit_exits.sql` y la publicación del frontend actualizado**, siguiendo [OPEN_VISIT_EXITS.md](OPEN_VISIT_EXITS.md). En esta entrega no se creó un deployment, no se aplicó SQL remoto ni se modificó `.env.local`. No repetir versiones ni ejecutar `seed_demo` o reset. Los pasos siguientes también sirven para instalaciones anteriores: omitir cualquier versión ya aplicada.
 

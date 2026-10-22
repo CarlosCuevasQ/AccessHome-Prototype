@@ -50,7 +50,7 @@ for (const state of ['cancelada','expirada']) {
   const projection=await publicView(i)
   assert.equal(projection.status,state); assert.equal(projection.hasOpenEntry,true)
   assert.equal(invitationQrPurpose(projection.status,projection.hasOpenEntry),'exit')
-  assert.deepEqual(Object.keys(projection).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status','hasOpenEntry'].sort())
+  assert.deepEqual(Object.keys(projection).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status','hasOpenEntry','residenceActive'].sort())
   assert.equal(projection.token,i.token)
   const result=await scan(i.token)
   assert.equal(result.authorized,true); assert.equal(result.record.type,'salida'); assert.equal(result.record.method,'QR')

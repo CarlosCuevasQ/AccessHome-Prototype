@@ -49,6 +49,7 @@ const {reportsService}=await import('../.test-build/services/reportsService.js')
 const {accessHistoryService}=await import('../.test-build/services/accessHistoryService.js')
 const {dashboardService}=await import('../.test-build/services/dashboardService.js')
 const {guardService}=await import('../.test-build/services/guardService.js')
+const {accessService}=await import('../.test-build/services/accessService.js')
 const {serviceAccessService}=await import('../.test-build/services/serviceAccessService.js')
 const {guardReportsService,loadShiftExport}=await import('../.test-build/services/guardReportsService.js')
 const {getRoleHome}=await import('../.test-build/utils/auth.js')
@@ -258,4 +259,23 @@ test('reconfirmar la misma sesión Auth conserva el reintento; cambiar de cuenta
   await guardService.validateToken('b'.repeat(64),'QR')
   assert.notEqual(requests.findLast(r=>r.path.endsWith('/validate_access')).body.request_id,first)
  } finally {lostAccessResponse=false;unsubscribe()}
+})
+
+test('control de acceso del administrador envía MANUAL a validate_access y reintenta con el mismo request_id',async()=>{
+ profile={id:randomUUID(),name:'Admin fixture',role:'admin',condominiumId:randomUUID(),residenceId:null}
+ await authService.login({email:'admin@fixture.invalid',password:randomUUID()})
+ const start=requests.length
+ lostAccessResponse=true
+ await assert.rejects(accessService.validateToken('c'.repeat(64)))
+ lostAccessResponse=false
+ await accessService.validateToken('c'.repeat(64))
+ const attempts=requests.slice(start).filter(r=>r.path.endsWith('/validate_access'))
+ assert.equal(attempts.length,2)
+ for(const attempt of attempts) {
+  // Sin scan_method la RPC de dos argumentos registraba QR aunque nadie escaneara.
+  assert.deepEqual(Object.keys(attempt.body).sort(),['request_id','scan_method','token'])
+  assert.equal(attempt.body.scan_method,'MANUAL')
+  assert.equal(attempt.headers.get('authorization'),'Bearer fixture.token.only')
+ }
+ assert.equal(attempts[0].body.request_id,attempts[1].body.request_id)
 })

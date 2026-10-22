@@ -15,13 +15,16 @@ import { CancelInvitation } from '../components/invitations/CancelInvitation'
 import { InvitationQr } from '../components/invitations/InvitationQr'
 import { InvitationShare } from '../components/invitations/InvitationShare'
 import { invitationPath } from '../utils/invitationLinks'
+import { loadResidentInvitation } from '../services/invitationDetailService'
+import { invitationQrPurpose } from '../services/invitationQrPurpose'
 
 export function InvitationPage() {
   const { invitationId = '' } = useParams()
   const location = useLocation()
-  const load = useCallback(async () => ({ context: await invitationsService.getContext(), invitation: await invitationsService.getInvitation(invitationId) }), [invitationId])
+  const load = useCallback(async () => ({ context: await invitationsService.getContext(), ...await loadResidentInvitation(invitationId) }), [invitationId])
   const { data, loading, error } = useCommunityQuery(load, 1000)
   const invitation = data?.invitation
+  const entryUnavailable = !!invitation && invitationQrPurpose(invitation.status, false, data.residenceActive) === 'inactive_residence'
   usePageTitle(invitation ? `Invitación · ${invitation.visitorName}` : 'Invitación')
   return <section className="community-page invitations-page resident-experience resident-invitation-detail">
     <ActionLink variant="back" to="/residente/invitaciones">Volver a invitaciones</ActionLink>
@@ -29,7 +32,7 @@ export function InvitationPage() {
     {error && <><h1>Invitación no disponible</h1><p className="form-error" role="alert">{error}</p></>}
     {invitation && <>
       {location.state?.created === true && <p className="form-success" role="status">Invitación creada correctamente para {invitation.residenceName}.</p>}
-      <FadeContent className="resident-title"><header><div><h1>{invitation.visitorName}</h1><p className="lead"><Icon name="home" />{invitation.residenceName}</p></div><InvitationStatusLabel status={invitation.status} /></header></FadeContent>
+      <FadeContent className="resident-title"><header><div><h1>{invitation.visitorName}</h1><p className="lead"><Icon name="home" />{invitation.residenceName}</p></div><InvitationStatusLabel status={invitation.status} entryUnavailable={entryUnavailable} /></header></FadeContent>
       {invitation.status === 'activa' && Date.parse(invitation.startsAt) > Date.now() && <p className="agenda-notice">Visita programada. Su vigencia comenzará el {formatDate(invitation.startsAt)}</p>}
       <div className="invitation-detail-grid">
       <div className="invitation-share-slot"><InvitationShare key={`share-${invitation.id}`} token={invitation.token} /></div>
@@ -45,7 +48,7 @@ export function InvitationPage() {
       <section className="invitation-qr-section resident-pass" aria-label="Código y enlace del visitante">
         <div className="pass-heading"><Icon name="scan" /><h2>Código de acceso</h2></div>
         <p className="pass-subtitle">{invitation.visitorName}</p>
-        <InvitationQr token={invitation.token} visitorName={invitation.visitorName} status={invitation.status} />
+        <InvitationQr token={invitation.token} visitorName={invitation.visitorName} status={invitation.status} residenceActive={data.residenceActive} />
         <p className="pass-validity">Hasta {formatDate(invitation.expiresAt)}</p>
         <ActionLink variant="detail" to={invitationPath(invitation.token)}>Abrir vista del visitante</ActionLink>
         <p className="visitor-help">{sharedMode ? 'El enlace no requiere sesión y consulta el estado compartido de la invitación.' : 'Modo local: el enlace solo consulta datos de este navegador y origen.'}</p>

@@ -14,6 +14,8 @@ Escenarios cubiertos con casa inactiva: salida por QR, salida sin QR, invitació
 
 Pendiente: aplicar la incremental en el proyecto de ensayo y ejecutar S-16 de [OPEN_VISIT_EXITS.md](OPEN_VISIT_EXITS.md) con cuentas reales. Estas pruebas usan Auth simulado y bases locales desechables.
 
+> Nota posterior: `20261021000100_inactive_residence_exit.sql` se aplicó después en remoto; `npm run backend:check` (solo lectura, 2026-10-21) reconoce `inactiveResidenceExitVersion: 1`. S-16 con cuentas reales sigue pendiente.
+
 ## Prompt 15.3 · Experiencia residente: validación local (registro histórico)
 
 Resultados reales de esta etapa (2026-10-08):

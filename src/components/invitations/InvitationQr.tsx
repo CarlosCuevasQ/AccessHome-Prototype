@@ -3,8 +3,9 @@ import type { InvitationStatus } from '../../types/invitations'
 import { currentInvitationUrl } from '../../utils/invitationLinks'
 import { invitationQrPurpose } from '../../services/invitationQrPurpose'
 
-export function InvitationQr({ token, visitorName, status, hasOpenEntry = false }: { token: string; visitorName: string; status: InvitationStatus; hasOpenEntry?: boolean }) {
-  const purpose = invitationQrPurpose(status, hasOpenEntry)
+export function InvitationQr({ token, visitorName, status, hasOpenEntry = false, residenceActive }: { token: string; visitorName: string; status: InvitationStatus; hasOpenEntry?: boolean; residenceActive?: boolean }) {
+  const purpose = invitationQrPurpose(status, hasOpenEntry, residenceActive)
+  if (purpose === 'inactive_residence') return <p className="access-notice" role="status">Esta invitación no está disponible para ingresar porque la residencia está inactiva.</p>
   if (purpose === 'unavailable') return <p className="access-notice">El QR no está disponible: esta invitación ya no permite accesos.</p>
   let url: string
   try { url = currentInvitationUrl(token) }

@@ -8,6 +8,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { formatDate } from '../utils/dates'
 import { AccessFeedback } from '../components/access/AccessFeedback'
 import { AccessHistory } from '../components/access/AccessHistory'
+import { sharedMode } from '../services/shared/provider'
 
 export function AccessControlPage() {
   usePageTitle('Control de acceso')
@@ -40,7 +41,9 @@ export function AccessControlPage() {
   return <section className="community-page access-control-page">
     <p className="eyebrow">Administrador / Seguridad</p>
     <h1>Control de acceso</h1>
-    <p className="lead">Simula la lectura de un QR con su token. La primera validación registra entrada y la segunda, salida.</p>
+    <p className="lead">{sharedMode
+      ? 'Registro manual del administrador: crea un movimiento real en el historial con método manual y tu cuenta como responsable. La primera validación registra entrada y la segunda, salida.'
+      : 'Demostración local: simula la lectura de un QR con su token en este navegador. La primera validación registra entrada y la segunda, salida.'}</p>
     {loading && <Skeleton variant="list" label="Cargando control de acceso…" />}
     {error && <p className="form-error" role="alert">{error}</p>}
     {data && <>
@@ -56,8 +59,10 @@ export function AccessControlPage() {
             </select>
           </label>
           <label className="form-field">Token de invitación<input required maxLength={200} autoComplete="off" autoCapitalize="none" spellCheck={false} value={token} onChange={(event) => changeToken(event.target.value)} /></label>
-          <p className="form-help">Seleccionar una invitación solo carga su token. Pulsa Validar acceso para registrar el movimiento. Puedes repetir el token para probar el límite de usos.</p>
-          <button className="button-link" type="submit">{validating ? 'Validando…' : 'Validar acceso'}</button>
+          <p className="form-help">{sharedMode
+            ? 'Seleccionar una invitación solo carga su token. Verifica al visitante antes de pulsar Registrar acceso manual: el movimiento queda en el historial y consume un uso de la invitación.'
+            : 'Seleccionar una invitación solo carga su token. Pulsa Validar acceso para registrar el movimiento. Puedes repetir el token para probar el límite de usos.'}</p>
+          <button className="button-link" type="submit">{validating ? 'Validando…' : sharedMode ? 'Registrar acceso manual' : 'Validar acceso'}</button>
         </fieldset>
       </form>
       {validationError && <p className="form-error" role="alert">{validationError} No se autorizó el acceso.</p>}

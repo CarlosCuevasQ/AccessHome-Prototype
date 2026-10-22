@@ -19,6 +19,9 @@ if(!url || !key?.startsWith('sb_publishable_')) {
   console.log(data.publicInvitationVersion>=2
     ? 'Proyección pública mínima detectada.'
     : 'Proyección pública mínima pendiente: revisar la incremental 20260917000700 antes de publicar invitaciones.')
+  console.log(data.publicInvitationVersion>=4
+    ? 'Disponibilidad pública por casa detectada (publicInvitationVersion: 4).'
+    : 'Disponibilidad pública por casa pendiente: revisar 20261021000200_public_invitation_residence_state.sql antes de publicar el frontend.')
   console.log(data.guardScanningVersion===1
     ? 'Escaneo de guardia detectado (guardScanningVersion: 1). Falta probar cámara y movimientos con cuentas reales.'
     : 'Escaneo de guardia pendiente: revisar la incremental 20260918000100.')

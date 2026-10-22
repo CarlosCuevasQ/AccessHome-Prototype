@@ -7,6 +7,8 @@ import { communityService } from '../.test-build/services/communityService.js'
 import { demoService } from '../.test-build/services/demoService.js'
 import { createDemoData } from '../.test-build/data/demo.js'
 import { DEMO_STORAGE_KEY } from '../.test-build/services/demoStorage.js'
+import { loadResidentInvitation } from '../.test-build/services/invitationDetailService.js'
+import { invitationQrPurpose } from '../.test-build/services/invitationQrPurpose.js'
 
 let storage
 const login = (email) => authService.login({ email, password: '' })
@@ -282,3 +284,24 @@ test('datos de invitaciones corruptos se rechazan sin sobrescribir el almacenami
   }
 })
 
+
+test('detalle del residente: estado autoritativo de la casa decide el QR; consulta sin escritura extra', async () => {
+  const id = await invitations.createInvitation(occasional)
+  const active = await loadResidentInvitation(id)
+  assert.equal(active.invitation.id, id); assert.equal(active.residenceActive, true)
+  assert.equal(invitationQrPurpose(active.invitation.status, false, active.residenceActive), 'access')
+  await login('admin@accesshome.demo')
+  await communityService.updateResidence('house-24', { number: '24', street: 'Circuito Robles', active: false })
+  for (const email of ['residente@accesshome.demo', 'mariana@accesshome.demo']) {
+    await login(email)
+    const detail = await loadResidentInvitation(id)
+    assert.equal(detail.invitation.status, 'activa'); assert.equal(detail.residenceActive, false)
+    assert.equal(invitationQrPurpose(detail.invitation.status, false, detail.residenceActive), 'inactive_residence')
+    assert.equal((await invitations.getContext()).canManage, false)
+    await assert.rejects(invitations.cancelInvitation(id), /inactiva|principal/)
+  }
+  await login('admin@accesshome.demo')
+  await communityService.updateResidence('house-24', { number: '24', street: 'Circuito Robles', active: true })
+  await login('residente@accesshome.demo')
+  assert.equal(invitationQrPurpose('activa', false, (await loadResidentInvitation(id)).residenceActive), 'access')
+})

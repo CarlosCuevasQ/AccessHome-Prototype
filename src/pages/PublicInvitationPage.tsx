@@ -8,6 +8,7 @@ import { formatDate } from '../utils/dates'
 import { InvitationQr } from '../components/invitations/InvitationQr'
 import { InvitationStatusLabel } from '../components/invitations/InvitationStatusLabel'
 import { sharedMode } from '../services/shared/provider'
+import { invitationQrPurpose } from '../services/invitationQrPurpose'
 
 export function PublicInvitationPage() {
   const { token = '' } = useParams()
@@ -23,15 +24,15 @@ export function PublicInvitationPage() {
     {data && <>
       <h1>{data.visitorName}</h1>
       <p className="visitor-destination">{data.residenceName} <span>{data.condominiumName}</span></p>
-      <InvitationStatusLabel status={data.status} />
-      <InvitationQr token={data.token} visitorName={data.visitorName} status={data.status} hasOpenEntry={data.hasOpenEntry} />
+      <InvitationStatusLabel status={data.status} entryUnavailable={invitationQrPurpose(data.status, data.hasOpenEntry, data.residenceActive) === 'inactive_residence'} />
+      <InvitationQr token={data.token} visitorName={data.visitorName} status={data.status} hasOpenEntry={data.hasOpenEntry} residenceActive={data.residenceActive} />
       <section className="visitor-details" aria-label="Vigencia de tu visita">
         <h2>Vigencia</h2>
         <dl className="detail-fields">
           <div><dt>Válida desde</dt><dd>{formatDate(data.startsAt)}</dd></div>
           <div><dt>Válida hasta</dt><dd>{formatDate(data.expiresAt)}</dd></div>
         </dl>
-        <p className="form-help">Horarios en la hora local de este dispositivo.{data.status === 'activa' && ' Presenta el QR dentro de este periodo y consérvalo hasta tu salida.'}</p>
+        <p className="form-help">Horarios en la hora local de este dispositivo.{invitationQrPurpose(data.status, data.hasOpenEntry, data.residenceActive) === 'access' && ' Presenta el QR dentro de este periodo y consérvalo hasta tu salida.'}</p>
       </section>
     </>}
     <button type="button" className="secondary-button" disabled={loading} onClick={() => setRevision(value => value + 1)}>Actualizar estado</button>

@@ -7,6 +7,7 @@ import { accessService } from '../.test-build/services/accessService.js'
 import { communityService } from '../.test-build/services/communityService.js'
 import { createDemoData } from '../.test-build/data/demo.js'
 import { DEMO_STORAGE_KEY } from '../.test-build/services/demoStorage.js'
+import { invitationQrPurpose } from '../.test-build/services/invitationQrPurpose.js'
 
 let storage
 let invitation
@@ -27,7 +28,7 @@ beforeEach(async () => {
 test('token permite lectura sin sesión con proyección pública y sin datos privados', async () => {
   const before = storage.get(DEMO_STORAGE_KEY)
   const publicView = await visitor.getInvitation(invitation.token)
-  assert.deepEqual(Object.keys(publicView).sort(), ['token', 'visitorName', 'residenceName', 'condominiumName', 'startsAt', 'expiresAt', 'status'].sort())
+  assert.deepEqual(Object.keys(publicView).sort(), ['token', 'visitorName', 'residenceName', 'condominiumName', 'startsAt', 'expiresAt', 'status', 'residenceActive'].sort())
   assert.equal(publicView.visitorName, invitation.visitorName)
   assert.equal(publicView.residenceName, 'Casa 24')
   assert.ok(publicView.condominiumName)
@@ -136,3 +137,19 @@ test('fallo de guardado público conserva la invitación sin vehículo y permite
   assert.deepEqual(read().invitations.find(i=>i.id===invitation.id).vehicle, vehicle)
 })
 
+
+test('demo local: casa inactiva se muestra no disponible para entrar y caseta la rechaza; reactivar la restablece', async () => {
+  assert.equal((await visitor.getInvitation(invitation.token)).residenceActive, true)
+  await login('admin@accesshome.demo')
+  await communityService.updateResidence('house-24', { number: '24', street: 'Robles', active: false })
+  await authService.logout()
+  const inactive = await visitor.getInvitation(invitation.token)
+  assert.equal(inactive.status, 'activa'); assert.equal(inactive.residenceActive, false)
+  assert.equal(invitationQrPurpose(inactive.status, inactive.hasOpenEntry, inactive.residenceActive), 'inactive_residence')
+  await login('admin@accesshome.demo')
+  assert.equal((await accessService.validateToken(invitation.token)).reason, 'inactive_residence')
+  await communityService.updateResidence('house-24', { number: '24', street: 'Robles', active: true })
+  await authService.logout()
+  const restored = await visitor.getInvitation(invitation.token)
+  assert.equal(invitationQrPurpose(restored.status, restored.hasOpenEntry, restored.residenceActive), 'access')
+})

@@ -106,7 +106,7 @@ async function race({second=input(10,20),rollback=false,isolation='READ COMMITTE
  }
 }
 
-test('PostgreSQL nativo: dieciséis migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
+test('PostgreSQL nativo: diecisiete migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
  t.diagnostic('PostgreSQL '+version+'; tres conexiones TCP locales, Auth simulado.')
  assert.notEqual(a.processID,b.processID)
 })

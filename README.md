@@ -52,9 +52,11 @@ Los RPCs expuestos son SECURITY INVOKER. La lógica privilegiada está en access
 
 ## Configuración compartida
 
-La configuración existente de `.env.local`, las quince migraciones anteriores y los datos se conservan. El 2026-10-21 `npm run backend:check` (solo lectura) detectó en remoto hasta `guardReportLogVersion: 1`. La corrección más reciente añade únicamente `20261021000100_inactive_residence_exit.sql`: un guardia puede registrar la salida de una visita abierta aunque el administrador haya desactivado la casa; las entradas a casas inactivas siguen rechazadas. No crea tablas ni cambia filas y no requiere publicar frontend. El responsable debe revisar el historial real y aplicar solo esa incremental.
+La configuración existente de `.env.local` y los datos se conservan. El repositorio contiene diecisiete migraciones. En remoto están aplicadas las dieciséis hasta `20261021000100_inactive_residence_exit.sql` (salida de visitas abiertas cuando el administrador desactiva la casa, sin admitir entradas); `npm run backend:check` de solo lectura del 2026-10-21 reconoce `inactiveResidenceExitVersion: 1`.
 
-Seguir [OPEN_VISIT_EXITS.md](docs/OPEN_VISIT_EXITS.md) y [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. Tras aplicarla, `npm run backend:check` debe indicar `inactiveResidenceExitVersion: 1`; conserva `guardReportLogVersion: 1`, `schemaVersion: 9` y las capacidades anteriores. No prueba login, cámara ni despliegue. La migración no se aplicó al proyecto remoto en esta entrega.
+Pendiente de aplicación remota: `20261021000200_public_invitation_residence_state.sql`. Añade `residenceActive` a `public_invitation` para que la vista del visitante no presente como utilizable para entrar una invitación de una casa inactiva (`publicInvitationVersion: 4`). No crea tablas ni cambia filas. Orden: revisar el historial real, aplicar solo esa incremental, ejecutar `security_baseline.sql`, comprobar con `npm run backend:check` `publicInvitationVersion: 4` y después publicar el frontend. No se afirma que producción esté corregida hasta completar esos pasos.
+
+Seguir [OPEN_VISIT_EXITS.md](docs/OPEN_VISIT_EXITS.md), [DEPLOYMENT.md](docs/DEPLOYMENT.md) y [PROTOTYPE_TESTING.md](docs/PROTOTYPE_TESTING.md). No volver a ejecutar `seed_demo`. `backend:check` no prueba login, cámara ni despliegue.
 
 Para instalaciones completamente nuevas, [SHARED_BACKEND_SETUP.md](docs/SHARED_BACKEND_SETUP.md) documenta la base inicial. Mantener expuesto `accesshome` y privado `accesshome_private`.
 

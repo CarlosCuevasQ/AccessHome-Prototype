@@ -48,4 +48,6 @@ export interface PublicInvitation {
   status: InvitationStatus
   /** Shared backend ledger projection. Missing on older backends/local demo. */
   hasOpenEntry?: boolean
+  /** Server-side house state; false means no new entry. Missing on older backends. */
+  residenceActive?: boolean
 }

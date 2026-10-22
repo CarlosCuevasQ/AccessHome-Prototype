@@ -15,7 +15,7 @@ if not r.active and not (a.role='guard' and entries=1 and exits=0 and i.used_use
 - Se conservan reintento por `request_id`, bloqueo residencia → invitación, intervalo de 3 s, `unique (invitation_id, direction)`, trazabilidad del operador y método.
 - No crea tablas, grants ni cambios de filas; `create or replace` conserva EXECUTE. `backend_health` añade `inactiveResidenceExitVersion: 1`.
 
-Aplicación remota **pendiente del responsable**: comprobar el historial (debe faltar solo `20261021000100`), aplicar el archivo completo como propietario, ejecutar `security_baseline.sql` y `npm run backend:check` (debe mostrar «Salida con casa inactiva detectada»). Después, el caso S-16 con cuentas reales. No requiere publicar un frontend nuevo.
+Estado remoto: **aplicada** según el responsable; `npm run backend:check` de solo lectura del 2026-10-21 muestra «Salida con casa inactiva detectada» (`inactiveResidenceExitVersion: 1`). Queda pendiente el caso S-16 con cuentas reales. No requiere publicar un frontend nuevo. Procedimiento para otro proyecto: comprobar el historial, aplicar el archivo completo como propietario, ejecutar `security_baseline.sql` y `backend:check`.
 
 ## Entrega original (Prompt 12)
 
@@ -42,7 +42,9 @@ La migración solo crea/reemplaza funciones y sus permisos. No crea tablas, alte
 | Expirada / cancelada | No | QR oculto, sin código presentado como utilizable |
 | Completada | Cualquiera | Estado final y QR oculto |
 
-La página vuelve a consultar al abrir, recuperar foco/conexión, pulsar Actualizar estado y cada 10 segundos estando visible. Un fallo de consulta oculta los datos previos. La presentación nunca concede acceso: `validate_access` sigue rechazando entradas inválidas y valida cada salida. El detalle privado del residente conserva su comportamiento; desde él se puede abrir/compartir la vista pública actualizada.
+Con `20261021000200` (pendiente de aplicación remota) la proyección añade `residenceActive`. Si la casa está inactiva, una invitación activa sin entrada se muestra **No disponible**, sin QR, en la vista pública y en el detalle del residente; con entrada abierta, la vista pública muestra el QR solo para salida. Sin ese campo (backend anterior) se conserva la tabla anterior.
+
+La página vuelve a consultar al abrir, recuperar foco/conexión, pulsar Actualizar estado y cada 10 segundos estando visible. Un fallo de consulta oculta los datos previos. La presentación nunca concede acceso: `validate_access` sigue rechazando entradas inválidas y valida cada salida. En la etapa 12, el detalle privado del residente conservó su comportamiento; desde él se puede abrir/compartir la vista pública actualizada. Actualmente (cambio local de 2026-10-21) ese detalle consulta el estado de su casa y, si está inactiva, muestra la invitación activa como **No disponible**, sin QR de acceso.
 
 ## Salida sin QR
 

@@ -176,7 +176,7 @@ test('invitación compartida: snapshot, token CSPRNG separado, consulta de otro 
  await assert.rejects(as('ana','cancel_invitation',[id]),/no disponible/)
  await assert.rejects(as('outsider','invitation_details',[id]),/no disponible/)
  const projection=await as(null,'public_invitation',[i.token,null])
- assert.deepEqual(Object.keys(projection).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status','hasOpenEntry'].sort())
+ assert.deepEqual(Object.keys(projection).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status','hasOpenEntry','residenceActive'].sort())
 })
 test('visitante público: solo consulta; vehicle rechazado sin modificar datos',async()=>{
  assert.equal(await as(null,'public_invitation',['invalid',null]),null)
@@ -214,7 +214,7 @@ test('consulta anónima usa estado actual en servidor: activa, cancelada, expira
    const data=await call(tx,'public_invitation',[item.token,null])
    assert.equal(data.status,state)
    assert.equal(data.condominiumName,condoName)
-   assert.deepEqual(Object.keys(data).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status','hasOpenEntry'].sort())
+   assert.deepEqual(Object.keys(data).sort(),['token','visitorName','residenceName','condominiumName','startsAt','expiresAt','status','hasOpenEntry','residenceActive'].sort())
    const headers=(await tx.query("select current_setting('response.headers') as value")).rows[0].value
    assert.deepEqual(JSON.parse(headers),[{'Cache-Control':'no-store'}])
   })
@@ -233,6 +233,26 @@ test('acceso administrativo conserva atomicidad e idempotencia y rechaza residen
  assert.equal((await as('admin','validate_access',[i.token,randomUUID()])).reason,'completed')
  assert.equal((await as('daniel','invitation_details',[id])).usedUses,2)
  assert.equal((await as('outsider','validate_access',[i.token,randomUUID()])).reason,'not_found')
+})
+test('registro manual del administrador conserva MANUAL y su responsable en el historial',async()=>{
+ const id=await as('daniel','create_invitation',[JSON.stringify(occasional({visitorName:'Registro manual admin'}))],['jsonb'])
+ const i=await as('daniel','invitation_details',[id]); const request=randomUUID()
+ // Misma interfaz de tres argumentos que usa el cliente del administrador.
+ const entry=await as('admin','validate_access',[i.token,request,'MANUAL'])
+ assert.equal(entry.authorized,true); assert.equal(entry.record.type,'entrada'); assert.equal(entry.record.method,'MANUAL')
+ assert.deepEqual(await as('admin','validate_access',[i.token,request,'MANUAL']),{...entry,replayed:true})
+ await assert.rejects(as('admin','validate_access',[i.token,request,'QR']),/operación no disponible/)
+ const exit=await as('admin','validate_access',[i.token,randomUUID(),'MANUAL'])
+ assert.equal(exit.record.type,'salida'); assert.equal(exit.record.method,'MANUAL')
+ const stored=(await db.query('select direction,method,validated_by from accesshome.access_records where invitation_id=$1 order by occurred_at',[id])).rows
+ assert.deepEqual(stored,[{direction:'entrada',method:'MANUAL',validated_by:users.admin},{direction:'salida',method:'MANUAL',validated_by:users.admin}])
+ const history=(await as('admin','list_access',[JSON.stringify({search:'Registro manual admin'})],['jsonb']))
+ assert.deepEqual(history.map(r=>r.method),['MANUAL','MANUAL'])
+ assert.deepEqual((await as('daniel','list_access',[JSON.stringify({search:'Registro manual admin'})],['jsonb'])).map(r=>r.method),['MANUAL','MANUAL'])
+ // Mismo motor: residentes y admin de otro condominio siguen sin poder registrar.
+ const other=await as('daniel','invitation_details',[await as('daniel','create_invitation',[JSON.stringify(occasional({visitorName:'Manual ajeno'}))],['jsonb'])])
+ await assert.rejects(as('ana','validate_access',[other.token,randomUUID(),'MANUAL']),/permiso/)
+ assert.equal((await as('outsider','validate_access',[other.token,randomUUID(),'MANUAL'])).reason,'not_found')
 })
 test('reportes con privacidad por autor y avance administrativo controlado',async()=>{
  const id=await as('daniel','create_report',[JSON.stringify({title:'Lámpara',category:'Instalaciones',description:'Lámpara del acceso apagada'})],['jsonb'])

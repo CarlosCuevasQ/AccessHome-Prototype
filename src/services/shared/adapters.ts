@@ -117,8 +117,9 @@ export async function validateSharedAccess<T>(token: string, method?: 'QR' | 'MA
 export const sharedAccess = {
   listActiveInvitations: () => rpc<AccessInvitationOption[]>('active_access_invitations'),
   listAccessRecords: () => rpc<AccessRecord[]>('list_access', { filters: {} }),
+  // The admin picks or types a token; nothing is scanned, so the ledger records MANUAL.
   async validateToken(token: string): Promise<AccessResult> {
-    return validateSharedAccess<AccessResult>(token)
+    return validateSharedAccess<AccessResult>(token, 'MANUAL')
   },
 }
 interface CommonDashboard { activeInvitationCount: number; vehicleCount: number; pendingReportCount: number; recentAccess: AccessRecord[] }
