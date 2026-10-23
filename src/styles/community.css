@@ -24,6 +24,7 @@
 .summary-strip dd { margin: 8px 0 0; font-size: 2rem; line-height: 1; color: var(--primary); font-weight: 600; }
 .search-field { max-width: 360px; margin: 24px 0; }
 .result-count, .count-label { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
+.guard-management-page .result-count { margin: var(--space-4) 0 var(--space-2); }
 .count-label { margin-left: 8px; }
 .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; background: var(--color-surface); }
 .data-table th { color: var(--muted); font-size: 0.8rem; font-weight: 600; background: var(--light-blue); }

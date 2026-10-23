@@ -20,6 +20,7 @@ export const workspaces: Record<WorkspaceRole, WorkspaceConfig> = {
     description: 'Consulta tus datos de acceso y el condominio que administras.',
     navigation: [
       { label: 'Condominio', path: '/admin' }, { label: 'Residencias', path: '/admin/residencias', end: false },
+      { label: 'Guardias', path: '/admin/guardias' },
       { label: 'Control de acceso', path: '/admin/control-acceso' }, { label: 'Historial de accesos', path: '/admin/historial' },
       { label: 'Historial de servicios', path: '/admin/servicios' },
       { label: 'Reportes de caseta', path: '/admin/reportes-caseta', end: false },

@@ -18,6 +18,8 @@ const requests=[]
 let responseError=false
 let lostAccessResponse=false
 let signInError=false
+let guardList=[]
+let guardStatusReply=null
 let profile={id:randomUUID(),name:'Daniel',role:'resident',condominiumId:randomUUID(),residenceId:randomUUID()}
 const originalFetch=globalThis.fetch
 globalThis.fetch=async (url,options={})=>{
@@ -33,6 +35,12 @@ globalThis.fetch=async (url,options={})=>{
  if(path.endsWith('/session_profile')) return new Response(JSON.stringify(profile),{status:200})
  if((path.endsWith('/validate_access') || path.endsWith('/guard_register_exit') || path.endsWith('/service_command') || path.endsWith('/guard_reports')) && lostAccessResponse) throw new TypeError('Fixture: response lost')
  if(profile?.role==='guard' && path.endsWith('/manage_community')) return new Response(JSON.stringify({code:'42501',message:'Denied'}),{status:403})
+ if(path.endsWith('/list_guards')) return new Response(JSON.stringify(guardList),{status:200})
+ if(path.endsWith('/set_guard_status')) {
+  if(guardStatusReply==='network') throw new TypeError('Fixture: network down')
+  if(guardStatusReply) return new Response(JSON.stringify(guardStatusReply.body),{status:guardStatusReply.status})
+  return new Response(JSON.stringify({id:body.guard_id,name:'Guardia fixture',active:body.enabled,changed:true}),{status:200})
+ }
  if(path.endsWith('/guard_dashboard')) return new Response(JSON.stringify({guardName:profile.name,condominiumName:'Condominio fixture',todayAccessCount:2}),{status:200})
  if(path.endsWith('/guard_history')) return new Response(JSON.stringify({records:[],hasMore:false}),{status:200})
  if(path.endsWith('/guard_open_visits')) return new Response(JSON.stringify({records:[],hasMore:false,timeZone:'America/Mexico_City'}),{status:200})
@@ -52,6 +60,7 @@ const {guardService}=await import('../.test-build/services/guardService.js')
 const {accessService}=await import('../.test-build/services/accessService.js')
 const {serviceAccessService}=await import('../.test-build/services/serviceAccessService.js')
 const {guardReportsService,loadShiftExport}=await import('../.test-build/services/guardReportsService.js')
+const {guardManagementService}=await import('../.test-build/services/guardManagementService.js')
 const {getRoleHome}=await import('../.test-build/utils/auth.js')
 const {demoService}=await import('../.test-build/services/demoService.js')
 const {readDemoData,writeDemoData}=await import('../.test-build/services/demoStorage.js')
@@ -259,6 +268,45 @@ test('reconfirmar la misma sesión Auth conserva el reintento; cambiar de cuenta
   await guardService.validateToken('b'.repeat(64),'QR')
   assert.notEqual(requests.findLast(r=>r.path.endsWith('/validate_access')).body.request_id,first)
  } finally {lostAccessResponse=false;unsubscribe()}
+})
+
+test('gestión de guardias: solo RPC con guard_id/enabled, refresco tras cambiar y mensajes seguros del servidor',async()=>{
+ await authService.logout()
+ profile={id:randomUUID(),name:'Admin fixture',role:'admin',condominiumId:randomUUID(),residenceId:null}
+ await authService.login({email:'admin@fixture.invalid',password:randomUUID()})
+ const guard=randomUUID()
+ guardList=[{id:guard,name:'Beatriz Caseta',active:true,createdAt:'2026-10-01T10:00:00Z'}]
+ let notified=0
+ const unsubscribe=communityService.subscribe(()=>{ notified++ })
+ try {
+  const start=requests.length
+  assert.deepEqual(await guardManagementService.list(),guardList)
+  assert.equal(notified,0)
+  assert.deepEqual(await guardManagementService.setStatus(guard,false),{id:guard,name:'Guardia fixture',active:false,changed:true})
+  assert.equal(notified,1)
+  const sent=requests.slice(start)
+  // Sin lecturas ni escrituras directas de tablas: solo las dos RPC, con la sesión del admin.
+  assert.deepEqual(sent.map(r=>r.path.split('/').slice(-2).join('/')),['rpc/list_guards','rpc/set_guard_status'])
+  assert.deepEqual(sent[0].body,{})
+  // Ni condominio, ni rol, ni actor: la autorización la deriva SQL del perfil autenticado.
+  assert.deepEqual(sent[1].body,{guard_id:guard,enabled:false})
+  for(const request of sent) {
+   assert.equal(request.headers.get('content-profile'),'accesshome')
+   assert.equal(request.headers.get('authorization'),'Bearer fixture.token.only')
+  }
+  // Bloqueo del responsable: el mensaje propio (P0001) llega tal cual a la interfaz.
+  guardStatusReply={status:400,body:{code:'P0001',message:'El responsable del sistema bloqueó a este guardia; solo él puede reactivarlo'}}
+  await assert.rejects(guardManagementService.setStatus(guard,true),/^Error: El responsable del sistema bloqueó a este guardia; solo él puede reactivarlo$/)
+  guardStatusReply={status:403,body:{code:'42501',message:'Guardia no disponible en tu condominio'}}
+  await assert.rejects(guardManagementService.setStatus(guard,true),/ya no está disponible en tu condominio/)
+  guardStatusReply={status:500,body:{code:'XX000',message:'relation accesshome_private.guard_owner_blocks failed'}}
+  await assert.rejects(guardManagementService.setStatus(guard,true),error=>/No se pudo completar/.test(error.message) && !/accesshome_private|guard_owner_blocks/.test(error.message))
+  guardStatusReply='network'
+  await assert.rejects(guardManagementService.setStatus(guard,true),/No se pudo contactar/)
+  guardStatusReply=null
+  await assert.rejects(guardManagementService.setStatus('',true),/Selecciona un guardia/)
+  assert.equal(notified,1)
+ } finally { unsubscribe(); guardStatusReply=null; guardList=[] }
 })
 
 test('control de acceso del administrador envía MANUAL a validate_access y reintenta con el mismo request_id',async()=>{

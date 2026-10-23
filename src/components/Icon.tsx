@@ -29,6 +29,7 @@ export function Icon({ name, className = '' }: { name: IconName; className?: str
   return <svg className={`icon ${className}`} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d={paths[name]} /></svg>
 }
 export function navigationIcon(path: string): IconName {
+  if (/\/admin\/guardias/.test(path)) return 'shield'
   if (/escanear|control-acceso/.test(path)) return 'scan'
   if (/salidas/.test(path)) return 'exit'
   if (/servicios/.test(path)) return 'package'

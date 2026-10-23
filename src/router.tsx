@@ -29,6 +29,7 @@ import { GuardReportPage, GuardReportsPage } from './pages/GuardReportsPage'
 import { GuardScanPage } from './pages/GuardScanPage'
 import { GuardExitPage } from './pages/GuardExitPage'
 import { ServiceAccessPage } from './pages/ServiceAccessPage'
+import { GuardManagementPage } from './pages/GuardManagementPage'
 
 export const router = createBrowserRouter([
   {
@@ -65,6 +66,7 @@ export const router = createBrowserRouter([
           { index: true, element: <CondominiumPage /> },
           { path: 'residencias', element: <ResidencesPage /> },
           { path: 'residencias/:residenceId', element: <ResidencePage administrative /> },
+          { path: 'guardias', element: <GuardManagementPage /> },
           { path: 'control-acceso', element: <AccessControlPage /> },
           { path: 'historial', element: <AccessHistoryPage /> },
           { path: 'servicios', element: <ServiceAccessPage administrative /> },

@@ -21,6 +21,19 @@ export interface GuardDashboard {
   pendingExitCount: number
   pendingExits: GuardAccess[]
 }
+// Administración de guardias (list_guards / set_guard_status). El bloqueo del responsable no se expone.
+export interface ManagedGuard {
+  id: string
+  name: string
+  active: boolean
+  createdAt: string
+}
+export interface GuardStatusChange {
+  id: string
+  name: string
+  active: boolean
+  changed: boolean
+}
 export interface GuardHistory {
   timeZone: string
   from: string
