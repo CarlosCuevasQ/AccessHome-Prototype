@@ -84,6 +84,14 @@ before(async () => {
   const beforeResidenceState = await snapshot()
   await db.exec(await readFile('supabase/migrations/20261021000200_public_invitation_residence_state.sql','utf8'))
   assert.deepEqual(await snapshot(),beforeResidenceState)
+  const beforeGuardManagement = await snapshot()
+  await db.exec(await readFile('supabase/migrations/20261021000300_admin_guard_management.sql','utf8'))
+  const afterGuardManagement = await snapshot()
+  for (const table of ['accesshome_private.guard_owner_blocks','accesshome_private.guard_status_changes']) {
+    assert.deepEqual(afterGuardManagement[table],[])
+    delete afterGuardManagement[table]
+  }
+  assert.deepEqual(afterGuardManagement,beforeGuardManagement)
   otherCondo = (await db.query("insert into accesshome.condominiums(name) values('Condominio ajeno') returning id")).rows[0].id
   await provision(users.guard,seed.condominiumId,'Claudia Seguridad')
   await provision(users.otherGuard,otherCondo,'Guardia ajeno')
@@ -98,6 +106,7 @@ test('incremental de caseta conserva cada fila de las ocho migraciones ya poblad
   assert.equal((await call(null,'backend_health')).openVisitExitsVersion,1)
   assert.equal((await call(null,'backend_health')).guardScanningVersion,1)
   assert.equal((await call(null,'backend_health')).inactiveResidenceExitVersion,1)
+  assert.equal((await call(null,'backend_health')).guardManagementVersion,1)
   await db.exec(await readFile('supabase/tests/security_baseline.sql','utf8'))
 })
 

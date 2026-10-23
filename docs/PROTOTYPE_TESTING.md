@@ -1,3 +1,36 @@
+## E1-A · Gestión de guardias por el administrador (2026-10-22, local)
+
+Resultados de la ejecución de E1-A (Node 24.11.0, base `13c32b6` con cambios locales sin commit):
+
+| Comando | Resultado |
+| --- | --- |
+| `node --test` de `admin-guard-management`, `guard-owner-block-migration`, `guard-backend`, `shared-backend`, `guard-scanning`, `condominium-isolation`, `service-access`, `inactive-residence-exit`, `guard-reports` | 118/118 |
+| `npm test` | **294/294** (267 + 24 de `tests/admin-guard-management.test.mjs` + 3 de `tests/guard-owner-block-migration.test.mjs`) |
+| `npm run test:concurrency` | **50/50**: dieciocho migraciones con `security_baseline.sql`; desactivación por el admin que espera a un escaneo en curso; dos admins simultáneos con un solo cambio auditado; bloqueo del responsable que vence a una reactivación administrativa en espera; dos carreras de la migración 300 en otra base del mismo clúster |
+| `npx tsc --noEmit`, `npm run build:vercel` (incluye `check-dist`; advertencia de chunk >500 kB ya conocida), `git diff --check` | Aprobados |
+| `npm run backend:check` (solo lectura) | `publicInvitationVersion: 4`; gestión de guardias **pendiente** (esperado: la migración no está aplicada) |
+
+Cubre: admin del propio y de otro condominio; residente, guardia, anónimo, admin inactivo y metadata falsificada; ids inexistentes, ajenos o que no son de guardia (mismo rechazo, sin cambios de filas); desactivar/activar repetidos sin escrituras extra; el guardia desactivado pierde acceso con las mismas claims JWT y lo recupera al reactivarse; bitácora sin acceso de clientes; escaneo de entrada/salida tras reactivar. Bloqueo del responsable: el admin no puede reactivar y el intento no cambia estado, bloqueo ni bitácora; una escritura directa del propietario se rechaza; solo el responsable lo retira y después el admin opera con normalidad; la desactivación del admin no crea bloqueo; repetir operaciones no audita. Estas pruebas cubren los triggers y los permisos; no prueban (ni pueden garantizar) nada frente a un propietario que deshabilite triggers o fije la marca.
+
+Correcciones de la revisión independiente (cada prueba demuestra la propiedad indicada):
+
+- **B1**, `tests/guard-owner-block-migration.test.mjs`: instala las migraciones anteriores a `20261021000300` (opción `before` del fixture), desactiva un guardia con la `set_guard_active` original, añade un admin y un residente inactivos y aplica la 300. Comprueba que solo ese guardia recibe bloqueo, que los perfiles quedan idénticos, que no se crea bitácora, que el admin no puede reactivarlo ni el guardia usar la caseta, que otro guardia activo sigue gestionable y que solo el responsable retira el bloqueo.
+- **I1**: el bloqueo solo cambia mediante `set_guard_active` y nunca sobre un guardia activo (inserción, borrado, `TRUNCATE` y desactivación directos rechazados); con el trigger de bloqueos deshabilitado se fuerza un bloqueo sobre un guardia activo y `guard_dashboard`, `guard_open_visits`, `validate_access` y `list_services` lo rechazan (barrera por solicitud de `require_guard`); tablas y funciones de control sin acceso de clientes.
+- **I2**: con `profiles_guard_active_write_rules` deshabilitado, `set_guard_status` sigue rechazando la reactivación por sí mismo; el trigger se rehabilita en `finally` y se comprueba que queda activo. De forma independiente, una escritura que se presenta como `set_guard_status` o `set_guard_active` no activa a un guardia bloqueado.
+- Bitácora: si falla la inserción (trigger de fallo, patrón de `guard-scanning`), al bloquear, al desbloquear y al reactivar por el admin no persiste ningún cambio; al bloquear a un guardia activo la fila registra origen `owner`, `enabled=false` y bloqueo.
+
+Corrección final antes del commit:
+
+- **Cambio de rol** (`admin-guard-management`): la secuencia exacta de la auditoría (`role='admin', active=true` y después `role='guard'` sobre un guardia bloqueado) se rechaza en el primer paso y el estado y la bitácora quedan idénticos; con la marca fijada como `set_guard_active` el cambio de rol sigue rechazado; si el primer paso se fuerza con el trigger deshabilitado dentro de una transacción, devolver `role='guard'` con el trigger activo se rechaza; todo se revierte y el trigger queda habilitado. Sin bloqueo también se rechaza cualquier cambio de rol hacia o desde `guard`; otros cambios del perfil y la gestión del admin siguen funcionando. `guard-owner-block-migration` comprueba lo mismo sobre un bloqueo creado por la retroconversión.
+- **Marcador**: tras `set_guard_active` y tras `set_guard_status` vale `''` y, en la misma transacción, un update directo de `active`, otro de un guardia distinto y una inserción de bloqueo se rechazan. Una operación idempotente no toca la marca (conserva el valor previo y una escritura directa sigue rechazada). Si la bitácora falla dentro de la función, al revertir el savepoint la marca vuelve a su valor previo.
+- **Rechazos sin efectos**: la prueba de escrituras directas en `guard_owner_blocks` ya no sobrescribe la fotografía con el estado actual. Compara perfiles, bloqueos y bitácora tras los rechazos y exige exactamente las dos filas de `set_guard_active`.
+- **Carrera de migración** (`tests/concurrency`, base aparte con las diecisiete anteriores y `installSharedSchema(..., { before, roles: false })`): una desactivación en curso hace esperar a la migración y termina como bloqueo sin bitácora; una desactivación iniciada con la migración abierta espera y, al confirmarse esta, la rechaza el nuevo trigger, sin dejar al guardia inactivo sin bloqueo.
+- **Baseline**: `security_baseline.sql` falla si cualquiera de los tres triggers está deshabilitado; cada prueba lo restaura y comprueba `tgenabled = 'O'`.
+
+Prueba de mutación local (script temporal que modifica la migración o el baseline, ejecuta las suites y los restaura con hash idéntico): 12 de 13 debilitamientos detectados. Se detectan: trigger de perfiles sin vigilar `role`, sin rechazo explícito del cambio de rol, baseline sin comprobar triggers, sin backfill, sin verificación del RPC, sin verificación de bloqueo o de escritor en el trigger de perfiles, marca sin cerrar en cada función, sin exigir guardia inactivo al bloquear, `require_guard` sin bloqueo y `set_guard_status` sin bitácora. No se detecta quitar solo el `lock table` explícito: la FK de `guard_owner_blocks` hacia `profiles` toma el mismo modo de bloqueo antes de la retroconversión. Quitando el lock y esa FK, la prueba de carrera falla; con el lock y sin la FK, pasa. En la revisión anterior, quitar el filtro explícito de condominio en `list_guards` no se detectaba porque la RLS `profile_read` produce el mismo aislamiento.
+
+Pendiente: aplicar `20261021000300`, comprobar `guardManagementVersion: 1`, pantalla E1-B y aceptación con cuentas reales. Pruebas con Auth simulado y bases locales desechables.
+
 ## Corrección 2026-10-21 · Salida con casa desactivada
 
 Resultados reales (2026-10-21, Node 24.11.0, base `66fdcaf` con cambios locales sin commit):

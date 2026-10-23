@@ -42,7 +42,7 @@ La migración solo crea/reemplaza funciones y sus permisos. No crea tablas, alte
 | Expirada / cancelada | No | QR oculto, sin código presentado como utilizable |
 | Completada | Cualquiera | Estado final y QR oculto |
 
-Con `20261021000200` (pendiente de aplicación remota) la proyección añade `residenceActive`. Si la casa está inactiva, una invitación activa sin entrada se muestra **No disponible**, sin QR, en la vista pública y en el detalle del residente; con entrada abierta, la vista pública muestra el QR solo para salida. Sin ese campo (backend anterior) se conserva la tabla anterior.
+Con `20261021000200` (aplicada en remoto el 2026-10-21; `publicInvitationVersion: 4`) la proyección añade `residenceActive`. Si la casa está inactiva, una invitación activa sin entrada se muestra **No disponible**, sin QR, en la vista pública y en el detalle del residente; con entrada abierta, la vista pública muestra el QR solo para salida. Sin ese campo (backend anterior) se conserva la tabla anterior.
 
 La página vuelve a consultar al abrir, recuperar foco/conexión, pulsar Actualizar estado y cada 10 segundos estando visible. Un fallo de consulta oculta los datos previos. La presentación nunca concede acceso: `validate_access` sigue rechazando entradas inválidas y valida cada salida. En la etapa 12, el detalle privado del residente conservó su comportamiento; desde él se puede abrir/compartir la vista pública actualizada. Actualmente (cambio local de 2026-10-21) ese detalle consulta el estado de su casa y, si está inactiva, muestra la invitación activa como **No disponible**, sin QR de acceso.
 

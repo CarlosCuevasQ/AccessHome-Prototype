@@ -67,6 +67,8 @@ La provisión valida Auth y condominio. Repetir los mismos tres datos es idempot
 
 ## 4. Activar o desactivar
 
+> Actualización 2026-10-22 (solo local): `20261021000300_admin_guard_management.sql` añade `list_guards` y `set_guard_status` para que el administrador activo active o desactive guardias de su propio condominio, con bitácora privada. Con esa migración, `set_guard_active(..., false)` pasa a ser un **bloqueo del responsable**: el administrador no puede reactivar a ese guardia y solo `set_guard_active(..., true)` lo retira. La firma, los errores y el uso de abajo no cambian. Al aplicarla, cada guardia que ya esté inactivo queda como bloqueo del responsable (sin historial inventado). Desde entonces los triggers rechazan un `update` directo de `profiles.active` de un guardia, las escrituras directas en `accesshome_private.guard_owner_blocks` y cualquier cambio de rol hacia o desde `guard` (usar una cuenta independiente). Usar siempre estas funciones: son las que registran el cambio en la bitácora. El propietario puede deshabilitar triggers o fijar la marca interna; un cambio hecho así no queda auditado. Está **pendiente de aplicación remota** y aún no tiene pantalla; hasta aplicarla y comprobar `guardManagementVersion: 1` con `npm run backend:check`, el procedimiento vigente en remoto es el siguiente. Alta y vinculación de cuentas siguen siendo del responsable (secciones 2 y 3).
+
 Solo el mismo responsable, con usuario y condominio explícitos:
 
 ```sql

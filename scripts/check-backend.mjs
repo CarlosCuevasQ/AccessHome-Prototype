@@ -40,5 +40,8 @@ if(!url || !key?.startsWith('sb_publishable_')) {
   console.log(data.inactiveResidenceExitVersion===1
     ? 'Salida con casa inactiva detectada (inactiveResidenceExitVersion: 1). Falta probarla con cuentas reales.'
     : 'Salida con casa inactiva pendiente: revisar 20261021000100_inactive_residence_exit.sql.')
+  console.log(data.guardManagementVersion===1
+    ? 'Gestión de guardias por el administrador detectada (guardManagementVersion: 1). Falta probarla con cuentas reales.'
+    : 'Gestión de guardias por el administrador pendiente: revisar 20261021000300_admin_guard_management.sql.')
  } catch(error) { console.error(error.message); process.exitCode=1 }
 }

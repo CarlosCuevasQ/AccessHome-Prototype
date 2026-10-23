@@ -106,7 +106,7 @@ async function race({second=input(10,20),rollback=false,isolation='READ COMMITTE
  }
 }
 
-test('PostgreSQL nativo: diecisiete migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
+test('PostgreSQL nativo: dieciocho migraciones y auditoría sin SECURITY DEFINER expuesto',t=>{
  t.diagnostic('PostgreSQL '+version+'; tres conexiones TCP locales, Auth simulado.')
  assert.notEqual(a.processID,b.processID)
 })
@@ -527,4 +527,144 @@ test('entrada en curso vence a una desactivación en espera; después solo puede
   const records=(await owner.query('select direction from accesshome.access_records where invitation_id=$1 order by occurred_at',[i.id])).rows
   assert.deepEqual(records,[{direction:'entrada'},{direction:'salida'}])
  } finally {await a.query('rollback');if(pending) await pending;await b.query('rollback');await setHouse(true)}
+})
+
+// Gestión de guardias por el admin con conexiones independientes.
+test('desactivación por el admin espera a un escaneo en curso; después el guardia pierde acceso',async()=>{
+ const i=await scanFixture()
+ let pending
+ try {
+  await beginGuard(a,1)
+  assert.equal((await validate(a,i.token)).rows[0].data.record.type,'entrada')
+  await begin(b)
+  await b.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:users.admin,is_anonymous:false})])
+  pending=settled(b.query('select accesshome.set_guard_status($1,false) as data',[scannerUsers[1]]))
+  await waitBlocked(b,a)
+  await a.query('commit')
+  const result=await pending
+  assert.equal(result.error,undefined); assert.equal(result.value.rows[0].data.changed,true)
+  await b.query('commit')
+  await beginGuard(a,1)
+  assert.equal((await settled(a.query('select accesshome.guard_dashboard()'))).error?.code,'42501')
+  await a.query('rollback')
+  assert.equal((await owner.query('select count(*)::int as n from accesshome.access_records where invitation_id=$1',[i.id])).rows[0].n,1)
+ } finally {
+  await a.query('rollback');if(pending) await pending;await b.query('rollback')
+  await owner.query('select accesshome_private.set_guard_active(user_id,condominium_id,true) from accesshome.profiles where user_id=$1',[scannerUsers[1]])
+ }
+})
+
+const condoAdmin2=randomUUID()
+async function secondAdmin() {
+ if((await owner.query('select 1 from accesshome.profiles where user_id=$1',[condoAdmin2])).rowCount) return
+ const condo=(await owner.query('select condominium_id from accesshome.residences where id=$1',[house])).rows[0].condominium_id
+ await owner.query('insert into auth.users values($1)',[condoAdmin2])
+ await owner.query("insert into accesshome.profiles(user_id,condominium_id,display_name,role) values($1,$2,'Admin dos','admin')",[condoAdmin2,condo])
+}
+async function beginAs(client,id) {
+ await begin(client)
+ await client.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:id,is_anonymous:false})])
+}
+const guardAudit=async guard=>(await owner.query('select count(*)::int as n from accesshome_private.guard_status_changes where guard_user_id=$1',[guard])).rows[0].n
+const guardCondo=async guard=>(await owner.query('select condominium_id from accesshome.profiles where user_id=$1',[guard])).rows[0].condominium_id
+
+test('dos admins aplican a la vez el mismo cambio: un solo cambio efectivo y auditado; el segundo informa sin cambio',async()=>{
+ await scanFixture();await secondAdmin()
+ const guard=scannerUsers[1],before=await guardAudit(guard)
+ let pending
+ try {
+  await beginAs(a,users.admin);await beginAs(b,condoAdmin2)
+  const first=(await a.query('select accesshome.set_guard_status($1,false) as data',[guard])).rows[0].data
+  assert.equal(first.changed,true)
+  pending=settled(b.query('select accesshome.set_guard_status($1,false) as data',[guard]))
+  await waitBlocked(b,a)
+  await a.query('commit')
+  const second=await pending
+  assert.equal(second.error,undefined)
+  assert.deepEqual(second.value.rows[0].data,{...first,changed:false})
+  await b.query('commit')
+  assert.equal(await guardAudit(guard),before+1)
+  assert.equal((await owner.query('select active from accesshome.profiles where user_id=$1',[guard])).rows[0].active,false)
+ } finally {
+  await a.query('rollback');if(pending) await pending;await b.query('rollback')
+  await owner.query('select accesshome_private.set_guard_active($1,$2,true)',[guard,await guardCondo(guard)])
+ }
+})
+
+test('el bloqueo del responsable en curso vence a una reactivación administrativa en espera',async()=>{
+ await scanFixture()
+ const guard=scannerUsers[1],condo=await guardCondo(guard)
+ let pending
+ try {
+  await a.query('begin')
+  await a.query('select accesshome_private.set_guard_active($1,$2,false)',[guard,condo])
+  await beginAs(b,users.admin)
+  pending=settled(b.query('select accesshome.set_guard_status($1,true) as data',[guard]))
+  await waitBlocked(b,a)
+  await a.query('commit')
+  const result=await pending
+  assert.match(result.error?.message??'',/responsable del sistema/)
+  await b.query('rollback')
+  const row=(await owner.query('select p.active,(select count(*)::int from accesshome_private.guard_owner_blocks where guard_user_id=$1) as blocks from accesshome.profiles p where user_id=$1',[guard])).rows[0]
+  assert.deepEqual(row,{active:false,blocks:1})
+ } finally {
+  await a.query('rollback');if(pending) await pending;await b.query('rollback')
+  await owner.query('select accesshome_private.set_guard_active($1,$2,true)',[guard,condo])
+ }
+})
+
+// Migración 300 en otra base del mismo clúster (los roles ya existen), poblada con las
+// diecisiete anteriores: ninguna desactivación queda entre la retroconversión y las barreras.
+async function upgradeDatabase() {
+ const name='upgrade_'+randomBytes(4).toString('hex')
+ await owner.query('create database '+name)
+ const pair=[cluster.getPgClient(name,'127.0.0.1'),cluster.getPgClient(name,'127.0.0.1')]
+ for(const client of pair) { clients.push(client); await client.connect() }
+ const [m,w]=pair
+ await installSharedSchema({exec:sql=>m.query(sql)},{before:'20261021000300',roles:false})
+ const condo=(await m.query("insert into accesshome.condominiums(name) values('Condominio migración') returning id")).rows[0].id
+ const guard=randomUUID()
+ await m.query('insert into auth.users values($1)',[guard])
+ await m.query('select accesshome_private.provision_guard($1,$2,$3)',[guard,condo,'Guardia migración'])
+ return {m,w,condo,guard}
+}
+const migration300=()=>readFile('supabase/migrations/20261021000300_admin_guard_management.sql','utf8')
+const guardRow=async(client,guard)=>(await client.query('select p.active,exists(select 1 from accesshome_private.guard_owner_blocks b where b.guard_user_id=p.user_id) as blocked,(select count(*)::int from accesshome_private.guard_status_changes c where c.guard_user_id=p.user_id) as audits from accesshome.profiles p where p.user_id=$1',[guard])).rows[0]
+
+test('migración 300: una desactivación del responsable en curso termina antes de la retroconversión y queda como bloqueo',async()=>{
+ const {m,w,condo,guard}=await upgradeDatabase()
+ let pending
+ try {
+  await w.query('begin')
+  await w.query('select accesshome_private.set_guard_active($1,$2,false)',[guard,condo]) // versión original
+  pending=settled(m.query(await migration300()))
+  await waitBlocked(m,w)
+  await w.query('commit')
+  const result=await pending
+  assert.equal(result.error,undefined)
+  assert.deepEqual(await guardRow(m,guard),{active:false,blocked:true,audits:0})
+ } finally {
+  await w.query('rollback');if(pending) await pending;await m.query('rollback')
+ }
+})
+
+test('migración 300: una desactivación iniciada durante la migración espera y la rechaza la nueva barrera',async()=>{
+ const {m,w,condo,guard}=await upgradeDatabase()
+ let pending
+ try {
+  const sql=await migration300(),open=sql.replace(/commit;\s*$/,'')
+  assert.notEqual(open,sql)
+  await m.query(open) // sin confirmar: retroconversión hecha y barreras creadas
+  pending=settled(w.query('select accesshome_private.set_guard_active($1,$2,false)',[guard,condo]))
+  await waitBlocked(w,m)
+  await m.query('commit')
+  const result=await pending
+  assert.match(result.error?.message??'',/set_guard_active o set_guard_status/)
+  assert.deepEqual(await guardRow(m,guard),{active:true,blocked:false,audits:0})
+  // Repetida después de confirmar, la función nueva desactiva, bloquea y audita.
+  await w.query('select accesshome_private.set_guard_active($1,$2,false)',[guard,condo])
+  assert.deepEqual(await guardRow(m,guard),{active:false,blocked:true,audits:1})
+ } finally {
+  if(pending) await pending;await m.query('rollback')
+ }
 })

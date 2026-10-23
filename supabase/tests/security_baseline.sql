@@ -1,4 +1,4 @@
--- Auditoría del catálogo después de las diecisiete migraciones. No crea datos.
+-- Auditoría del catálogo después de las dieciocho migraciones. No crea datos.
 -- Ejecutar como el propietario de las migraciones en un proyecto de prueba.
 begin;
 set transaction read only;
@@ -33,7 +33,8 @@ declare
     'accesshome_private.list_services(text,integer)',
     'accesshome_private.service_command(text,uuid,jsonb,uuid)',
     'accesshome_private.guard_reports(text,jsonb,uuid)',
-    'accesshome_private.guard_report_log(uuid,text,integer,boolean)'
+    'accesshome_private.guard_report_log(uuid,text,integer,boolean)',
+    'accesshome_private.set_guard_status(uuid,boolean)'
   ];
 begin
   foreach permission in array array['anon','authenticated','service_role'] loop
@@ -79,6 +80,20 @@ begin
   if exists (select 1 from pg_policies where schemaname in ('accesshome', 'accesshome_private') and cmd <> 'SELECT') then
       raise exception 'Las escrituras deben pasar por RPCs autorizados';
   end if;
+  -- Barreras del estado de guardias: deben existir, apuntar a su función y estar habilitadas
+  -- en modo normal ('O'; 'A' también dispara en réplica). 'D' o 'R' cuentan como ausentes.
+  for item in select * from (values
+      ('accesshome.profiles', 'profiles_guard_active_write_rules', 'accesshome_private.guard_active_write_rules()'),
+      ('accesshome_private.guard_owner_blocks', 'guard_owner_blocks_write_rules', 'accesshome_private.guard_owner_block_write_rules()'),
+      ('accesshome_private.guard_owner_blocks', 'guard_owner_blocks_no_truncate', 'accesshome_private.guard_owner_block_write_rules()')
+    ) as t(relation, trigger_name, function_name)
+  loop
+    if not exists (select 1 from pg_trigger t
+        where t.tgrelid = to_regclass(item.relation) and t.tgname = item.trigger_name
+          and t.tgfoid = to_regprocedure(item.function_name) and t.tgenabled in ('O', 'A')) then
+      raise exception 'Trigger de guardias ausente o deshabilitado: %', item.trigger_name;
+    end if;
+  end loop;
   for item in select p.oid, p.proname, p.prosecdef, p.proconfig
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'accesshome_private'

@@ -1,16 +1,20 @@
 # Compartir invitaciones y desplegar el ensayo en Vercel
 
-## Despliegue vigente (2026-10-21)
+## Despliegue vigente (2026-10-22)
 
-El repositorio contiene diecisiete migraciones; en remoto están aplicadas las dieciséis hasta `20261021000100`. Para publicar los cambios actuales:
+El repositorio contiene dieciocho migraciones; en remoto están aplicadas las diecisiete hasta `20261021000200` (verificado el 2026-10-21 con `supabase migration list` y `backend:check`: `publicInvitationVersion: 4`). Pendiente: `20261021000300_admin_guard_management.sql` (gestión de guardias por el administrador), implementada solo en local y sin interfaz todavía. Para publicarla cuando se autorice:
 
-1. Revisar el historial remoto (`supabase migration list` / `db push --dry-run`): debe faltar únicamente `20261021000200_public_invitation_residence_state.sql`.
-2. Aplicar solo esa incremental como propietario y ejecutar [security_baseline.sql](../supabase/tests/security_baseline.sql) sin excepciones.
-3. Ejecutar `npm run backend:check` y confirmar **`publicInvitationVersion: 4`** («Disponibilidad pública por casa detectada»).
-4. Solo después publicar el frontend con `npm run build:vercel` y `npm run deployment:check`.
-5. Aceptar con cuentas reales: invitación de casa activa con QR normal; casa inactiva «No disponible» sin QR en la vista pública y en el detalle del residente; visita abierta con QR de salida o salida sin QR en caseta; control de acceso del administrador registrado como `MANUAL`.
+1. Revisar el historial remoto (`npx supabase migration list --linked` y `npx supabase db push --linked --dry-run`): debe faltar únicamente `20261021000300_admin_guard_management.sql`, sin semillas ni roles.
+2. Aplicar solo esa incremental (`npx supabase db push --linked`) y ejecutar [security_baseline.sql](../supabase/tests/security_baseline.sql) completo en el SQL Editor como propietario; debe terminar sin excepciones.
+3. Ejecutar `npm run backend:check` y confirmar **`guardManagementVersion: 1`** («Gestión de guardias por el administrador detectada»). Antes de aplicar la migración el resultado esperado es «pendiente».
+4. Solo después publicar una interfaz que use `list_guards`/`set_guard_status` (`npm run build:vercel` y `npm run deployment:check`).
+5. Aceptar con cuentas reales: el administrador ve solo los guardias de su condominio; al desactivar uno, su sesión abierta pierde acceso a caseta en la siguiente operación; al reactivarlo lo recupera. Con un guardia bloqueado por el responsable (`set_guard_active(..., false)`), el administrador no puede reactivarlo hasta que el responsable ejecute `set_guard_active(..., true)`.
 
-Si el frontend se publica antes del paso 3, la vista pública conserva el comportamiento anterior hasta aplicar la migración. No declarar producción corregida sin completar estos pasos.
+No declarar disponible en producción la gestión de guardias sin completar estos pasos.
+
+### Despliegue anterior (2026-10-21, registro histórico)
+
+Se aplicó `20261021000200_public_invitation_residence_state.sql` siguiendo el mismo orden (historial, aplicación, `security_baseline.sql`, `publicInvitationVersion: 4`) y después se publicó el commit `13c32b6` en `main`. Según el responsable, el despliegue de esa etapa quedó completado; la aceptación con cuentas reales (casa inactiva «No disponible», QR de salida, `MANUAL` del administrador y S-16) no se verificó desde este entorno.
 
 ## Estado de la etapa 12 (registro histórico)
 
